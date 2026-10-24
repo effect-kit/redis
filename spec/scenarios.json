@@ -34,7 +34,7 @@
         "WIRE-08",
         "WIRE-09"
       ],
-      "artifact": "docs/progress/reports/02-protocol.md",
+      "artifact": "research/docs/progress/reports/02-protocol.md",
       "engineVersion": "none-pure-protocol",
       "runtimeVersion": "Node 24.22.0",
       "moduleVersions": {},
@@ -56,7 +56,7 @@
       "date": "2026-10-25",
       "configuration": "Pure byte codec; default and explicit boundary limits; synthetic data only",
       "scenarioIds": ["SPLIT-01", "SPLIT-02", "SPLIT-03"],
-      "artifact": "docs/progress/reports/02-protocol.md",
+      "artifact": "research/docs/progress/reports/02-protocol.md",
       "engineVersion": "none-pure-protocol",
       "runtimeVersion": "Node 24.22.0",
       "moduleVersions": {},
@@ -94,7 +94,7 @@
         "LIMIT-14",
         "LIMIT-15"
       ],
-      "artifact": "docs/progress/reports/02-protocol.md",
+      "artifact": "research/docs/progress/reports/02-protocol.md",
       "engineVersion": "none-pure-protocol",
       "runtimeVersion": "Node 24.22.0",
       "moduleVersions": {},

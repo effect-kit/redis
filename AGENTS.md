@@ -17,8 +17,10 @@ Never describe planned command or server compatibility as implemented or verifie
    for exact APIs. The catalog currently pins Effect **4.0.6**; do not copy v3 or old
    beta examples or assume that `effect/unstable/*` imports still exist.
 3. Read this guide's architecture decisions before adding protocol or transport code.
-   Keep provisional investigations in ignored `/research/`; maintained docs and
-   builds must never require that directory.
+   Keep detailed docs, research and phase reports under ignored `/research/`.
+   Test-required specifications stay tracked in `/spec/`. Builds, tests, CI and
+   published artifacts must never require research. Use Oxfmt/Oxlint configuration;
+   do not add `.editorconfig`.
 
 ## Dependency and workspace policy
 
@@ -91,46 +93,48 @@ Never describe planned command or server compatibility as implemented or verifie
 - Check emitted artifacts and package contents before a release. Never include
   ignored research, secrets, fixtures, or local runtime state in a published package.
 - Update concise maintained documentation when behavior, configuration, commands,
-  dependencies, or architecture change. Research is local evidence, not required docs.
+  dependencies, or architecture change. Keep detailed documentation in ignored
+  research; maintain only concise README and agent instructions in Git.
 - Create a commit after each meaningful, self-contained change using Conventional
   Commits. Lefthook formats/lints staged code and validates messages; pre-push runs
   workspace lint, typecheck, and tests. Hooks supplement CI and do not replace it.
 
-## Phase progress and reporting
+## Private documentation and phase reports
 
-- Read [implementation progress](docs/progress/README.md), the
-  [backlog](docs/progress/backlog.md), prerequisite phase reports and relevant actual
-  code before starting a phase. The tracked index owns phase IDs/status and minimum
-  gates; ignored local research can add detail but is not a build/test dependency.
-  When available, `research/implementation/README.md` indexes the detailed local plan.
-- Implement the authorized phase with behavior, tests and docs together. Verify its
-  prerequisites; do not restart completed work or silently narrow the broad v1 scope.
-  Internal phase order does not authorize external publication or paid provisioning.
-- After every phase, write/update `docs/progress/reports/NN-topic.md` using the
-  [phase report template](docs/progress/phase-report-template.md). Also checkpoint
-  partial/blocked work before handoff/interruption; keep status incomplete until
-  its acceptance gates actually pass.
-- Reports record delivered behavior/modules, exact check commands/results/counts,
-  real versus controlled fixtures and versions, fresh versus cached evidence,
-  decisions, failures/skips, deferred/backlog IDs and exact next actions. No secrets
-  or unredacted traffic. A report or zero-test job is not implementation evidence.
-- Update the status index and backlog in the same coherent commit. Every deferred
-  promised item needs an owning phase, release impact and measurable closure criterion.
-  Keep future scope distinct from release blockers; never hide a missing provider
-  fixture or quarantine behind an aggregate pass percentage.
-- Keep AGENTS.md instructional; phase history belongs in reports. Promote durable
-  API/architecture decisions to owning maintained docs/code when implemented. Research
-  stays ignored; do not force-add roadmap files or make maintained docs require them.
+- User preference: keep detailed docs and all phase records in ignored `/research/`.
+  Never commit or force-add them, or recreate a tracked root docs directory.
+  Keep test-required specifications in tracked `/spec/`. Root/package READMEs and
+  this agent guide remain concise tracked references.
+- When present, read `research/docs/progress/README.md`, its backlog and prerequisite
+  reports before a phase. `research/implementation/README.md` indexes the local plan;
+  tracked `/spec/` holds command/fixture/scenario inventories. Research references are
+  optional on a fresh clone: inspect actual code/tests/history and do not make
+  builds, typechecks, default tests, CI or package contents depend on private files.
+- Implement the authorized phase with behavior and tests. Preserve the broad v1
+  target and verified prerequisites. A phase order does not authorize publication
+  or paid provisioning.
+- After every phase, write/update `research/docs/progress/reports/NN-topic.md` using
+  `research/docs/progress/phase-report-template.md` when available. Checkpoint partial
+  work before handoff; keep incomplete gates open. Update the local index/backlog.
+- Reports record behavior/modules, exact commands/counts/results, real versus
+  controlled fixtures, versions, cache freshness, failures/skips, decisions,
+  deferred work and next actions. No credentials or real payloads. Missing live
+  evidence is not a pass; every deferred promise needs an owner and closure criterion.
+- Keep specification validation tooling, runtime source, tests and executable fixtures
+  tracked and self-contained. Put future generated production metadata in its owning
+  source module; generating it locally must not make normal builds require research.
+- Keep AGENTS.md instructional. Store detailed architecture/protocol notes under
+  `research/docs/architecture/` and history in local reports. No private-file
+  dependency or broken research links in tracked/package READMEs.
 
 ## Architecture decisions
 
-Implemented contracts are documented in [foundation contracts](docs/architecture/foundation.md)
-and [RESP codec](docs/architecture/protocol.md). Read the codec byte/EOF/ownership
-contract before integrating native sockets. Drain results between feeds and partition
-chunks to fit remaining retained-wire capacity. Codec Results compose through
-Effect.fromResult; parser errors retire a decoder and later its physical generation.
-The tracked [specification inventory](spec/README.md) owns release/fixture/scenario
-inputs; its command modes are planning seeds, not production routing metadata.
+Local details, when present, live in `research/docs/architecture/foundation.md` and
+`research/docs/architecture/protocol.md`. Before socket integration inspect actual
+codec code/tests: drain results between feeds and partition chunks to remaining
+retained-wire capacity. Codec Results compose through Effect.fromResult; protocol
+errors retire a decoder and later its physical connection generation. Tracked command
+inventory modes are planning seeds, not production routing/replay metadata.
 
 These are design decisions, not implemented features. Check installed APIs and
 real-server conformance before making public compatibility promises.

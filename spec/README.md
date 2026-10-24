@@ -61,6 +61,8 @@ parity (matching/different/unverified) and execution status are independent. Exe
 results require a run ID, exact engine/runtime/module versions, transport, protocol,
 topology, authentication, configuration digest, scenario IDs and evidence artifact.
 Schemas validate evidence structure; only executed conformance establishes truth.
+Detailed reports referenced by evidence artifacts live in ignored local research;
+validators check their metadata without reading or requiring those private files.
 
 Keep actual native/provider results not-run until their owning tests execute. Missing
 credentials or fixtures do not become a pass. Do not provision paid deployments from

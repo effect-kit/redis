@@ -1,5 +1,6 @@
-# Local research (never force-add).
+# Private research and detailed docs (never force-add).
 /research/
+/docs/
 
 # Dependencies and package manager state.
 node_modules/

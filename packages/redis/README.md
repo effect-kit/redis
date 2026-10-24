@@ -6,12 +6,11 @@ The public API includes configuration decoding, binary `encodeCommand`, incremen
 codec limits and typed errors. Network connections and command execution arrive
 in later phases.
 
-See the [RESP codec](../../docs/architecture/protocol.md) for grammar, streamed forms,
-Result/Effect composition, EOF/error handling and byte limits.
-See the [foundation contract](../../docs/architecture/foundation.md) for endpoint
-shapes, redaction, TLS/options validation, defaults and the internal scoped transport
-boundary. [Release specifications](../../spec/README.md) track planned coverage;
-their presence is not conformance evidence.
+The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
+Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
+to detect truncated input. Detailed architecture notes and progress reports stay in
+ignored local research. [Release specifications](../../spec/README.md) track planned
+coverage; their presence is not conformance evidence.
 
 Only Effect is a runtime peer dependency. Universal exports have no Node/Bun imports.
 Builds use tsdown/Klarity, TypeScript 7 declarations and Publint. Tests, tools and
@@ -29,4 +28,4 @@ Run from the workspace root:
 
 Tests require no Redis process, credentials or network access. Real server/provider
 lanes will be added with their owning phases; no empty integration job counts as a
-pass. See [implementation progress](../../docs/progress/README.md).
+pass.
