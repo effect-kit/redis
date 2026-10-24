@@ -17,8 +17,9 @@ pnpm check
 ```
 
 `pnpm install` installs Lefthook. Klarity supplies TypeScript, Oxlint, Oxfmt,
-Commitlint, and Git hook conventions. TypeScript 7 emits unbundled ESM and declarations
-directly; no additional bundler is needed for this scaffold.
+Commitlint, and Git hook conventions. TypeScript 7 checks types;
+tsdown uses Klarity’s library preset to build unbundled ESM and declarations, with
+Publint checking package exports.
 
 | Command             | Purpose                                            |
 | ------------------- | -------------------------------------------------- |

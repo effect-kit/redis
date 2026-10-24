@@ -22,7 +22,12 @@ Never describe planned command or server compatibility as implemented or verifie
 ## Dependency and workspace policy
 
 - Use pnpm **12.14.0**, Node **24.22.0+**, Turborepo, TypeScript **7.0.2**, and Klarity
-  presets. Commit `pnpm-lock.yaml`; use `pnpm install --frozen-lockfile` in CI.
+  presets. Build libraries with tsdown and `klarity/tsdown/library`; keep
+  TypeScript 7 for typechecking. Commit `pnpm-lock.yaml`; use `pnpm install --frozen-lockfile` in CI.
+- Keep tsdown at **0.23.1** while using TypeScript **7.0.2**. Its declaration plugin
+  supports this compiler; tsdown 0.23.2's plugin requires the TypeScript 7.1 API.
+  Recheck the pair before upgrades; do not downgrade to TypeScript 6 or force isolated
+  declarations just to bypass an incompatible declaration emitter.
 - Keep shared versions exact in the default catalog in `pnpm-workspace.yaml` and use
   `catalog:` in manifests. Keep runtime Effect versions aligned across packages.
 - Effect v4 is the only permitted library runtime dependency/peer. Use platform

@@ -10,5 +10,6 @@ will live here. Runtime-specific socket adapters will use separate subpath expor
 workspace packages when their ownership requires it.
 
 Use `pnpm --filter effect-redis build`, `typecheck`, `lint`, or `test` from the root.
-The build uses TypeScript 7 directly to emit unbundled ESM and declarations. Tests use
+The build uses tsdown with `klarity/tsdown/library` for unbundled ESM, TypeScript 7
+declarations, and Publint validation. Tests use
 Node's built-in runner; the initial scaffold has no behavior tests.

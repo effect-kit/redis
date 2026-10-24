@@ -26,6 +26,8 @@
     "lefthook": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:"
   },
