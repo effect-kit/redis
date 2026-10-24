@@ -36,6 +36,8 @@ Publint checking package exports.
 - `packages/redis`: the private `effect-redis` library scaffold.
 - `pnpm-workspace.yaml`: shared, exact dependency versions in the default pnpm catalog.
 - `AGENTS.md`: engineering policy and architecture guidance for contributors and agents.
+- [Implementation progress](docs/progress/README.md): phase status, acceptance gates,
+  reports and deferred-work tracking.
 - `research/`: ignored local Markdown investigations and upstream metadata; never commit it.
 
 Effect is installed at the workspace root so its `AGENTS.md`, AI documentation, and

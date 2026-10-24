@@ -61,19 +61,30 @@ Never describe planned command or server compatibility as implemented or verifie
 
 - Make the smallest coherent change. Preserve public behavior and existing naming,
   module, error, and formatting patterns. Do not refactor unrelated code.
-- Keep modules focused; review source files approaching 300–500 lines. Split by
-  domain or responsibility, not arbitrary size. Large generated catalogs are exempt.
+- Keep handwritten source and test files below 500 physical lines; review splitting
+  near 400. Split by domain, operation group or responsibility, not arbitrary size.
+  Use folders/subfolders for related ownership. Generated metadata and indivisible
+  declarative fixtures are exceptions; record provenance and the reason in the phase report.
 - Extract only reused logic, important domain concepts, or boundaries that materially
   improve readability/testing. Avoid generic helpers, wrappers, speculative services,
   dead code, debug logging, and comments that repeat the implementation.
 - Use explicit shallow control flow and domain-specific names. Propagate or translate
   errors at their owning boundary; never silently swallow them.
+- Keep comments short and limited to non-obvious invariants, protocol/compatibility
+  constraints, units or trade-offs. Do not narrate obvious code. Public JSDoc explains
+  meaningful input/result/error semantics rather than repeating function names.
 - Add tests for meaningful behavior, public APIs, security boundaries, and regressions.
-  Use Node's built-in test runner initially; run Effect at the test boundary and use
-  Effect's installed testing utilities when needed. Do not test placeholder exports.
+  Use `@effect/vitest` for Effect workflows and ordinary Vitest for pure code. Phase
+  01 adopts the compatible dev toolchain; the current scaffold still uses empty
+  `node --test`. Inspect exact installed APIs: v4 `it.effect` and `it.live` already
+  provide Scope. Use TestClock for deterministic policy/race tests, live services for
+  real sockets/processes/providers, and shared Layers only with explicit isolation.
+  Keep typed fixtures/support modules reusable and focused; do not build a fake Redis
+  implementation or use broad mocks that bypass the production scheduler. Typecheck
+  tests/tools separately. Do not test placeholder exports or merely Effect itself.
 - Run `pnpm check` after meaningful changes. It covers format, lint, root/package
   typechecks, package tests, and builds. There are no behavioral tests yet; add them
-  with the first protocol implementation. Report any skipped checks and their reason.
+  with the first implemented contracts/protocol. Report skipped checks and their reason.
 - Check emitted artifacts and package contents before a release. Never include
   ignored research, secrets, fixtures, or local runtime state in a published package.
 - Update concise maintained documentation when behavior, configuration, commands,
@@ -81,6 +92,32 @@ Never describe planned command or server compatibility as implemented or verifie
 - Create a commit after each meaningful, self-contained change using Conventional
   Commits. Lefthook formats/lints staged code and validates messages; pre-push runs
   workspace lint, typecheck, and tests. Hooks supplement CI and do not replace it.
+
+## Phase progress and reporting
+
+- Read [implementation progress](docs/progress/README.md), the
+  [backlog](docs/progress/backlog.md), prerequisite phase reports and relevant actual
+  code before starting a phase. The tracked index owns phase IDs/status and minimum
+  gates; ignored local research can add detail but is not a build/test dependency.
+  When available, `research/implementation/README.md` indexes the detailed local plan.
+- Implement the authorized phase with behavior, tests and docs together. Verify its
+  prerequisites; do not restart completed work or silently narrow the broad v1 scope.
+  Internal phase order does not authorize external publication or paid provisioning.
+- After every phase, write/update `docs/progress/reports/NN-topic.md` using the
+  [phase report template](docs/progress/phase-report-template.md). Also checkpoint
+  partial/blocked work before handoff/interruption; keep status incomplete until
+  its acceptance gates actually pass.
+- Reports record delivered behavior/modules, exact check commands/results/counts,
+  real versus controlled fixtures and versions, fresh versus cached evidence,
+  decisions, failures/skips, deferred/backlog IDs and exact next actions. No secrets
+  or unredacted traffic. A report or zero-test job is not implementation evidence.
+- Update the status index and backlog in the same coherent commit. Every deferred
+  promised item needs an owning phase, release impact and measurable closure criterion.
+  Keep future scope distinct from release blockers; never hide a missing provider
+  fixture or quarantine behind an aggregate pass percentage.
+- Keep AGENTS.md instructional; phase history belongs in reports. Promote durable
+  API/architecture decisions to owning maintained docs/code when implemented. Research
+  stays ignored; do not force-add roadmap files or make maintained docs require them.
 
 ## Architecture decisions
 
@@ -267,6 +304,9 @@ must not silently defer them to v1.1 merely to ship sooner.
   accept an aggregate pass percentage in place of passing every promised capability.
 
 ### Implementation milestones and verification
+
+The list below groups responsibilities. The tracked progress index owns the twenty
+phase IDs, prerequisites and status; these groups are not alternate phase numbers.
 
 1. Binary RESP codec and limits, with fragmented/malformed input fixtures.
 2. Scoped Node TCP/TLS, handshake, raw commands, typed errors, bounded scheduling,
