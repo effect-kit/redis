@@ -1,5 +1,6 @@
-/**
- * A binary-safe Redis command token. Command builders encode numeric arguments
- * as strings; arbitrary binary keys and values remain bytes.
- */
-export type RedisArgument = string | Uint8Array;
+export type { RedisArgument } from "./RedisArgument.js";
+export { decodeRedisConfig } from "./RedisConfig.js";
+export type { RedisConfig } from "./RedisConfig.js";
+export { RedisConfigError } from "./errors/RedisConfigError.js";
+export { TransportError } from "./errors/TransportError.js";
+export type { RespPairs, RespValue } from "./protocol/RespValue.js";

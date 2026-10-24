@@ -1,0 +1,74 @@
+[
+  {
+    "name": "CMS.INCRBY",
+    "category": "cms",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "CMS.INFO",
+    "category": "cms",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "CMS.INITBYDIM",
+    "category": "cms",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "CMS.INITBYPROB",
+    "category": "cms",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "CMS.MERGE",
+    "category": "cms",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "CMS.QUERY",
+    "category": "cms",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  }
+]

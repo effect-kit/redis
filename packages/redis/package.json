@@ -2,7 +2,7 @@
   "name": "effect-redis",
   "version": "0.0.0",
   "private": true,
-  "description": "A native Redis protocol client for Effect v4 (workspace scaffold).",
+  "description": "Native Redis client foundation for Effect v4: validated configuration and lossless protocol contracts.",
   "files": [
     "dist",
     "README.md"
@@ -17,18 +17,23 @@
   },
   "scripts": {
     "build": "tsdown",
-    "lint": "oxlint --deny-warnings src *.config.ts",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.tools.json",
-    "test": "node --test"
+    "lint": "oxlint --deny-warnings src test tools *.config.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.tools.json",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "check:spec": "node tools/check-spec.ts"
   },
   "devDependencies": {
+    "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "effect": "catalog:",
     "klarity": "catalog:",
     "oxlint": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "effect": "catalog:"

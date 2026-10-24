@@ -1,0 +1,219 @@
+[
+  {
+    "id": "CONFIG",
+    "ownerPhase": 1,
+    "contract": "URLs, limits, TLS option pairs, exclusive fields and safe redaction",
+    "execution": "not-run",
+    "clock": "virtual"
+  },
+  {
+    "id": "TRANSPORT",
+    "ownerPhase": 1,
+    "contract": "Controlled byte fixture: fragmentation, partial writes, failure and scoped cleanup",
+    "execution": "not-run",
+    "clock": "virtual"
+  },
+  {
+    "id": "WIRE",
+    "ownerPhase": 2,
+    "contract": "Lossless RESP2/3 values, attributes, pushes, nested errors and exact numbers",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "SPLIT",
+    "ownerPhase": 2,
+    "contract": "All split positions, one-byte/coalesced chunks and multibyte boundaries",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "LIMIT",
+    "ownerPhase": 2,
+    "contract": "Malformed/truncated data, bounded lengths, depth and allocations",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "SOCKET",
+    "ownerPhase": 3,
+    "contract": "Native TCP/TLS/Unix acquisition, backpressure, trust and cleanup",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "HANDSHAKE",
+    "ownerPhase": 4,
+    "contract": "Authentication, HELLO fallback policy, SELECT and naming before admission",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "OWNERSHIP",
+    "ownerPhase": 4,
+    "contract": "Admission/write/reply cancellation races and connection generations",
+    "execution": "not-run",
+    "clock": "virtual"
+  },
+  {
+    "id": "UNKNOWN",
+    "ownerPhase": 4,
+    "contract": "Mutation followed by reply loss: no automatic replay",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "ADMISSION",
+    "ownerPhase": 4,
+    "contract": "Count/byte bounds, stalled peer and canceled waiters",
+    "execution": "not-run",
+    "clock": "virtual"
+  },
+  {
+    "id": "COMMAND",
+    "ownerPhase": 5,
+    "contract": "Arguments, options, binary replies, missing values and wrong types",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "TYPES",
+    "ownerPhase": 5,
+    "contract": "Schema requirements, payload inference and option-dependent return types",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "SESSION",
+    "ownerPhase": 7,
+    "contract": "Exclusive leases, pipelines, WATCH/MULTI/EXEC and adjacency",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "BLOCK",
+    "ownerPhase": 7,
+    "contract": "Timeout results, destructive pop uncertainty and dedicated leases",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "SCAN",
+    "ownerPhase": 8,
+    "contract": "Opaque cursors, duplicates, empty nonterminal pages and cancellation",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "STREAM",
+    "ownerPhase": 8,
+    "contract": "IDs/fields, groups, pending/claim, acknowledgment and recovery",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "PUSH",
+    "ownerPhase": 9,
+    "contract": "Subscriptions, acknowledgments, overflow, reconnect gaps and reader fairness",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "TRACK",
+    "ownerPhase": 9,
+    "contract": "Cache invalidations, OPTIN adjacency, identity and reconnect",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "SCRIPT",
+    "ownerPhase": 10,
+    "contract": "Per-node script loading, explicit keys, functions and no uncertain replay",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "ADMIN",
+    "ownerPhase": 10,
+    "contract": "Explicit nodes/modes, ACL restrictions and safe diagnostics",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "CLUSTER",
+    "ownerPhase": 11,
+    "contract": "Binary hash slots, cross-slot errors, redirects, resharding and failover",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "SENTINEL",
+    "ownerPhase": 12,
+    "contract": "Separate credentials, role verification and real failover",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "MODULE",
+    "ownerPhase": 13,
+    "contract": "Pinned dialect/option/reply/precision behavior for selected modules",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "HTTP",
+    "ownerPhase": 15,
+    "contract": "Endpoint status/errors, exact bytes/numbers, batches and abort uncertainty",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "SSE",
+    "ownerPhase": 15,
+    "contract": "Split UTF-8/events, multiline payloads, overflow and teardown",
+    "execution": "not-run",
+    "clock": "none"
+  },
+  {
+    "id": "IDENTITY",
+    "ownerPhase": 16,
+    "contract": "Credential acquisition, rotation, concurrent refresh and reauthentication",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "ENGINE",
+    "ownerPhase": 17,
+    "contract": "Exact engine builds with available subsets and semantic differences",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "PROVIDER",
+    "ownerPhase": 18,
+    "contract": "Isolated real hosted deployments and service restrictions",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "RUNTIME",
+    "ownerPhase": 14,
+    "contract": "Actual Node/Bun/Deno/Workers entrypoints, versions and cleanup",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "SOAK",
+    "ownerPhase": 19,
+    "contract": "Bounded memory/handles, churn, stalls and faults under sustained workload",
+    "execution": "not-run",
+    "clock": "live"
+  },
+  {
+    "id": "PACK",
+    "ownerPhase": 20,
+    "contract": "Packed consumer imports, declarations, assets and runtime boundaries",
+    "execution": "not-run",
+    "clock": "none"
+  }
+]

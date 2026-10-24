@@ -1,0 +1,240 @@
+[
+  {
+    "id": "redis-core",
+    "url": "https://github.com/redis/redis/tree/8.10.2/src/commands",
+    "revision": "8.10.2",
+    "sha256": "51e3990364859e3489fe810060f9fdd0723874b21daa7c28e81327f1a4715abc",
+    "evidence": "metadata"
+  },
+  {
+    "id": "valkey-core",
+    "url": "https://github.com/valkey-io/valkey/tree/9.1.2/src/commands",
+    "revision": "9.1.2",
+    "sha256": "4206a839e6b6efab5a21a863a435621ad78bc8469af90d9b4e1e77c0e4f36dcc",
+    "evidence": "metadata"
+  },
+  {
+    "id": "redis-docs",
+    "url": "https://github.com/redis/docs/blob/8da7f68c5dd1fd99826e6ef4a9af36f7fca91500/data/commands.json",
+    "revision": "8da7f68c5dd1fd99826e6ef4a9af36f7fca91500",
+    "sha256": "efcc8eec865092bf9c210b363b7de8d7a96ec18194c76ba9f96258e42c9bd336",
+    "evidence": "metadata"
+  },
+  {
+    "id": "valkey-docs",
+    "url": "https://github.com/valkey-io/valkey-doc/tree/a95bf25cac3c22ffcabb45baaa4bf2eb86040d26",
+    "revision": "a95bf25cac3c22ffcabb45baaa4bf2eb86040d26",
+    "sha256": "3d1aa16f51c581435f997a45d127fbf438e304e5aa1b72c3abea9e40dbde2813",
+    "evidence": "metadata"
+  },
+  {
+    "id": "upstash-search.aggregate",
+    "url": "https://upstash.com/docs/redis/commands/search/search-aggregate.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "8227d798723a4ad8661a8399a25e311a705408384cf6a864c298593ca67c9cde",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.aliasadd",
+    "url": "https://upstash.com/docs/redis/commands/search/search-aliasadd.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "27ba12ffa221944ccc4ef1226f29aeff8965814020721accc9e3e790ea462461",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.aliasdel",
+    "url": "https://upstash.com/docs/redis/commands/search/search-aliasdel.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "4328b3fe1c701d58194bb38df2b013086f5deca1b8ac61c4064b00b5d8b7178c",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.count",
+    "url": "https://upstash.com/docs/redis/commands/search/search-count.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "d5ebca79f07f498d3374228359fadbe626a7d6bba5bca9084928f15436dfe284",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.create",
+    "url": "https://upstash.com/docs/redis/commands/search/search-create.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "f132c79f130753126b16715d6765958a697e231d7d7bb98a6b3da882b139cf3a",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.describe",
+    "url": "https://upstash.com/docs/redis/commands/search/search-describe.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "f778470371f1e43e4a4ca9e1dcdd885d9b1b5725eff49cb0756d1f802d102bdc",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.drop",
+    "url": "https://upstash.com/docs/redis/commands/search/search-drop.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "609e462e73c0332d1679cba777bc1e574afc1028f02376556446967d12200f4c",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.listaliases",
+    "url": "https://upstash.com/docs/redis/commands/search/search-listaliases.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "89ec33c6f8bf06148dae1af0a391023d6a47dd4b8cc56a3a70cad34c27320e3e",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.listindexes",
+    "url": "https://upstash.com/docs/redis/commands/search/search-listindexes.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "ce35f26184c9b59a5e7016b7d0effd255e48082b8599acf03c9b21d8264a647d",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.query",
+    "url": "https://upstash.com/docs/redis/commands/search/search-query.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "10429d300cbb3e41859f780a95e4355b713c9d23251a66b2b36ac7163a14468b",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-search.waitindexing",
+    "url": "https://upstash.com/docs/redis/commands/search/search-waitindexing.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "a736a2419c4b273663956adb82288e914bb75cd9339886a55fc5c89d36b5273a",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-acl-resttoken",
+    "url": "https://upstash.com/docs/redis/commands/server/acl-resttoken.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "e2fa514400405fca0ee45f64647daf3fdf86bea7384fdf4fd4556023180fb49e",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-vector.add",
+    "url": "https://upstash.com/docs/redis/commands/vector/vector-add.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "54bc0754dd842365628af635d7d1ed52666949e2c5ecb60c4201139bffc04113",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-vector.count",
+    "url": "https://upstash.com/docs/redis/commands/vector/vector-count.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "41db251ba1e34bdeb4d696553605391a3b8f5b00b12425047bc7c68937928f12",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-vector.create",
+    "url": "https://upstash.com/docs/redis/commands/vector/vector-create.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "0dacc1ff3ce3f20086a2e9f558e2fe0db34f2aef995948a29c9685065b79dd1a",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-vector.del",
+    "url": "https://upstash.com/docs/redis/commands/vector/vector-del.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "b13de2727147bbde72cde756d019470d9ce72ad3d23a0769d119ddaa8bd91c16",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-vector.drop",
+    "url": "https://upstash.com/docs/redis/commands/vector/vector-drop.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "5a12e45601219f0e48fa3f675e049bd0ce9f0980493af7f2f8af07e2bec061d4",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-vector.get",
+    "url": "https://upstash.com/docs/redis/commands/vector/vector-get.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "6f355474379a4ef9c4e274df4e85bb95e063748e3ce457c9886fd77d2b4c3e0f",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-vector.info",
+    "url": "https://upstash.com/docs/redis/commands/vector/vector-info.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "c2a24b2d87dab10da14f2166d978a750bbc43ec936f7deb82b85915e11585a36",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-vector.query",
+    "url": "https://upstash.com/docs/redis/commands/vector/vector-query.md",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "c2fff4891deaf824ed9155082272000a357291b7701149c28bc5753ea52582d1",
+    "evidence": "documentation"
+  },
+  {
+    "id": "redis-cloud-deployment-docs",
+    "url": "https://redis.io/docs/latest/operate/rc/databases/configuration/clustering/",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "f2b04e28f2e9aefb3320c60e7a80ddc562d01ce4871d23e8a5c84b58ddbe40c3",
+    "evidence": "documentation"
+  },
+  {
+    "id": "elasticache-deployment-docs",
+    "url": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/SupportedCommands.html",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "c0e9257e64a5fffbaa65b0473e694a0d76865303282a15cbf9a4e37a80927da9",
+    "evidence": "documentation"
+  },
+  {
+    "id": "memorydb-deployment-docs",
+    "url": "https://docs.aws.amazon.com/memorydb/latest/devguide/what-is-memorydb-for-redis.html",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "4e02001a5b61280442e3b1036d53cac9ce7b58b6724d42ab33e556d94505bbd5",
+    "evidence": "documentation"
+  },
+  {
+    "id": "memorystore-deployment-docs",
+    "url": "https://docs.cloud.google.com/memorystore/docs/valkey/supported-commands",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "6bd19e82707a7165f69b81dc0b7a02a834534b9d4ae3ccecfc5531cd2a704ae4",
+    "evidence": "documentation"
+  },
+  {
+    "id": "azure-deployment-docs",
+    "url": "https://learn.microsoft.com/en-us/azure/redis/overview",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "7822051fab8dc189db3a650f8623422baa824647c26c86f051f6f54290f482b4",
+    "evidence": "documentation"
+  },
+  {
+    "id": "upstash-deployment-docs",
+    "url": "https://upstash.com/docs/redis/features/restapi",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "fa166f1d4c1c6bbf0ea763037a70ad0cfd617b7ac7a4b66468175db4d26ea2f3",
+    "evidence": "documentation"
+  },
+  {
+    "id": "aiven-deployment-docs",
+    "url": "https://aiven.io/docs/products/valkey",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "c41485eaecac8372be7a72fc2a974411405c6118a4f036a8c6adb45b16857210",
+    "evidence": "documentation"
+  },
+  {
+    "id": "digitalocean-deployment-docs",
+    "url": "https://docs.digitalocean.com/products/databases/valkey/",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "535421a340f5993c1d2ab63926056ea403521fbf610add82266bad433a0aee3f",
+    "evidence": "documentation"
+  },
+  {
+    "id": "tair-deployment-docs",
+    "url": "https://help.aliyun.com/en/redis/developer-reference/overview-3/",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "9b3e75693c770a2278ede6b6cc4be9d1db2b7b3a838fdfba7fcc201d17fea590",
+    "evidence": "documentation"
+  },
+  {
+    "id": "redis-software-deployment-docs",
+    "url": "https://redis.io/docs/latest/operate/rs/",
+    "revision": "snapshot-2026-10-25",
+    "sha256": "728db9033018283ccea2300c568b121cb20f6481fb635bba5d7d70bfdc1bdcf1",
+    "evidence": "documentation"
+  }
+]

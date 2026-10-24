@@ -4,8 +4,9 @@ A Redis protocol client built with Effect v4 and runtime platform APIs. The goal
 complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities across
 Redis-compatible servers and transports.
 
-**Status:** workspace and architecture foundation. No Redis client functionality is
-implemented yet. Compatibility is a target, not a claim about this scaffold.
+**Status:** Phase 01 foundation: validated configuration, lossless value/transport
+contracts, Effect-native offline tests and tracked release specifications. Network
+connections and Redis commands are not implemented. Compatibility remains a target.
 
 ## Development
 
@@ -21,23 +22,26 @@ Commitlint, and Git hook conventions. TypeScript 7 checks types;
 tsdown uses Klarity’s library preset to build unbundled ESM and declarations, with
 Publint checking package exports.
 
-| Command             | Purpose                                            |
-| ------------------- | -------------------------------------------------- |
-| `pnpm build`        | Build workspace packages through Turborepo         |
-| `pnpm typecheck`    | Check root tool configs and workspace source       |
-| `pnpm lint`         | Lint root tool configs and workspace source        |
-| `pnpm format`       | Format tracked project files with Oxfmt            |
-| `pnpm format:check` | Check formatting                                   |
-| `pnpm test`         | Run package tests through Turborepo (no tests yet) |
-| `pnpm check`        | Formatting, lint, typecheck, test, and build       |
+| Command             | Purpose                                                  |
+| ------------------- | -------------------------------------------------------- |
+| `pnpm build`        | Build workspace packages through Turborepo               |
+| `pnpm typecheck`    | Check root configs, source, tests and tooling            |
+| `pnpm lint`         | Lint root configs, source, tests and tooling             |
+| `pnpm format`       | Format tracked project files with Oxfmt                  |
+| `pnpm format:check` | Check formatting                                         |
+| `pnpm test`         | Run offline Effect Vitest/unit/specification tests       |
+| `pnpm check:spec`   | Validate tracked release/fixture/scenario specifications |
+| `pnpm check`        | Formatting, lint, typecheck, test, and build             |
 
 ## Workspace
 
-- `packages/redis`: the private `effect-redis` library scaffold.
+- `packages/redis`: the private `effect-redis` library foundation.
 - `pnpm-workspace.yaml`: shared, exact dependency versions in the default pnpm catalog.
 - `AGENTS.md`: engineering policy and architecture guidance for contributors and agents.
 - [Implementation progress](docs/progress/README.md): phase status, acceptance gates,
   reports and deferred-work tracking.
+- [Foundation contracts](docs/architecture/foundation.md): current configuration and byte contracts.
+- [Release specifications](spec/README.md): tracked command/fixture/scenario inventory.
 - `research/`: ignored local Markdown investigations and upstream metadata; never commit it.
 
 Effect is installed at the workspace root so its `AGENTS.md`, AI documentation, and

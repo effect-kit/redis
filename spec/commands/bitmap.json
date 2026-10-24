@@ -1,0 +1,87 @@
+[
+  {
+    "name": "BITCOUNT",
+    "category": "bitmap",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "BITFIELD",
+    "category": "bitmap",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "BITFIELD_RO",
+    "category": "bitmap",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "BITOP",
+    "category": "bitmap",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run",
+    "notes": "dragonfly: Missing: ANDOR, DIFF, ONE. | Garnet has separate BITOP AND/NOT option rows; do not infer whole-command parity"
+  },
+  {
+    "name": "BITPOS",
+    "category": "bitmap",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "GETBIT",
+    "category": "bitmap",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "SETBIT",
+    "category": "bitmap",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  }
+]

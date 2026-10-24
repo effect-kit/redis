@@ -3,7 +3,8 @@
 ## Scope and status
 
 Build a native Redis-compatible client with Effect v4. This repository currently
-contains workspace tooling and a private library scaffold, not a working Redis client.
+contains validated configuration, value/transport contracts, offline Effect Vitest
+tests and tracked release specifications, not a working Redis client.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -74,17 +75,17 @@ Never describe planned command or server compatibility as implemented or verifie
   constraints, units or trade-offs. Do not narrate obvious code. Public JSDoc explains
   meaningful input/result/error semantics rather than repeating function names.
 - Add tests for meaningful behavior, public APIs, security boundaries, and regressions.
-  Use `@effect/vitest` for Effect workflows and ordinary Vitest for pure code. Phase
-  01 adopts the compatible dev toolchain; the current scaffold still uses empty
-  `node --test`. Inspect exact installed APIs: v4 `it.effect` and `it.live` already
-  provide Scope. Use TestClock for deterministic policy/race tests, live services for
+  Use `@effect/vitest` for Effect workflows and ordinary Vitest for pure code. The
+  catalog pins @effect/vitest 4.0.6, Vitest 5.0.5 and Vite 8.3.5. Inspect exact
+  installed APIs: v4 `it.effect` and `it.live` already provide Scope. Use TestClock for deterministic policy/race tests, live services for
   real sockets/processes/providers, and shared Layers only with explicit isolation.
   Keep typed fixtures/support modules reusable and focused; do not build a fake Redis
   implementation or use broad mocks that bypass the production scheduler. Typecheck
   tests/tools separately. Do not test placeholder exports or merely Effect itself.
 - Run `pnpm check` after meaningful changes. It covers format, lint, root/package
-  typechecks, package tests, and builds. There are no behavioral tests yet; add them
-  with the first implemented contracts/protocol. Report skipped checks and their reason.
+  typechecks, offline Effect Vitest/specification tests, and builds. Run `pnpm check:spec`
+  for the tracked release inventory; never depend on ignored research. Report skipped
+  checks and their reason.
 - Check emitted artifacts and package contents before a release. Never include
   ignored research, secrets, fixtures, or local runtime state in a published package.
 - Update concise maintained documentation when behavior, configuration, commands,
@@ -120,6 +121,10 @@ Never describe planned command or server compatibility as implemented or verifie
   stays ignored; do not force-add roadmap files or make maintained docs require them.
 
 ## Architecture decisions
+
+Implemented phase-01 contracts are documented in [foundation contracts](docs/architecture/foundation.md).
+The tracked [specification inventory](spec/README.md) owns release/fixture/scenario
+inputs; its command modes are planning seeds, not production routing metadata.
 
 These are design decisions, not implemented features. Check installed APIs and
 real-server conformance before making public compatibility promises.

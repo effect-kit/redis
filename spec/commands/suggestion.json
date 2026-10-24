@@ -1,0 +1,50 @@
+[
+  {
+    "name": "FT.SUGADD",
+    "category": "suggestion",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "FT.SUGDEL",
+    "category": "suggestion",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "FT.SUGGET",
+    "category": "suggestion",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "FT.SUGLEN",
+    "category": "suggestion",
+    "classification": "module",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 13,
+    "scenarioFamilies": ["MODULE", "COMMAND"],
+    "sources": ["redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  }
+]

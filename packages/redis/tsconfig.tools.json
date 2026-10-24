@@ -1,4 +1,7 @@
 {
   "extends": "klarity/tsconfig/app/node",
-  "include": ["*.config.ts"]
+  "include": ["*.config.ts", "tools/**/*.ts"],
+  "compilerOptions": {
+    "allowImportingTsExtensions": true
+  }
 }

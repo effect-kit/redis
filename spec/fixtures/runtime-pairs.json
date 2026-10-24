@@ -1,0 +1,128 @@
+[
+  {
+    "id": "node-tcp",
+    "runtime": "node",
+    "fixture": "redis",
+    "transport": "tcp",
+    "ownerPhase": 3,
+    "scenarioFamilies": ["RUNTIME", "SOCKET"],
+    "execution": "not-run"
+  },
+  {
+    "id": "node-tls",
+    "runtime": "node",
+    "fixture": "redis",
+    "transport": "tls",
+    "ownerPhase": 3,
+    "scenarioFamilies": ["RUNTIME", "SOCKET"],
+    "execution": "not-run"
+  },
+  {
+    "id": "node-unix",
+    "runtime": "node",
+    "fixture": "redis",
+    "transport": "unix",
+    "ownerPhase": 3,
+    "scenarioFamilies": ["RUNTIME", "SOCKET"],
+    "execution": "not-run"
+  },
+  {
+    "id": "node-http",
+    "runtime": "node",
+    "fixture": "upstash-http",
+    "transport": "http",
+    "ownerPhase": 15,
+    "scenarioFamilies": ["RUNTIME", "HTTP"],
+    "execution": "not-run"
+  },
+  {
+    "id": "node-sse",
+    "runtime": "node",
+    "fixture": "upstash-sse",
+    "transport": "sse",
+    "ownerPhase": 15,
+    "scenarioFamilies": ["RUNTIME", "SSE"],
+    "execution": "not-run"
+  },
+  {
+    "id": "bun-tcp",
+    "runtime": "bun",
+    "fixture": "redis",
+    "transport": "tcp",
+    "ownerPhase": 14,
+    "scenarioFamilies": ["RUNTIME", "SOCKET"],
+    "execution": "not-run"
+  },
+  {
+    "id": "bun-tls",
+    "runtime": "bun",
+    "fixture": "redis",
+    "transport": "tls",
+    "ownerPhase": 14,
+    "scenarioFamilies": ["RUNTIME", "SOCKET"],
+    "execution": "not-run"
+  },
+  {
+    "id": "bun-unix",
+    "runtime": "bun",
+    "fixture": "redis",
+    "transport": "unix",
+    "ownerPhase": 14,
+    "scenarioFamilies": ["RUNTIME", "SOCKET"],
+    "execution": "not-run"
+  },
+  {
+    "id": "bun-http",
+    "runtime": "bun",
+    "fixture": "upstash-http",
+    "transport": "http",
+    "ownerPhase": 15,
+    "scenarioFamilies": ["RUNTIME", "HTTP"],
+    "execution": "not-run"
+  },
+  {
+    "id": "bun-sse",
+    "runtime": "bun",
+    "fixture": "upstash-sse",
+    "transport": "sse",
+    "ownerPhase": 15,
+    "scenarioFamilies": ["RUNTIME", "SSE"],
+    "execution": "not-run"
+  },
+  {
+    "id": "deno-http",
+    "runtime": "deno",
+    "fixture": "upstash-http",
+    "transport": "http",
+    "ownerPhase": 18,
+    "scenarioFamilies": ["RUNTIME", "HTTP"],
+    "execution": "not-run"
+  },
+  {
+    "id": "deno-sse",
+    "runtime": "deno",
+    "fixture": "upstash-sse",
+    "transport": "sse",
+    "ownerPhase": 18,
+    "scenarioFamilies": ["RUNTIME", "SSE"],
+    "execution": "not-run"
+  },
+  {
+    "id": "workerd-http",
+    "runtime": "workerd",
+    "fixture": "upstash-http",
+    "transport": "http",
+    "ownerPhase": 18,
+    "scenarioFamilies": ["RUNTIME", "HTTP"],
+    "execution": "not-run"
+  },
+  {
+    "id": "workerd-sse",
+    "runtime": "workerd",
+    "fixture": "upstash-sse",
+    "transport": "sse",
+    "ownerPhase": 18,
+    "scenarioFamilies": ["RUNTIME", "SSE"],
+    "execution": "not-run"
+  }
+]

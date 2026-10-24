@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-10-25",
+  "commandCount": 741,
+  "baselineCounts": {
+    "redis-core": 459,
+    "valkey-core": 425
+  },
+  "categories": [
+    {
+      "file": "array.json",
+      "sha256": "b362b8983ef4e43b94cc1028863bc0cf1c90cb44f0c6c87f09c5623c44085c19",
+      "count": 18
+    },
+    {
+      "file": "bf.json",
+      "sha256": "247414e1282785a4dc8c477ac85a672a774c6041ec7a546189ff92b78dc857bc",
+      "count": 12
+    },
+    {
+      "file": "bitmap.json",
+      "sha256": "c149e8700ca37ee2e8c7fd402dfcb0aa47d42f089d893ff15b5e9889b2bff619",
+      "count": 7
+    },
+    {
+      "file": "cf.json",
+      "sha256": "30df6a96413569b08b839c2425fa59f73514b185b696ca8a0950b3ef3ab09b8c",
+      "count": 13
+    },
+    {
+      "file": "cluster.json",
+      "sha256": "7be2d89b13caf43b204748318c6ca4ee45be306ecefb939a0a5a1aef09df4f22",
+      "count": 40
+    },
+    {
+      "file": "cms.json",
+      "sha256": "34abb2db32806da89f0fb068444d459bc442e245e16a82d4bad740fcf1e0e10c",
+      "count": 6
+    },
+    {
+      "file": "connection.json",
+      "sha256": "09c04b16f1d2e26bc2248e6087d6bebaabd46a650255afefd05e2d45bb4a4ba9",
+      "count": 28
+    },
+    {
+      "file": "generic.json",
+      "sha256": "31077434fbfd7ead24e1588e6b6631acff2eff8a4841a4e1c0dc0cf9e2ba4979",
+      "count": 39
+    },
+    {
+      "file": "geo.json",
+      "sha256": "00b22bf1013d1b8051eaf92fca15966eea8d4ae75e0d2edf3037d6667223895a",
+      "count": 10
+    },
+    {
+      "file": "hash.json",
+      "sha256": "1c40e1f059625a7863b405f6a4f5bb928d1af1dda1ddaed67a12473e91c3a030",
+      "count": 33
+    },
+    {
+      "file": "hyperloglog.json",
+      "sha256": "86b979dc9f09c494115fc5c8273fdf82d58f25fda77fde82f9ab4ecf04c8b36c",
+      "count": 5
+    },
+    {
+      "file": "json.json",
+      "sha256": "d598459080e907c5ca9a4ad7a314901b94c0eb6367e5b2df8ab4e970a95e1cc3",
+      "count": 25
+    },
+    {
+      "file": "list.json",
+      "sha256": "d92c7f6b9ef0af45b8a8b2814e35da83220875849f909085d2a79e3a42c3fa54",
+      "count": 24
+    },
+    {
+      "file": "pubsub.json",
+      "sha256": "a2e769a5c2a5fdc39b3fe6a433a9094759f5bb73c24b1f23bc16a79aa96f1eff",
+      "count": 15
+    },
+    {
+      "file": "scripting.json",
+      "sha256": "004ded46b1687208a135230ab8407cfb7309bf548f166ad7355f1f719ce2e6f2",
+      "count": 24
+    },
+    {
+      "file": "search.json",
+      "sha256": "fcd5ce8917ea7306267715f548d1c550c7022ed52e67dfb0241520ebc22de6ce",
+      "count": 46
+    },
+    {
+      "file": "sentinel.json",
+      "sha256": "2ce78f76cf74f8da85dc88c9ca486ad75e1e9f691f99c793ac7d2f32e1c631b8",
+      "count": 26
+    },
+    {
+      "file": "server.json",
+      "sha256": "26e2e4dd21979069bb101d4586083407cc5950eb58b6ed34e11eff9f9063f2b3",
+      "count": 99
+    },
+    {
+      "file": "set.json",
+      "sha256": "ead012925c8ee89bd45e471713317622638fffccb6d3d1e495b2014db65ec538",
+      "count": 19
+    },
+    {
+      "file": "sorted-set.json",
+      "sha256": "eab06ff2afbda91411b6d758c913f3c8eebd4d26b30bbe48f23d038f65e794da",
+      "count": 35
+    },
+    {
+      "file": "stream.json",
+      "sha256": "e8346fda30e346b35a452cb8b6602a7f75392ae9c9290b5477606ae47c16be31",
+      "count": 30
+    },
+    {
+      "file": "string.json",
+      "sha256": "e8e6623b93f9a5f09487053f4d7e1cf3811af3318f9bc2347ec6ea1d23f9279a",
+      "count": 27
+    },
+    {
+      "file": "suggestion.json",
+      "sha256": "d26d2724c856b16dc0113eb6d5b361bc5b942b3e8c2c45ab791d055cab8c5fec",
+      "count": 4
+    },
+    {
+      "file": "tdigest.json",
+      "sha256": "aac093fc99c4108a753a3e56c888c6571b116f7eba8e1bcec19118f91f0f7a9d",
+      "count": 14
+    },
+    {
+      "file": "timeseries.json",
+      "sha256": "a32e7f00af3b05f30ac8c6c8048cd64a027f68cbf610894c1d0704225d0a06ea",
+      "count": 21
+    },
+    {
+      "file": "topk.json",
+      "sha256": "a984921124a0d7a0dce932c0bbba12db51f606348b99d9c2529122257edebf7b",
+      "count": 7
+    },
+    {
+      "file": "transactions.json",
+      "sha256": "7f25d2b245204ed0979b09e476b472834ebcbd6ceac577dcc66eab80ef898755",
+      "count": 5
+    },
+    {
+      "file": "undocumented-modules.json",
+      "sha256": "35d2e92a64ddcd20c4f23fc1a470c1756ccb0ee1d6fc57d358c0476df968f40d",
+      "count": 88
+    },
+    {
+      "file": "vector-set.json",
+      "sha256": "a29fad8994555f1a5b557ac78c5d8081e351dae7f3767c62e4a699c826eb03d8",
+      "count": 13
+    },
+    {
+      "file": "vector.json",
+      "sha256": "aed1f53ebed5cf9c3667c153c2f6cc411b736cbde0951bfe7e5e16cea472ade2",
+      "count": 8
+    }
+  ]
+}

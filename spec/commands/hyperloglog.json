@@ -1,0 +1,64 @@
+[
+  {
+    "name": "PFADD",
+    "category": "hyperloglog",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "PFCOUNT",
+    "category": "hyperloglog",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "PFDEBUG",
+    "category": "hyperloglog",
+    "classification": "internal",
+    "typedCoverage": "boundary",
+    "mode": "advanced",
+    "ownerPhase": 10,
+    "scenarioFamilies": ["ADMIN"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run",
+    "notes": "garnet: Internal command"
+  },
+  {
+    "name": "PFMERGE",
+    "category": "hyperloglog",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "ordinary",
+    "ownerPhase": 6,
+    "scenarioFamilies": ["COMMAND"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "PFSELFTEST",
+    "category": "hyperloglog",
+    "classification": "internal",
+    "typedCoverage": "boundary",
+    "mode": "advanced",
+    "ownerPhase": 10,
+    "scenarioFamilies": ["ADMIN"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run",
+    "notes": "garnet: Internal command"
+  }
+]

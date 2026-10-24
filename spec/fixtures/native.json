@@ -1,0 +1,302 @@
+[
+  {
+    "id": "redis",
+    "kind": "engine",
+    "product": "redis",
+    "version": "8.10.2",
+    "source": {
+      "repository": "https://github.com/redis/redis",
+      "commit": "498ecd0d6d007db11ddb3aea9428552598a78622",
+      "refUrl": "https://api.github.com/repos/redis/redis/git/ref/tags/8.10.2"
+    },
+    "ownerPhase": 3,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "redis-6.2",
+    "kind": "engine",
+    "product": "redis",
+    "version": "6.2.19",
+    "source": {
+      "repository": "https://github.com/redis/redis",
+      "commit": "fa00bd2fff1533ad6e8483d9ce8868f383df2fbb",
+      "refUrl": "https://api.github.com/repos/redis/redis/git/ref/tags/6.2.19"
+    },
+    "ownerPhase": 3,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "redis-7.2",
+    "kind": "engine",
+    "product": "redis",
+    "version": "7.2.11",
+    "source": {
+      "repository": "https://github.com/redis/redis",
+      "commit": "d4c381df7a729c06a5207c4f18d804febe956dc4",
+      "refUrl": "https://api.github.com/repos/redis/redis/git/ref/tags/7.2.11"
+    },
+    "ownerPhase": 3,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "redis-7.4",
+    "kind": "engine",
+    "product": "redis",
+    "version": "7.4.6",
+    "source": {
+      "repository": "https://github.com/redis/redis",
+      "commit": "4b03ddfdac5a5c007358df8d08873f508f2fbfe3",
+      "refUrl": "https://api.github.com/repos/redis/redis/git/ref/tags/7.4.6"
+    },
+    "ownerPhase": 3,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "valkey",
+    "kind": "engine",
+    "product": "valkey",
+    "version": "9.1.2",
+    "source": {
+      "repository": "https://github.com/valkey-io/valkey",
+      "commit": "7f1dffedff6de73058b2c2a389422b6ecd56c8fb",
+      "refUrl": "https://api.github.com/repos/valkey-io/valkey/git/ref/tags/9.1.2"
+    },
+    "ownerPhase": 3,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "valkey-7.2",
+    "kind": "engine",
+    "product": "valkey",
+    "version": "7.2.11",
+    "source": {
+      "repository": "https://github.com/valkey-io/valkey",
+      "commit": "97b6663c775193cce6e41c752e7683f000f80ad5",
+      "refUrl": "https://api.github.com/repos/valkey-io/valkey/git/ref/tags/7.2.11"
+    },
+    "ownerPhase": 3,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "valkey-8.0",
+    "kind": "engine",
+    "product": "valkey",
+    "version": "8.0.3",
+    "source": {
+      "repository": "https://github.com/valkey-io/valkey",
+      "commit": "6917ea8f8d7b1072a410f90de71c7c6108e9b2e7",
+      "refUrl": "https://api.github.com/repos/valkey-io/valkey/git/ref/tags/8.0.3"
+    },
+    "ownerPhase": 3,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "dragonfly",
+    "kind": "engine",
+    "product": "dragonfly",
+    "version": "v2.0.2",
+    "source": {
+      "repository": "https://github.com/dragonflydb/dragonfly",
+      "commit": "8ce4bbb106586057fbd85f71ed353c60d0d5bf87",
+      "refUrl": "https://api.github.com/repos/dragonflydb/dragonfly/git/ref/tags/v2.0.2"
+    },
+    "ownerPhase": 17,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "keydb",
+    "kind": "engine",
+    "product": "keydb",
+    "version": "v6.3.4",
+    "source": {
+      "repository": "https://github.com/Snapchat/KeyDB",
+      "commit": "7e7e5e57d25fe246a8201f0acf5e7363c0bf1e14",
+      "refUrl": "https://api.github.com/repos/Snapchat/KeyDB/git/ref/tags/v6.3.4"
+    },
+    "ownerPhase": 17,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "redict",
+    "kind": "engine",
+    "product": "redict",
+    "version": "7.3.6",
+    "source": {
+      "repository": "https://codeberg.org/redict/redict",
+      "commit": "47d5ab530bbe0d35ee996c7057e34efa644ff655",
+      "refUrl": "https://codeberg.org/api/v1/repos/redict/redict/tags?limit=3"
+    },
+    "ownerPhase": 17,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "garnet",
+    "kind": "engine",
+    "product": "garnet",
+    "version": "v2.2.4",
+    "source": {
+      "repository": "https://github.com/microsoft/garnet",
+      "commit": "9fb3cbb795e3cfba12504d1c025a6cd4e3daec89",
+      "refUrl": "https://api.github.com/repos/microsoft/garnet/git/ref/tags/v2.2.4"
+    },
+    "ownerPhase": 17,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "kvrocks",
+    "kind": "engine",
+    "product": "kvrocks",
+    "version": "v2.17.0",
+    "source": {
+      "repository": "https://github.com/apache/kvrocks",
+      "commit": "185d4221df20af8ed3416e4dec4de8917312a2e9",
+      "refUrl": "https://api.github.com/repos/apache/kvrocks/git/ref/tags/v2.17.0"
+    },
+    "ownerPhase": 17,
+    "configuration": "native standalone; isolated loopback; no modules",
+    "scenarioFamilies": ["ENGINE", "COMMAND"],
+    "execution": "not-run"
+  },
+  {
+    "id": "json",
+    "kind": "module",
+    "product": "json",
+    "version": "v2.8.19",
+    "source": {
+      "repository": "https://github.com/RedisJSON/RedisJSON",
+      "commit": "68d37a4089534164e17dc8d8219b781ec056de4a",
+      "refUrl": "https://api.github.com/repos/RedisJSON/RedisJSON/git/ref/tags/v2.8.19"
+    },
+    "ownerPhase": 13,
+    "configuration": "build/load with redis-7.2; verify module ABI and feature subset in phase 13",
+    "scenarioFamilies": ["MODULE"],
+    "execution": "not-run"
+  },
+  {
+    "id": "search",
+    "kind": "module",
+    "product": "search",
+    "version": "v2.10.31",
+    "source": {
+      "repository": "https://github.com/RediSearch/RediSearch",
+      "commit": "989e8372dabb03328a98a1f478b3862d1b5704d0",
+      "refUrl": "https://api.github.com/repos/RediSearch/RediSearch/git/ref/tags/v2.10.31"
+    },
+    "ownerPhase": 13,
+    "configuration": "build/load with redis-7.2; verify module ABI and feature subset in phase 13",
+    "scenarioFamilies": ["MODULE"],
+    "execution": "not-run"
+  },
+  {
+    "id": "timeseries",
+    "kind": "module",
+    "product": "timeseries",
+    "version": "v1.8.26",
+    "source": {
+      "repository": "https://github.com/RedisTimeSeries/RedisTimeSeries",
+      "commit": "0237c8c321303173708b3abce5130c7447c0db87",
+      "refUrl": "https://api.github.com/repos/RedisTimeSeries/RedisTimeSeries/git/ref/tags/v1.8.26"
+    },
+    "ownerPhase": 13,
+    "configuration": "build/load with redis-7.2; verify module ABI and feature subset in phase 13",
+    "scenarioFamilies": ["MODULE"],
+    "execution": "not-run"
+  },
+  {
+    "id": "bloom",
+    "kind": "module",
+    "product": "bloom",
+    "version": "v2.4.27",
+    "source": {
+      "repository": "https://github.com/RedisBloom/RedisBloom",
+      "commit": "800d6f89a78ad512afb107783bb1bf654b8cf8ed",
+      "refUrl": "https://api.github.com/repos/RedisBloom/RedisBloom/git/ref/tags/v2.4.27"
+    },
+    "ownerPhase": 13,
+    "configuration": "build/load with redis-7.2; verify module ABI and feature subset in phase 13",
+    "scenarioFamilies": ["MODULE"],
+    "execution": "not-run"
+  },
+  {
+    "id": "bun",
+    "kind": "runtime",
+    "product": "bun",
+    "version": "bun-v1.4.4",
+    "source": {
+      "repository": "https://github.com/oven-sh/bun",
+      "commit": "38afee6c84fcf48c0edb2466aa4b27d287a59c30",
+      "refUrl": "https://api.github.com/repos/oven-sh/bun/git/ref/tags/bun-v1.4.4"
+    },
+    "ownerPhase": 14,
+    "configuration": "actual executable; no Node emulation",
+    "scenarioFamilies": ["RUNTIME"],
+    "execution": "not-run"
+  },
+  {
+    "id": "deno",
+    "kind": "runtime",
+    "product": "deno",
+    "version": "v2.9.8",
+    "source": {
+      "repository": "https://github.com/denoland/deno",
+      "commit": "fe7ed012d92c642fd8e5607ac5a45d517538b5c5",
+      "refUrl": "https://api.github.com/repos/denoland/deno/git/ref/tags/v2.9.8"
+    },
+    "ownerPhase": 18,
+    "configuration": "actual executable; no Node emulation",
+    "scenarioFamilies": ["RUNTIME"],
+    "execution": "not-run"
+  },
+  {
+    "id": "node",
+    "kind": "runtime",
+    "product": "node",
+    "version": "24.22.0",
+    "source": {
+      "repository": "https://nodejs.org",
+      "commit": null,
+      "refUrl": "https://nodejs.org/dist/v24.22.0/SHASUMS256.txt"
+    },
+    "ownerPhase": 3,
+    "configuration": "Node 24 baseline; runtime matrix below",
+    "scenarioFamilies": ["RUNTIME"],
+    "execution": "not-run"
+  },
+  {
+    "id": "workerd",
+    "kind": "runtime",
+    "product": "cloudflare-workers",
+    "version": "1.20261024.1",
+    "source": {
+      "repository": "https://registry.npmjs.org/workerd",
+      "commit": null,
+      "refUrl": "https://registry.npmjs.org/workerd/1.20261024.1"
+    },
+    "ownerPhase": 18,
+    "configuration": "compatibility_date=2026-10-24; flags=[]; real isolated deployed Worker also required",
+    "scenarioFamilies": ["RUNTIME", "HTTP", "SSE"],
+    "execution": "not-run"
+  }
+]

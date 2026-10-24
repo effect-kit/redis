@@ -16,5 +16,6 @@
       "dependsOn": ["build"],
       "outputs": []
     }
-  }
+  },
+  "globalDependencies": ["spec/**"]
 }

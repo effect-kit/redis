@@ -1,0 +1,62 @@
+[
+  {
+    "name": "DISCARD",
+    "category": "transactions",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "session",
+    "ownerPhase": 7,
+    "scenarioFamilies": ["SESSION"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "EXEC",
+    "category": "transactions",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "session",
+    "ownerPhase": 7,
+    "scenarioFamilies": ["SESSION"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "MULTI",
+    "category": "transactions",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "session",
+    "ownerPhase": 7,
+    "scenarioFamilies": ["SESSION"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "UNWATCH",
+    "category": "transactions",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "session",
+    "ownerPhase": 7,
+    "scenarioFamilies": ["SESSION"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  },
+  {
+    "name": "WATCH",
+    "category": "transactions",
+    "classification": "application",
+    "typedCoverage": "planned",
+    "mode": "session",
+    "ownerPhase": 7,
+    "scenarioFamilies": ["SESSION"],
+    "sources": ["redis-core", "valkey-core", "redis-docs"],
+    "implementation": "planned",
+    "execution": "not-run"
+  }
+]
