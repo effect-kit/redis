@@ -12,7 +12,7 @@ to detect truncated input. Detailed architecture notes and progress reports stay
 ignored local research. [Release specifications](../../spec/README.md) track planned
 coverage; their presence is not conformance evidence.
 
-Only Effect is a runtime peer dependency. Universal exports have no Node/Bun imports.
+Effect `^4.0.6` is the only runtime peer dependency. Universal exports have no Node/Bun imports.
 Builds use tsdown/Klarity, TypeScript 7 declarations and Publint. Tests, tools and
 specifications stay outside the package artifact.
 
@@ -29,3 +29,6 @@ Run from the workspace root:
 Tests require no Redis process, credentials or network access. Real server/provider
 lanes will be added with their owning phases; no empty integration job counts as a
 pass.
+
+Licensed under Apache-2.0. Package archives include the license and built artifacts;
+`prepack` rebuilds them, and pnpm replaces catalog references with compatible ranges.

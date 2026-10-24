@@ -165,49 +165,49 @@ settings:
 catalogs:
   default:
     '@commitlint/cli':
-      specifier: 21.2.4
+      specifier: '^21.2.4'
       version: 21.2.4
     '@commitlint/config-conventional':
-      specifier: 21.2.4
+      specifier: '^21.2.4'
       version: 21.2.4
     '@effect/vitest':
-      specifier: 4.0.6
+      specifier: '^4.0.6'
       version: 4.0.6
     '@types/node':
-      specifier: 24.19.2
+      specifier: '^24.19.2'
       version: 24.19.2
     effect:
-      specifier: 4.0.6
+      specifier: '^4.0.6'
       version: 4.0.6
     klarity:
-      specifier: 0.3.0
+      specifier: '^0.3.0'
       version: 0.3.0
     lefthook:
-      specifier: 2.2.2
+      specifier: '^2.2.2'
       version: 2.2.2
     oxfmt:
-      specifier: 0.74.0
+      specifier: '^0.74.0'
       version: 0.74.0
     oxlint:
-      specifier: 1.89.0
+      specifier: '^1.89.0'
       version: 1.89.0
     publint:
-      specifier: 0.3.25
+      specifier: '^0.3.25'
       version: 0.3.25
     tsdown:
-      specifier: 0.23.1
+      specifier: '>=0.23.1 <0.23.2'
       version: 0.23.1
     turbo:
-      specifier: 2.11.10
+      specifier: '^2.11.10'
       version: 2.11.10
     typescript:
-      specifier: 7.0.2
+      specifier: '~7.0.2'
       version: 7.0.2
     vite:
-      specifier: 8.3.5
+      specifier: '^8.3.5'
       version: 8.3.5
     vitest:
-      specifier: 5.0.5
+      specifier: '^5.0.5'
       version: 5.0.5
 
 importers:

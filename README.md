@@ -38,7 +38,7 @@ Publint checking package exports.
 ## Workspace
 
 - `packages/effect-redis`: the private `@envoy1084/effect-redis` library foundation.
-- `pnpm-workspace.yaml`: shared, exact dependency versions in the default pnpm catalog.
+- `pnpm-workspace.yaml`: shared compatible dependency ranges in the default pnpm catalog.
 - `AGENTS.md`: engineering policy and architecture guidance for contributors and agents.
 - [Release specifications](spec/README.md): tracked command/fixture/scenario inventory.
 - `research/`: ignored local docs, plans, phase reports and investigations.
@@ -61,3 +61,12 @@ The maintained [agent guide](AGENTS.md) records module boundaries, binary safety
 cancellation and replay rules, transactions, topology, and implementation milestones.
 Local research catalogs are split by category under `research/redis-commands/`,
 `research/valkey-commands/`, and `research/upstash-commands/`.
+
+## Dependencies and license
+
+Catalog ranges allow compatible updates; `pnpm-lock.yaml` records exact resolutions
+for reproducible installs. Effect uses `^4.0.6`, TypeScript stays within `~7.0.2`,
+and tsdown is constrained to `>=0.23.1 <0.23.2` until its declaration plugin supports
+our compiler. Use frozen installs in CI and review lockfile updates.
+
+Licensed under [Apache-2.0](LICENSE). The library remains private during development.

@@ -1,6 +1,20 @@
 {
   "name": "effect-redis-workspace",
   "private": true,
+  "description": "Development workspace for the native Effect v4 Redis client.",
+  "homepage": "https://github.com/envoy1084/effect-redis#readme",
+  "bugs": {
+    "url": "https://github.com/envoy1084/effect-redis/issues"
+  },
+  "license": "Apache-2.0",
+  "author": {
+    "name": "envoy1084",
+    "url": "https://github.com/envoy1084"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/envoy1084/effect-redis.git"
+  },
   "type": "module",
   "scripts": {
     "build": "turbo run build",

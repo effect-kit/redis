@@ -14,7 +14,7 @@ Never describe planned command or server compatibility as implemented or verifie
    changes separately before implementation; never mix unrelated changes.
 2. Read `node_modules/effect/AGENTS.md` completely before writing Effect code. Follow
    the relevant links under `node_modules/effect/ai-docs/` and inspect installed source
-   for exact APIs. The catalog currently pins Effect **4.0.6**; do not copy v3 or old
+   for exact APIs. The lockfile currently resolves Effect **4.0.6**; do not copy v3 or old
    beta examples or assume that `effect/unstable/*` imports still exist.
 3. Read this guide's architecture decisions before adding protocol or transport code.
    Keep detailed docs, research and phase reports under ignored `/research/`.
@@ -27,12 +27,15 @@ Never describe planned command or server compatibility as implemented or verifie
 - Use pnpm **12.14.0**, Node **24.22.0+**, Turborepo, TypeScript **7.0.2**, and Klarity
   presets. Build libraries with tsdown and `klarity/tsdown/library`; keep
   TypeScript 7 for typechecking. Commit `pnpm-lock.yaml`; use `pnpm install --frozen-lockfile` in CI.
-- Keep tsdown at **0.23.1** while using TypeScript **7.0.2**. Its declaration plugin
+- Keep tsdown within **>=0.23.1 <0.23.2** and TypeScript within **~7.0.2**. Its declaration plugin
   supports this compiler; tsdown 0.23.2's plugin requires the TypeScript 7.1 API.
   Recheck the pair before upgrades; do not downgrade to TypeScript 6 or force isolated
   declarations just to bypass an incompatible declaration emitter.
-- Keep shared versions exact in the default catalog in `pnpm-workspace.yaml` and use
-  `catalog:` in manifests. Keep runtime Effect versions aligned across packages.
+- Keep shared compatible ranges in the default catalog in `pnpm-workspace.yaml` and
+  use `catalog:` in manifests. Prefer caret ranges for stable dependencies, narrow
+  known toolchain incompatibilities, and commit exact resolutions in pnpm-lock.yaml.
+  Keep runtime Effect versions aligned across packages; the public Effect peer range
+  is **^4.0.6**. Review compatibility before widening its major version.
 - Effect v4 is the only permitted library runtime dependency/peer. Use platform
   TCP/TLS, bytes, and HTTP APIs at adapter boundaries. Do not add ioredis, node-redis,
   Bun.RedisClient, Upstash SDKs, RESP parsers, or unrelated runtime libraries.
@@ -78,7 +81,7 @@ Never describe planned command or server compatibility as implemented or verifie
   meaningful input/result/error semantics rather than repeating function names.
 - Add tests for meaningful behavior, public APIs, security boundaries, and regressions.
   Use `@effect/vitest` for Effect workflows and ordinary Vitest for pure code. The
-  catalog pins @effect/vitest 4.0.6, Vitest 5.0.5 and Vite 8.3.5. Inspect exact
+  lockfile resolves @effect/vitest 4.0.6, Vitest 5.0.5 and Vite 8.3.5. Inspect exact
   installed APIs: v4 `it.effect` and `it.live` already provide Scope. Use TestClock for deterministic policy/race tests, live services for
   real sockets/processes/providers, and shared Layers only with explicit isolation.
   Keep typed fixtures/support modules reusable and focused; do not build a fake Redis
