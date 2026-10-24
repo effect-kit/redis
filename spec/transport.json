@@ -1,0 +1,642 @@
+{
+  "runtime": "node",
+  "baseline": "24.22.0",
+  "sources": [
+    "https://github.com/nodejs/node/blob/v24.22.0/doc/api/net.md",
+    "https://github.com/nodejs/node/blob/v24.22.0/doc/api/tls.md",
+    "https://github.com/nodejs/node/blob/v24.22.0/doc/api/stream.md"
+  ],
+  "boundaries": [
+    "Single physical connection; no Redis AUTH/HELLO/SELECT handshake or request/reply scheduler.",
+    "Redis/Valkey PING and ECHO are transport smoke evidence, not command/engine/provider certification.",
+    "Native readable backpressure and logical write bounds are not an RSS or performance certification."
+  ],
+  "scenarios": [
+    {
+      "id": "SOCKET-01",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "TCP Layer exchanges owned binary chunks and closes idempotently",
+      "assertions": [
+        "Binary payload is unchanged; returned bytes are owned Uint8Array; close is idempotent; future reads fail closed."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-02",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native", "node-unix"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "Unix socket exchanges bytes",
+      "assertions": ["An absolute Unix socket endpoint exchanges the expected byte."],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-03",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "drains bytes before stable EOF and rejects writes after half-close",
+      "assertions": [
+        "Final payload arrives before stable clean EOF; writes after peer half-close fail closed."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-04",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "refused acquisition is a redacted typed open failure",
+      "assertions": [
+        "Refused connection produces TransportError at open; serialized failure omits the endpoint."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-05",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "interrupting a pending reader leaves the socket usable",
+      "assertions": [
+        "Interrupting a waiting read does not orphan its waiter; a subsequent echo reaches the next reader."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-06",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "close wakes a pending reader and future operations",
+      "assertions": ["Explicit close wakes the waiting reader and rejects subsequent writes."],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-07",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "scope finalization closes physical connections across repeated acquisition",
+      "assertions": [
+        "Twelve scoped round trips leave twelve accepted and twelve closed peer sockets."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-08",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "oversized writes fail before sending and do not poison the socket",
+      "assertions": [
+        "Oversized write fails limit before sending; a later permitted write succeeds."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-09",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "concurrent readers fail explicitly without stealing the first reply",
+      "assertions": [
+        "Second reader fails unavailable; the original reader receives the expected bytes."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-10",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "native write backpressure resumes after a stalled peer starts reading",
+      "assertions": [
+        "Writer stays pending against a paused peer, rejects overlap and snapshots caller bytes; all original bytes arrive after resume."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-11",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "canceling a possibly partial write retires the physical socket",
+      "assertions": [
+        "Interruption of a possibly partial write finishes and prevents reuse of that physical connection."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-12",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "peer reset wakes a blocked writer with a typed failure",
+      "assertions": ["Peer destruction wakes a blocked writer with a typed write failure."],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-13",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-tls"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "custom CA, verified server name and SNI complete before byte I/O",
+      "assertions": [
+        "Custom CA and explicit identity verify; echoed binary bytes match; server observes requested SNI."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-14",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-tls"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "untrusted certificates fail acquisition without insecure fallback",
+      "assertions": [
+        "Default certificate verification rejects the untrusted CA without successful fallback."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-15",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-tls"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "trusted CA does not bypass hostname verification",
+      "assertions": [
+        "Trusted CA does not bypass wrong-name rejection; private cause identifies hostname verification failure."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-16",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-tls"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "explicit insecure mode works only when requested",
+      "assertions": ["Only explicit rejectUnauthorized=false permits the untrusted test identity."],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-17",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-tls"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "mutual TLS presents the configured client certificate and key",
+      "assertions": [
+        "Server authorizes the supplied client certificate and the binary exchange succeeds."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-18",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-tls"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "required client authentication fails without an identity",
+      "assertions": [
+        "Server requiring client identity rejects the unidentified connection before an application reply."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-19",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "TLS establishment deadline retires a stalled handshake",
+      "assertions": [
+        "Stalled TLS establishment fails with typed open timeout and closes the socket."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-20",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "canceled TLS acquisition destroys the not-yet-ready socket",
+      "assertions": [
+        "Interrupting acquisition completes physical disconnect and leaves one closed peer socket."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-21",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": [
+        "redis",
+        "redis-6.2",
+        "redis-7.2",
+        "redis-7.4",
+        "valkey",
+        "valkey-7.2",
+        "valkey-8.0"
+      ],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "process",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire disposable pinned server container and isolated loopback connection.",
+      "operation": "real $fixture pinned build exchanges PING and binary ECHO",
+      "assertions": [
+        "Each pinned build reports its expected version, returns PONG and preserves all 200000 binary ECHO bytes. Built-in MODULE LIST inventory matches the pinned image profile; no extra image-entrypoint modules are loaded."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-22",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["redis", "valkey"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "process",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire disposable pinned server container and isolated loopback connection.",
+      "operation": "real $fixture verifies mutual TLS and exchanges PING",
+      "assertions": [
+        "Primary Redis and Valkey exchange PONG over CA-verified mutually authenticated TLS."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-23",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["redis"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "process",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire disposable pinned server container and isolated loopback connection.",
+      "operation": "fault proxy holds and fragments actual Redis replies",
+      "assertions": [
+        "Held real-server reply cannot complete early; releasing fragmented bytes yields PONG without forwarding errors."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-24",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["redis"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "process",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire disposable pinned server container and isolated loopback connection.",
+      "operation": "fault proxy cuts an established connection with a held reply",
+      "assertions": [
+        "Cutting a connection with a held reply wakes the reader with EOF or a typed read closure."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-25",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["redis"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "process",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire disposable pinned server container and isolated loopback connection.",
+      "operation": "failed readiness removes the already-created container and state",
+      "assertions": [
+        "Failed independent readiness removes the allocated container and temporary state."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-26",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["redis"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "process",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire disposable pinned server container and isolated loopback connection.",
+      "operation": "canceled fixture startup awaits container removal and state cleanup",
+      "assertions": [
+        "Canceled startup waits for removal of its allocated container and temporary state; acquisition failures propagate."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-27",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-tls"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "default DNS server name sends SNI and verifies the hostname",
+      "assertions": ["DNS host supplies default SNI and passes hostname verification."],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-28",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-tls"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "an IP connection still verifies identity without explicit SNI",
+      "assertions": [
+        "IP host without explicit serverName still fails a mismatched certificate identity."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-29",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "invalid identity material fails before opening and stays redacted",
+      "assertions": [
+        "Invalid identity material fails before opening a socket and never enters serialized errors."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-30",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "remote reset also wakes a suspended reader",
+      "assertions": ["TCP reset wakes an already-suspended reader with a typed read failure."],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-31",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "finalization removes owned native listeners and ignores stale readiness",
+      "assertions": [
+        "All adapter-added native listeners are removed; stale readiness cannot reopen the retired connection."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-32",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-loopback"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "an idle reader stays in bounded native readable mode and drains owned chunks",
+      "assertions": [
+        "Idle transport stays in native readable mode; reads are owned and at most 64 KiB; a 1 MiB payload drains before EOF."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-33",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["node-tls"],
+      "requiredCapabilities": ["node-native", "node-tls"],
+      "isolation": "connection",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire scoped loopback byte peer; generate ephemeral test certificates when required.",
+      "operation": "forwarding proxy passes verified TLS without terminating it",
+      "assertions": [
+        "Proxy forwards encrypted bytes without terminating TLS; end-to-end SNI and verified binary echo succeed."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-34",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["redis"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "process",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire disposable pinned server container and isolated loopback connection.",
+      "operation": "proxy request pause resumes without dropping buffered bytes",
+      "assertions": [
+        "Paused request remains pending until explicit release, then produces the intact PONG reply."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-35",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["redis", "valkey", "node"],
+      "requiredCapabilities": ["node-native", "node-unix"],
+      "isolation": "process",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Acquire disposable pinned Redis/Valkey container and pinned Node runtime sharing an isolated Unix socket volume. Copy compiled client artifacts and the existing Effect runtime.",
+      "operation": "Run compiled Node transport PING and binary ECHO against each primary server over Unix.",
+      "assertions": [
+        "Pinned Node 24.22.0 without a network interface exchanges intact PING/ECHO through the shared Unix socket using the built library."
+      ],
+      "cleanup": "Close the connection; await container removal; remove the Unix volume and temporary artifact state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    }
+  ]
+}

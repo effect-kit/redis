@@ -4,10 +4,10 @@ A Redis protocol client built with Effect v4 and runtime platform APIs. The goal
 complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities across
 Redis-compatible servers and transports.
 
-**Status:** Phase 02: bounded binary RESP request encoding and incremental RESP2/RESP3
-decoding, including declared streamed forms, with validated configuration and offline
-tests. Network connections and command execution are not implemented. Server
-compatibility remains a target.
+**Status:** Phase 03 adds scoped native Node TCP/TLS/Unix byte transports and
+real Redis/Valkey networking fixtures to the bounded RESP codec and validated
+configuration. The ordinary command connection engine is not implemented. Broad
+server/command compatibility remains a target.
 
 ## Development
 
@@ -33,6 +33,8 @@ Publint checking package exports.
 | `pnpm test`               | Run offline Effect Vitest/unit/specification tests       |
 | `pnpm test:protocol:fuzz` | Build and run the watchdog protocol corpus               |
 | `pnpm check:spec`         | Validate tracked release/fixture/scenario specifications |
+| `pnpm fixtures:pull`      | Explicitly download pinned integration-test images       |
+| `pnpm test:node`          | Run live Node socket/TLS and Redis/Valkey fixture tests  |
 | `pnpm check`              | Formatting, lint, typecheck, test, and build             |
 
 ## Workspace
@@ -70,3 +72,8 @@ and tsdown is constrained to `>=0.23.1 <0.23.2` until its declaration plugin sup
 our compiler. Use frozen installs in CI and review lockfile updates.
 
 Licensed under [Apache-2.0](LICENSE). The library remains private during development.
+
+Node networking is exposed through `@envoy1084/effect-redis/node`. Live tests need
+Docker, OpenSSL and `pnpm fixtures:pull`; `pnpm check` remains independent of those
+prerequisites. CI runs the live lane separately. Fixture ports are loopback-only,
+state is temporary, and all fixture containers are removed after each scope.

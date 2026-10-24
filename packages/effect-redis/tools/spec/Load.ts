@@ -58,12 +58,14 @@ export const loadSpecification: Effect.Effect<Spec.Specification, SpecificationE
     );
     return {
       protocol: yield* load("protocol.json", Spec.ProtocolProfile),
+      transport: yield* load("transport.json", Spec.TransportProfile),
       index,
       commands: groups.flat(),
       release: yield* load("release.json", Spec.Release),
       sources: yield* load("sources.json", Schema.NonEmptyArray(Spec.Source)),
       scenarios: yield* load("scenarios.json", Schema.NonEmptyArray(Spec.Scenario)),
       native: yield* load("fixtures/native.json", Schema.NonEmptyArray(Spec.NativeFixture)),
+      nodeImages: yield* load("fixtures/node-images.json", Schema.NonEmptyArray(Spec.NodeImage)),
       hosted: yield* load("fixtures/hosted.json", Schema.NonEmptyArray(Spec.HostedFixture)),
       runtimePairs: yield* load(
         "fixtures/runtime-pairs.json",

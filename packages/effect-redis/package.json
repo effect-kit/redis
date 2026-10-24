@@ -42,6 +42,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
     }
   },
   "publishConfig": {
@@ -50,12 +54,14 @@
   "scripts": {
     "build": "tsdown",
     "lint": "oxlint --deny-warnings src test tools *.config.ts",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.tools.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.tools.json",
     "test": "vitest run",
     "test:unit": "vitest run",
     "check:spec": "node tools/check-spec.ts",
     "test:protocol:fuzz": "node tools/fuzz-protocol.ts",
-    "prepack": "pnpm run build"
+    "prepack": "pnpm run build",
+    "test:node": "pnpm run build && vitest run --config vitest.node.config.ts",
+    "fixtures:pull": "node tools/prepare-node-fixtures.ts"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",

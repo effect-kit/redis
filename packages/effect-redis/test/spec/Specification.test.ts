@@ -6,6 +6,7 @@ import {
   CompatibilityRecord,
   ProtocolProfile,
   ScenarioDefinition,
+  TransportProfile,
 } from "../../tools/spec/Schema.ts";
 import { validateSpecification } from "../../tools/spec/Validate.ts";
 
@@ -155,5 +156,38 @@ it.live("SPEC-07: protocol evidence must reference declared scenario IDs", () =>
     });
     const broken = { ...spec, protocol };
     expect(validateSpecification(broken)).toContain("Missing protocol evidence scenario: WIRE-01");
+  }),
+);
+
+it.live("SPEC-08: Node image pins cannot omit or drift from primary fixture versions", () =>
+  Effect.gen(function* () {
+    const spec = yield* loadSpecification;
+    expect(
+      validateSpecification({
+        ...spec,
+        nodeImages: spec.nodeImages.filter((image) => image.fixture !== "valkey"),
+      }),
+    ).toContain("Missing Node image: valkey");
+    const first = spec.nodeImages[0];
+    if (first === undefined) throw new Error("Missing primary image");
+    expect(
+      validateSpecification({
+        ...spec,
+        nodeImages: [{ ...first, image: "redis:latest" }, ...spec.nodeImages.slice(1)],
+      }),
+    ).toContain("Node image differs from native target: redis");
+  }),
+);
+
+it.live("SPEC-09: transport evidence cannot invent undeclared scenarios", () =>
+  Effect.gen(function* () {
+    const spec = yield* loadSpecification;
+    const transport = yield* Schema.decodeUnknownEffect(TransportProfile)({
+      ...spec.transport,
+      scenarios: spec.transport.scenarios.filter((scenario) => scenario.id !== "SOCKET-01"),
+    });
+    expect(validateSpecification({ ...spec, transport })).toContain(
+      "Missing transport evidence scenario: SOCKET-01",
+    );
   }),
 );

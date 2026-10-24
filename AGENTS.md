@@ -3,8 +3,9 @@
 ## Scope and status
 
 Build a native Redis-compatible client with Effect v4. This repository currently
-contains a bounded RESP codec, validated configuration, value/transport contracts,
-offline tests and tracked release specifications, not a networked Redis client.
+contains a bounded RESP codec, validated configuration, scoped Node byte transports,
+offline and live networking tests, and tracked release specifications. The ordinary
+Redis request/reply connection engine is not implemented.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -43,6 +44,8 @@ Never describe planned command or server compatibility as implemented or verifie
   any necessary addition. Klarity supplies configuration, not the compiler binaries.
 - Start in `packages/effect-redis`; create packages only for a real consumer, runtime,
   dependency, or ownership boundary. Keep universal exports free of Node/Bun imports.
+  Node transport lives behind `@envoy1084/effect-redis/node`; keep the universal
+  typecheck free of Node globals and verify both entrypoints from a packed artifact.
 - The package remains private until publishing is explicitly in scope. Do not add
   release automation or publish packages as part of routine implementation.
 
@@ -87,6 +90,10 @@ Never describe planned command or server compatibility as implemented or verifie
   Keep typed fixtures/support modules reusable and focused; do not build a fake Redis
   implementation or use broad mocks that bypass the production scheduler. Typecheck
   tests/tools separately. Do not test placeholder exports or merely Effect itself.
+- Run `pnpm test:node` when native transport, fixtures or socket ownership changes.
+  It needs Docker, OpenSSL and explicitly prepared images (`pnpm fixtures:pull`).
+  The lane uses disposable loopback fixtures and never auto-pulls or reads deployment
+  endpoints/credentials. Missing prerequisites fail; they are not passing skips.
 - Run `pnpm test:protocol:fuzz` when protocol/byte ownership changes; CI also runs
   its built-artifact corpus under an external deadline. Keep its seed/replay evidence.
 - Run `pnpm check` after meaningful changes. It covers format, lint, root/package
@@ -155,6 +162,11 @@ real-server conformance before making public compatibility promises.
   Bun.connect implement the platform boundary. Socket writer acquisition can wait
   across disconnects, so gate writes by a live connection generation and completed
   handshake. A reconnecting socket must not silently replay an old command.
+  The Node adapter directly implements our physical Transport contract. It reads
+  at most 64 KiB per pull in native readable mode and permits one pending reader
+  and writer. Writes snapshot input, enforce maxInFlightBytes, and send 64 KiB
+  chunks with callback/drain backpressure. Interruption of an active write destroys
+  that socket; it never resumes the remaining bytes on another connection.
 - Use `effect/http` HttpClient/FetchHttpClient for HTTP. Do not force stateless HTTP
   through the stateful TCP connection contract. Share command descriptors and codecs
   only when provider/transport semantics match.
@@ -323,7 +335,7 @@ must not silently defer them to v1.1 merely to ship sooner.
 
 ### Implementation milestones and verification
 
-The list below groups responsibilities. The tracked progress index owns the twenty
+The list below groups responsibilities. The local research progress index owns the twenty
 phase IDs, prerequisites and status; these groups are not alternate phase numbers.
 
 1. Binary RESP codec and limits, with fragmented/malformed input fixtures.

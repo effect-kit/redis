@@ -10,9 +10,11 @@ const check = Effect.gen(function* () {
     return yield* new SpecificationError({ file: "spec", reason: issues.join("; ") });
   return {
     protocolScenarios: spec.protocol.scenarios.length,
+    transportScenarios: spec.transport.scenarios.length,
     commands: spec.commands.length,
     categories: spec.index.categories.length,
     nativeFixtures: spec.native.length,
+    nodeImages: spec.nodeImages.length,
     hostedConfigurations: spec.hosted.length,
     runtimePairs: spec.runtimePairs.length,
     scenarioFamilies: spec.scenarios.length,

@@ -1,0 +1,54 @@
+[
+  {
+    "fixture": "redis",
+    "image": "redis:8.10.2",
+    "digest": "sha256:97ec88159e6d7cfb5ddef9015386087d58a912de80112f06ebdfa78fa5989901",
+    "modules": {
+      "vectorset": "1"
+    }
+  },
+  {
+    "fixture": "redis-6.2",
+    "image": "redis:6.2.19",
+    "digest": "sha256:1a1394b2feea67b9984ff7a12cab6d5e30c54b8dd3524a637f995dbc376dd1db",
+    "modules": {}
+  },
+  {
+    "fixture": "redis-7.2",
+    "image": "redis:7.2.11",
+    "digest": "sha256:76dc61f6ca42748060aa86080ef8393d0c118660db0a1dead26c2b8e94bf601b",
+    "modules": {}
+  },
+  {
+    "fixture": "redis-7.4",
+    "image": "redis:7.4.6",
+    "digest": "sha256:a9cc41d6d01da2aa26c219e4f99ecbeead955a7b656c1c499cce8922311b2514",
+    "modules": {}
+  },
+  {
+    "fixture": "valkey",
+    "image": "valkey/valkey:9.1.2",
+    "digest": "sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd",
+    "modules": {
+      "lua": "1"
+    }
+  },
+  {
+    "fixture": "valkey-7.2",
+    "image": "valkey/valkey:7.2.11",
+    "digest": "sha256:9d09cdba3c2fc12605404d87b5e4adab15822bdada00bf3a19d9fd9d74c99e01",
+    "modules": {}
+  },
+  {
+    "fixture": "valkey-8.0",
+    "image": "valkey/valkey:8.0.3",
+    "digest": "sha256:4e78d8ccab4d8978afca140a3dd75b4e45d683d1e51602ee71e976bcc2bd939e",
+    "modules": {}
+  },
+  {
+    "fixture": "node",
+    "image": "node:24.22.0-alpine",
+    "variant": "alpine",
+    "digest": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f"
+  }
+]

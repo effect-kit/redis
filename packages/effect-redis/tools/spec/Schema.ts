@@ -54,6 +54,14 @@ export const ProtocolProfile = Schema.Struct({
   scenarios: Schema.NonEmptyArray(ScenarioDefinition),
 });
 
+export const TransportProfile = Schema.Struct({
+  runtime: Schema.Literal("node"),
+  baseline: Name,
+  sources: Schema.NonEmptyArray(Url),
+  boundaries: Names,
+  scenarios: Schema.NonEmptyArray(ScenarioDefinition),
+});
+
 /** Documentation availability and executed semantic evidence are independent. */
 export const CompatibilityRecord = Schema.Struct({
   feature: Name,
@@ -157,6 +165,14 @@ export const NativeFixture = Schema.Struct({
   Schema.makeFilter((fixture) => fixture.kind === "runtime" || fixture.source.commit !== null),
 );
 
+export const NodeImage = Schema.Struct({
+  fixture: Name,
+  image: Name,
+  variant: Schema.optionalKey(Name),
+  modules: Schema.optionalKey(Schema.Record(Name, Name)),
+  digest: Schema.String.check(Schema.isPattern(/^sha256:[a-f0-9]{64}$/)),
+});
+
 export const HostedFixture = Schema.Struct({
   id: Name,
   provider: Name,
@@ -212,6 +228,7 @@ export const Release = Schema.Struct({
 
 export interface Specification {
   readonly protocol: typeof ProtocolProfile.Type;
+  readonly transport: typeof TransportProfile.Type;
   readonly release: typeof Release.Type;
   readonly index: typeof CommandIndex.Type;
   readonly commands: ReadonlyArray<typeof Command.Type>;
@@ -219,6 +236,7 @@ export interface Specification {
   readonly scenarios: ReadonlyArray<typeof Scenario.Type>;
   readonly native: ReadonlyArray<typeof NativeFixture.Type>;
   readonly hosted: ReadonlyArray<typeof HostedFixture.Type>;
+  readonly nodeImages: ReadonlyArray<typeof NodeImage.Type>;
   readonly runtimePairs: ReadonlyArray<typeof RuntimePair.Type>;
   readonly topologies: ReadonlyArray<typeof Topology.Type>;
 }

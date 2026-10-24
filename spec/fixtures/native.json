@@ -10,7 +10,7 @@
       "refUrl": "https://api.github.com/repos/redis/redis/git/ref/tags/8.10.2"
     },
     "ownerPhase": 3,
-    "configuration": "native standalone; isolated loopback; no modules",
+    "configuration": "native standalone; isolated loopback; no added loadmodule directives; built-in engine modules recorded by fixture image",
     "scenarioFamilies": ["ENGINE", "COMMAND"],
     "execution": "not-run"
   },
@@ -25,7 +25,7 @@
       "refUrl": "https://api.github.com/repos/redis/redis/git/ref/tags/6.2.19"
     },
     "ownerPhase": 3,
-    "configuration": "native standalone; isolated loopback; no modules",
+    "configuration": "native standalone; isolated loopback; no added loadmodule directives; built-in engine modules recorded by fixture image",
     "scenarioFamilies": ["ENGINE", "COMMAND"],
     "execution": "not-run"
   },
@@ -40,7 +40,7 @@
       "refUrl": "https://api.github.com/repos/redis/redis/git/ref/tags/7.2.11"
     },
     "ownerPhase": 3,
-    "configuration": "native standalone; isolated loopback; no modules",
+    "configuration": "native standalone; isolated loopback; no added loadmodule directives; built-in engine modules recorded by fixture image",
     "scenarioFamilies": ["ENGINE", "COMMAND"],
     "execution": "not-run"
   },
@@ -55,7 +55,7 @@
       "refUrl": "https://api.github.com/repos/redis/redis/git/ref/tags/7.4.6"
     },
     "ownerPhase": 3,
-    "configuration": "native standalone; isolated loopback; no modules",
+    "configuration": "native standalone; isolated loopback; no added loadmodule directives; built-in engine modules recorded by fixture image",
     "scenarioFamilies": ["ENGINE", "COMMAND"],
     "execution": "not-run"
   },
@@ -70,7 +70,7 @@
       "refUrl": "https://api.github.com/repos/valkey-io/valkey/git/ref/tags/9.1.2"
     },
     "ownerPhase": 3,
-    "configuration": "native standalone; isolated loopback; no modules",
+    "configuration": "native standalone; isolated loopback; no added loadmodule directives; built-in engine modules recorded by fixture image",
     "scenarioFamilies": ["ENGINE", "COMMAND"],
     "execution": "not-run"
   },
@@ -85,7 +85,7 @@
       "refUrl": "https://api.github.com/repos/valkey-io/valkey/git/ref/tags/7.2.11"
     },
     "ownerPhase": 3,
-    "configuration": "native standalone; isolated loopback; no modules",
+    "configuration": "native standalone; isolated loopback; no added loadmodule directives; built-in engine modules recorded by fixture image",
     "scenarioFamilies": ["ENGINE", "COMMAND"],
     "execution": "not-run"
   },
@@ -100,7 +100,7 @@
       "refUrl": "https://api.github.com/repos/valkey-io/valkey/git/ref/tags/8.0.3"
     },
     "ownerPhase": 3,
-    "configuration": "native standalone; isolated loopback; no modules",
+    "configuration": "native standalone; isolated loopback; no added loadmodule directives; built-in engine modules recorded by fixture image",
     "scenarioFamilies": ["ENGINE", "COMMAND"],
     "execution": "not-run"
   },

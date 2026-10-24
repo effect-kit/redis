@@ -23,6 +23,29 @@ export const validateSpecification = (spec: Specification): ReadonlyArray<string
     "native fixture IDs",
     spec.native.map((fixture) => fixture.id),
   );
+  const imageFixtures = unique(
+    "Node image fixtures",
+    spec.nodeImages.map((image) => image.fixture),
+  );
+  const nodeTargets = spec.native.filter(
+    (fixture) => (fixture.kind === "engine" || fixture.id === "node") && fixture.ownerPhase === 3,
+  );
+  for (const fixture of nodeTargets) {
+    if (!imageFixtures.has(fixture.id)) issues.push(`Missing Node image: ${fixture.id}`);
+  }
+  for (const image of spec.nodeImages) {
+    const fixture = nodeTargets.find((target) => target.id === image.fixture);
+    if (fixture?.kind === "engine" && image.modules === undefined)
+      issues.push(`Missing Node fixture module inventory: ${image.fixture}`);
+    if (
+      fixture === undefined ||
+      !image.image.endsWith(
+        `:${fixture.version}${image.variant === undefined ? "" : `-${image.variant}`}`,
+      )
+    ) {
+      issues.push(`Node image differs from native target: ${image.fixture}`);
+    }
+  }
   const hosted = unique(
     "hosted fixture IDs",
     spec.hosted.map((fixture) => fixture.id),
@@ -83,6 +106,24 @@ export const validateSpecification = (spec: Specification): ReadonlyArray<string
     if (family.evidence !== undefined)
       requireAll("protocol evidence scenario", family.evidence.scenarioIds, protocolIds);
   }
+  const transportIds = unique(
+    "transport scenario IDs",
+    spec.transport.scenarios.map((scenario) => scenario.id),
+  );
+  for (const scenario of spec.transport.scenarios) {
+    if (scenario.family !== "SOCKET" || scenario.ownerPhase !== 3 || scenario.clock !== "live")
+      issues.push(`Wrong transport scenario owner: ${scenario.id}`);
+    requireAll(
+      "transport fixture",
+      scenario.fixtures,
+      new Set([...native, "node-loopback", "node-tls"]),
+    );
+  }
+  const socketEvidence = spec.scenarios.find((scenario) => scenario.id === "SOCKET")?.evidence;
+  if (socketEvidence !== undefined)
+    requireAll("transport evidence scenario", socketEvidence.scenarioIds, transportIds);
+  if (spec.native.find((fixture) => fixture.id === "node")?.version !== spec.transport.baseline)
+    issues.push("Node transport baseline differs from native runtime");
   if (
     spec.commands.length !== spec.release.commandCount ||
     spec.index.commandCount !== spec.release.commandCount

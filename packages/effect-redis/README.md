@@ -3,8 +3,9 @@
 A runtime-neutral Redis client foundation for Effect v4. The package remains private.
 The public API includes configuration decoding, binary `encodeCommand`, incremental
 `makeRespDecoder`, lossless `RespValue`/`RespPairs`, `RedisArgument`/`RedisCommand`,
-codec limits and typed errors. Network connections and command execution arrive
-in later phases.
+codec limits and typed errors. The Node-only `/node` entrypoint exports `connect`,
+`layer`, `Transport` and `TransportConnection` for scoped TCP/TLS/Unix byte I/O.
+The ordinary Redis command connection engine arrives in phase 04.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -26,9 +27,20 @@ Run from the workspace root:
 - `pnpm check:spec`: tracked inventory/fixture/scenario validation.
 - `pnpm check`: the complete workspace checks.
 
-Tests require no Redis process, credentials or network access. Real server/provider
-lanes will be added with their owning phases; no empty integration job counts as a
-pass.
+Default tests require no Redis process, credentials or network access. `pnpm test:node`
+is a separate live lane requiring Docker, OpenSSL and images prepared with
+`pnpm fixtures:pull`. It runs disposable Redis/Valkey fixtures; it never uses hosted
+endpoints or automatically downloads prerequisites. Provider certification is pending.
 
 Licensed under Apache-2.0. Package archives include the license and built artifacts;
 `prepack` rebuilds them, and pnpm replaces catalog references with compatible ranges.
+
+Node transport accepts a validated `RedisConfig` inside an Effect scope. `read`
+returns owned nonempty bytes or `undefined` for clean EOF; `write` applies bounded
+backpressure; `close` is idempotent and wakes pending operations. Only one reader and
+writer may own a connection. Canceling an active write retires that socket because
+a prefix may have been sent. Local write completion does not prove server execution.
+
+TLS verifies trust and identity by default and supports explicit SNI, custom CAs and
+client certificates. Acquisition includes the TLS handshake and connect deadline;
+Redis AUTH/HELLO/SELECT and reconnection policies belong to the later connection engine.
