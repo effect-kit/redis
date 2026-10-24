@@ -42,3 +42,16 @@ Effect is installed at the workspace root so its `AGENTS.md`, AI documentation, 
 source are available locally. Effect is the library's only intended runtime peer;
 tooling packages are development dependencies. No existing Redis client or protocol
 parser is used. Commit meaningful changes separately using Conventional Commits.
+
+## Architecture direction
+
+Implement native RESP2/RESP3 over scoped TCP/TLS, typed Effect commands, and Stream
+helpers for subscriptions, cursor scans, and Redis Stream consumption. Node and Bun
+supply socket adapters; Upstash HTTP uses a separate executor with explicit transport
+capabilities. Server versions, modules, and provider restrictions determine actual
+command availability.
+
+The maintained [agent guide](AGENTS.md) records module boundaries, binary safety,
+cancellation and replay rules, transactions, topology, and implementation milestones.
+Local research catalogs are split by category under `research/redis-commands/`,
+`research/valkey-commands/`, and `research/upstash-commands/`.

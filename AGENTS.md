@@ -84,6 +84,177 @@ Never describe planned command or server compatibility as implemented or verifie
 
 ## Architecture decisions
 
-The research-backed design is recorded here as the foundation is established.
-Implementation details must be checked against the installed Effect version and
-real server tests before becoming public API promises.
+These are design decisions, not implemented features. Check installed APIs and
+real-server conformance before making public compatibility promises.
+
+### Native protocol and boundaries
+
+- Implement RESP directly: ordered command tokens → binary RESP frames → scoped
+  TCP/TLS socket → incremental reply decoder → typed command result. Do not wrap
+  another Redis client or use textual inline commands.
+- Keep protocol/value/byte codec modules pure and runtime-neutral. Build the
+  connection scheduler above them, then the executor/client and category command
+  modules. Runtime adapters supply Node/Bun sockets or Upstash HTTP. Dependencies
+  point toward protocol; protocol must not import the client or runtime adapters.
+- Use the installed `effect/socket/Socket` contract where it fits; Node net/tls or
+  Bun.connect implement the platform boundary. Socket writer acquisition can wait
+  across disconnects, so gate writes by a live connection generation and completed
+  handshake. A reconnecting socket must not silently replay an old command.
+- Use `effect/http` HttpClient/FetchHttpClient for HTTP. Do not force stateless HTTP
+  through the stateful TCP connection contract. Share command descriptors and codecs
+  only when provider/transport semantics match.
+- Keep command families in separate modules/files (strings, hashes, lists, sets,
+  sorted sets, streams, keys, Pub/Sub, scripting, administration, module families).
+  Keep research catalogs split into category files under each backend's folder too.
+  Do not make one catch-all file for every Redis command.
+
+### Command and value contracts
+
+- A raw command accepts a nonempty ordered sequence of `RedisArgument` tokens and
+  returns a lossless RESP value. Split multiword commands into tokens: `CLIENT`,
+  `LIST`. Unknown/custom/module commands need no library release or allowlist entry.
+- Typed descriptors pair argument encoding with reviewed, option-aware reply
+  decoding, key extraction, routing policy, capability notes, and replay policy.
+  Avoid an unchecked generic `send<A>` that asserts arbitrary result types.
+- Commands are Effects. Cursor scans and continuous consumption add lazy Stream
+  helpers. Redis lists/sets/hashes/streams remain remote server state; Effect Queue,
+  PubSub, collections, or Stream do not reproduce those server data structures.
+- Bytes are `Uint8Array`; string encoding is explicit UTF-8. Calculate wire lengths
+  from encoded bytes, preserve empty and invalid-UTF-8 blobs, and never auto-JSON
+  serialize values. Application Schema codecs are optional explicit operations.
+- Preserve all relevant RESP2/RESP3 types, nested errors, attributes, and pushes.
+  Keep raw map keys/pairs lossless. Attributes decorate the following value; pushes
+  and attributes do not consume ordinary command reply slots.
+- Use bigint/preserved decimal tokens for exact integer replies; number conversion
+  requires a safe-range check. Keep doubles/special floating values distinct.
+  Missing values, empty strings, timeout nulls, and TTL negative sentinels differ.
+- Parse incrementally across arbitrary chunk splits. Bound header/blob/buffer size,
+  aggregate counts and nesting depth; reject invalid lengths/terminators without
+  unbounded allocation or quadratic full-buffer concatenation. Retire a malformed
+  connection. Treat streamed RESP3 aggregates and replication/RDB framing as explicit
+  additional capabilities; ordinary RESP3 support does not imply them.
+
+### Connection correctness and sessions
+
+- One physical socket owns one ordered writer, one reader, and a bounded pending
+  FIFO of Deferred results. Bound queued/in-flight command count and bytes; respect
+  native write backpressure. Register pending slots before bytes can be sent.
+- Coordinate admission, pending registration and writing so interruption cannot
+  orphan/reorder replies. On close/failure, retire the connection generation and
+  complete every waiter exactly once; stop admission and release scoped workers.
+- Before write ownership, cancellation can remove an unsent command. Once it may
+  have been written, retain a tombstone and drain its reply, or retire the socket.
+  Removing an in-flight slot can deliver its reply to the wrong caller.
+- A timeout/disconnect after write has an unknown execution outcome. Never replay
+  mutations, scripts, destructive pops, XREADGROUP, or EXEC automatically. Connection
+  retry, explicit server-rejection recovery and application retry are different
+  policies. Read-only alone does not establish replay safety.
+- Finish TLS, authentication, protocol negotiation, client naming and database
+  selection before ordinary admission. Fall back from HELLO 3 only on a verified
+  unsupported protocol/command response and permitted policy; do not turn auth,
+  ACL, TLS, network or parse failures into successful fallback.
+- Pipelines preserve order and individual failures but add no atomicity. Lease one
+  connection for WATCH/read/MULTI/EXEC; distinguish null EXEC conflicts, queue-time
+  aborts and individual runtime errors. Redis does not roll back sibling commands.
+  Cleanup with UNWATCH/DISCARD when valid, or destroy the lease before reuse.
+- Use dedicated scoped connections for blocking operations and subscriptions.
+  WAIT/WAITAOF must stay with the writes they cover; an unrelated pool lease changes
+  their semantics. ASKING, CLIENT CACHING and other next-command state also require
+  exclusive scheduling on the correct socket.
+- CLIENT REPLY OFF/SKIP, MONITOR, RESET/QUIT, SHUTDOWN and replication change response
+  or connection behavior. Route them through explicit reviewed session/mode APIs.
+  Unknown raw stateful commands require an explicit session/node; do not corrupt
+  the shared request/reply scheduler to claim broad raw-command support.
+
+### Streams, subscriptions and recovery
+
+- One-shot XREAD/XREADGROUP returns an Effect; a continuous reader is a scoped
+  Stream. Preserve exact stream IDs, ordered fields, tombstones and option-dependent
+  tuples. Resolve `$` once when establishing a continuous reader, not on each poll.
+- Consumer groups expose pending recovery, claim/autoclaim, explicit acknowledgments
+  and retention/deletion policies. Processing helpers acknowledge after application
+  success. Cancellation can cause redelivery; do not promise exactly-once processing.
+- Cursor helpers use Stream pagination without treating an empty nonterminal page
+  as completion. Keep cursors opaque and document duplicates/no snapshot guarantee.
+- Pub/Sub is at-most-once. Track subscription acknowledgments and pattern/sharded
+  modes; separate control frames, invalidations and unknown pushes from ordinary
+  replies. Local PubSub/Queue fanout is bounded. Slow subscribers must not block the
+  shared reply reader. Overflow/reconnect must fail or expose an explicit delivery
+  gap; never silently drop messages or imply reconnect recovered missed events.
+
+### Topology and capability policy
+
+- Standalone, Cluster, Sentinel, explicit-node and HTTP are separate execution
+  modes with shared contracts where appropriate. Support for encoding a command
+  does not mean every backend/transport implements it.
+- Cluster hashes binary keys with CRC16-XMODEM and Redis hash-tag rules. Bound
+  MOVED/ASK redirects, refresh topology, and pair ASKING immediately with its target
+  command. Preserve multi-key atomicity: reject cross-slot operations unless a
+  separately named scatter/gather helper explicitly changes their guarantees.
+- Generate key extraction only from reviewed metadata. Handle incomplete/movable
+  keys and commands such as EVAL/FCALL/XREADGROUP/SORT with explicit rules. Unknown
+  raw commands require declared keys or a target node; argument one is not always
+  a key. Administrative commands need explicit per-node/broadcast semantics.
+- Redis Cluster permits database 0 only; Valkey 9+ can enable multiple databases
+  through configuration. Model this as a backend capability, not a universal rule.
+  Sentinel uses separate endpoints/credentials and primary discovery plus ROLE
+  verification; refresh on failover without replaying uncertain writes.
+- Use supported/unsupported/unknown capabilities with recorded evidence. COMMAND
+  INFO/DOCS, HELLO, MODULE LIST and INFO may be unavailable under ACL/provider rules.
+  Unknown is not unsupported; server banners alone are not reliable feature tests.
+
+### Upstash and Bun
+
+- Bun.RedisClient is another client, not a Redis server. Bun compatibility means
+  this client's own transport runs on Bun; do not delegate to its built-in client.
+- Upstash TCP/TLS can use RESP. Its HTTP executor uses native fetch through Effect,
+  bearer headers, JSON token arrays, `/pipeline`, and `/multi-exec` as applicable.
+  HTTP atomic batches do not provide a long-lived WATCH transaction session.
+- Upstash REST documents no WATCH/UNWATCH/DISCARD, blocking list/sorted-set/stream
+  reads, arbitrary connection controls, or client-side Cluster mode. Reject these
+  capabilities explicitly. Do not impersonate blocking commands with polling.
+- Upstash documents SUBSCRIBE/MONITOR over SSE; implement them as separate scoped
+  HTTP streams with their own parsing and verified capabilities. Do not infer all
+  TCP subscription modes from those endpoints.
+- JSON arrays cannot express arbitrary binary arguments. Use only documented input
+  encodings or fail explicitly. Evaluate RESP2 binary response mode for exact bytes
+  and integers; base64 JSON strings do not solve JSON number precision. Test each
+  command/batch endpoint before claiming a lossless shared codec path.
+- Keep Upstash SEARCH.* and VECTOR.* descriptors separate from Redis FT.* and V*.
+  Do not silently translate incompatible query/vector dialects.
+- Effect 4.0.6 already has `effect/persistence/Redis`, an operations service rather
+  than a native protocol implementation. Add an optional integration adapter later;
+  its string-oriented API and buffering choices must not constrain our core model.
+
+### Implementation milestones and verification
+
+1. Binary RESP codec and limits, with fragmented/malformed input fixtures.
+2. Scoped Node TCP/TLS, handshake, raw commands, typed errors, bounded scheduling,
+   cancellation and unknown-outcome handling.
+3. Reviewed typed command families and metadata generation with semantic overlays;
+   test option-dependent arguments/replies and track coverage explicitly.
+4. Pipelines, sessions, transactions, blocking operations, Pub/Sub and Stream/group
+   recovery against disposable real Redis and Valkey instances.
+5. Cluster redirects/resharding, Sentinel failover, Bun transport, Upstash HTTP/SSE,
+   module/dialect extensions and any claimed replication modes.
+6. Packed consumer/declaration checks and benchmarks before publishing.
+
+Test cancellation before/after write, interleaved pushes/attributes, partial writes,
+disconnect during mutations/EXEC, socket/listener/fiber cleanup, binary round-trips,
+integer fidelity, wrong types, TLS/auth/ACL failure, and server/option differences.
+Keep live provider tests opt-in. Record server/runtime/transport/protocol/module
+versions for compatibility claims; a metadata inventory is not conformance.
+
+Research baseline: Redis 8.10.2 and Valkey 9.1.2 source metadata plus a pinned current
+Redis docs catalog and Upstash references, investigated 2026-10-25. Counts include
+containers, subcommands, internal commands and modules, so no universal command
+total is promised. Sources remain accessible without ignored research:
+
+- [RESP specification](https://redis.io/docs/latest/develop/reference/protocol-spec/)
+- [Redis 8.10.2 commands](https://github.com/redis/redis/tree/8.10.2/src/commands)
+- [Valkey 9.1.2 commands](https://github.com/valkey-io/valkey/tree/9.1.2/src/commands)
+- [Redis Cluster](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/)
+- [Valkey Cluster](https://valkey.io/topics/cluster-spec/)
+- [Sentinel client specification](https://redis.io/docs/latest/develop/reference/sentinel-clients/)
+- [Upstash REST](https://upstash.com/docs/redis/features/restapi)
+- [Upstash compatibility](https://upstash.com/docs/redis/overall/compatibility)
