@@ -1,0 +1,36 @@
+{
+  "name": "effect-redis-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "lint": "pnpm lint:root && turbo run lint",
+    "lint:root": "oxlint --deny-warnings *.config.ts",
+    "lint:fix": "oxlint --fix .",
+    "typecheck": "pnpm typecheck:root && turbo run typecheck",
+    "typecheck:root": "tsc --noEmit -p tsconfig.json",
+    "test": "turbo run test",
+    "prepare": "lefthook install"
+  },
+  "dependencies": {
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
+    "@types/node": "catalog:",
+    "klarity": "catalog:",
+    "lefthook": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.22.0"
+  },
+  "packageManager": "pnpm@12.14.0"
+}
