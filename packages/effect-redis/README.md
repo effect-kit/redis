@@ -1,4 +1,4 @@
-# effect-redis
+# @envoy1084/effect-redis
 
 A runtime-neutral Redis client foundation for Effect v4. The package remains private.
 The public API includes configuration decoding, binary `encodeCommand`, incremental
@@ -18,10 +18,10 @@ specifications stay outside the package artifact.
 
 Run from the workspace root:
 
-- `pnpm --filter effect-redis test` (or `test:unit`): offline Vitest/Effect tests.
-- `pnpm --filter effect-redis typecheck`: source, test and tool configurations.
-- `pnpm --filter effect-redis lint`: source, tests, support and tooling.
-- `pnpm --filter effect-redis build`: unbundled ESM/declarations plus Publint.
+- `pnpm --filter @envoy1084/effect-redis test` (or `test:unit`): offline Vitest/Effect tests.
+- `pnpm --filter @envoy1084/effect-redis typecheck`: source, test and tool configurations.
+- `pnpm --filter @envoy1084/effect-redis lint`: source, tests, support and tooling.
+- `pnpm --filter @envoy1084/effect-redis build`: unbundled ESM/declarations plus Publint.
 - `pnpm test:protocol:fuzz`: built-artifact fuzz/large-input corpus under an external watchdog.
 - `pnpm check:spec`: tracked inventory/fixture/scenario validation.
 - `pnpm check`: the complete workspace checks.

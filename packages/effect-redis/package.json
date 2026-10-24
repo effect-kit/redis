@@ -1,5 +1,5 @@
 {
-  "name": "effect-redis",
+  "name": "@envoy1084/effect-redis",
   "version": "0.0.0",
   "private": true,
   "description": "Native Effect v4 Redis foundation with bounded RESP2/RESP3 codec and validated configuration.",

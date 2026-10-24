@@ -37,7 +37,7 @@ Publint checking package exports.
 
 ## Workspace
 
-- `packages/redis`: the private `effect-redis` library foundation.
+- `packages/effect-redis`: the private `@envoy1084/effect-redis` library foundation.
 - `pnpm-workspace.yaml`: shared, exact dependency versions in the default pnpm catalog.
 - `AGENTS.md`: engineering policy and architecture guidance for contributors and agents.
 - [Release specifications](spec/README.md): tracked command/fixture/scenario inventory.

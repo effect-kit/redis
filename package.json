@@ -14,8 +14,8 @@
     "typecheck:root": "tsc --noEmit -p tsconfig.json",
     "test": "turbo run test",
     "prepare": "lefthook install",
-    "check:spec": "pnpm --filter effect-redis check:spec",
-    "test:protocol:fuzz": "pnpm build && pnpm --filter effect-redis test:protocol:fuzz"
+    "check:spec": "pnpm --filter @envoy1084/effect-redis check:spec",
+    "test:protocol:fuzz": "pnpm build && pnpm --filter @envoy1084/effect-redis test:protocol:fuzz"
   },
   "dependencies": {
     "effect": "catalog:"

@@ -38,7 +38,7 @@ Never describe planned command or server compatibility as implemented or verifie
   Bun.RedisClient, Upstash SDKs, RESP parsers, or unrelated runtime libraries.
 - Development tools are allowed. Prefer installed tools and platform APIs; explain
   any necessary addition. Klarity supplies configuration, not the compiler binaries.
-- Start in `packages/redis`; create packages only for a real consumer, runtime,
+- Start in `packages/effect-redis`; create packages only for a real consumer, runtime,
   dependency, or ownership boundary. Keep universal exports free of Node/Bun imports.
 - The package remains private until publishing is explicitly in scope. Do not add
   release automation or publish packages as part of routine implementation.

@@ -55,7 +55,7 @@ changing the independent release scope. Command modes here are reviewed planning
 seeds, not production routing/replay metadata; phase 05 must review option-sensitive
 encoders/decoders and executable descriptor overlays against pinned source.
 
-Effect schemas under `packages/redis/tools/spec/Schema.ts` define scenario definitions
+Effect schemas under `packages/effect-redis/tools/spec/Schema.ts` define scenario definitions
 and compatibility records. Availability (supported/unsupported/unknown), semantic
 parity (matching/different/unverified) and execution status are independent. Executed
 results require a run ID, exact engine/runtime/module versions, transport, protocol,
