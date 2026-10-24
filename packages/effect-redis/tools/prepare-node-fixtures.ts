@@ -1,31 +1,37 @@
-import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { parseArgs } from "node:util";
 
-import { Schema } from "effect";
+import { Effect } from "effect";
 
-import { NodeImage } from "./spec/Schema.ts";
+import { getContainerRuntimeClient, ImageName } from "testcontainers";
 
-const images = Schema.decodeUnknownSync(Schema.NonEmptyArray(NodeImage))(
-  JSON.parse(
-    readFileSync(new URL("../../../spec/fixtures/node-images.json", import.meta.url), "utf8"),
+import { currentImages, imageReference, selectEngine } from "./FixtureTargets.ts";
+
+const { values } = parseArgs({
+  args: process.argv.slice(2).filter((arg) => arg !== "--"),
+  options: { engine: { type: "string" } },
+  strict: true,
+});
+const selectedEngine = selectEngine(values.engine ?? process.env.EFFECT_REDIS_TEST_ENGINE);
+const client = await getContainerRuntimeClient();
+await Effect.runPromise(
+  Effect.forEach(
+    currentImages,
+    (image) =>
+      Effect.promise(async () => {
+        if (
+          selectedEngine !== "all" &&
+          ![selectedEngine, "node", "ryuk"].includes(image.fixture.split("-")[0] ?? "")
+        )
+          return;
+        const reference = imageReference(image);
+        process.stdout.write(`Pulling ${reference}\n`);
+        await client.image.pull(ImageName.fromString(reference));
+        await client.image.inspect(ImageName.fromString(reference));
+        await client.container.dockerode.getImage(reference).tag({
+          repo: image.image.slice(0, image.image.lastIndexOf(":")),
+          tag: image.image.slice(image.image.lastIndexOf(":") + 1),
+        });
+      }),
+    { concurrency: 1 },
   ),
 );
-for (const { image, digest } of images) {
-  const reference = `${image}@${digest}`;
-  process.stdout.write(`Pulling ${reference}\n`);
-  const result = spawnSync("docker", ["pull", reference], { stdio: "inherit", timeout: 180_000 });
-  if (result.error || result.status !== 0) {
-    process.stderr.write(`Fixture pull failed: ${String(result.error ?? result.status)}\n`);
-    process.exitCode = 1;
-    break;
-  }
-  const tag = spawnSync("docker", ["image", "tag", reference, image], {
-    stdio: "inherit",
-    timeout: 30_000,
-  });
-  if (tag.error || tag.status !== 0) {
-    process.stderr.write(`Fixture tagging failed: ${String(tag.error ?? tag.status)}\n`);
-    process.exitCode = 1;
-    break;
-  }
-}

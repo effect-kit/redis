@@ -166,6 +166,9 @@ export const NativeFixture = Schema.Struct({
 );
 
 export const NodeImage = Schema.Struct({
+  version: Name,
+  moduleList: Schema.optionalKey(Schema.Literal("unsupported")),
+  architecture: Schema.optionalKey(Schema.Literals(["arm64", "x64"])),
   fixture: Name,
   image: Name,
   variant: Schema.optionalKey(Name),

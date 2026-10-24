@@ -23,29 +23,44 @@ export const validateSpecification = (spec: Specification): ReadonlyArray<string
     "native fixture IDs",
     spec.native.map((fixture) => fixture.id),
   );
-  const imageFixtures = unique(
+  unique(
     "Node image fixtures",
-    spec.nodeImages.map((image) => image.fixture),
+    spec.nodeImages.map((image) => `${image.fixture}:${image.architecture ?? "multi"}`),
   );
   const nodeTargets = spec.native.filter(
-    (fixture) => (fixture.kind === "engine" || fixture.id === "node") && fixture.ownerPhase === 3,
+    (fixture) => fixture.kind === "engine" || fixture.id === "node",
   );
   for (const fixture of nodeTargets) {
-    if (!imageFixtures.has(fixture.id)) issues.push(`Missing Node image: ${fixture.id}`);
+    if (!spec.nodeImages.some((image) => image.fixture === fixture.id))
+      issues.push(`Missing Node image: ${fixture.id}`);
   }
   for (const image of spec.nodeImages) {
     const fixture = nodeTargets.find((target) => target.id === image.fixture);
-    if (fixture?.kind === "engine" && image.modules === undefined)
-      issues.push(`Missing Node fixture module inventory: ${image.fixture}`);
-    if (
-      fixture === undefined ||
-      !image.image.endsWith(
-        `:${fixture.version}${image.variant === undefined ? "" : `-${image.variant}`}`,
-      )
-    ) {
+    const version =
+      fixture?.version.replace(/^v/, "") ?? (image.fixture === "ryuk" ? "0.14.0" : undefined);
+    const suffix =
+      image.fixture === "keydb"
+        ? `:${image.architecture === "arm64" ? "arm64" : "x86_64"}_v${version}`
+        : `:${image.fixture === "dragonfly" ? "v" : ""}${version}${image.variant === undefined ? "" : `-${image.variant}`}`;
+    if (version === undefined || image.version !== version || !image.image.endsWith(suffix))
       issues.push(`Node image differs from native target: ${image.fixture}`);
-    }
+    if (
+      fixture?.kind === "engine" &&
+      image.moduleList !== "unsupported" &&
+      image.modules === undefined
+    )
+      issues.push(`Missing Node fixture module inventory: ${image.fixture}`);
   }
+  for (const architecture of ["arm64", "x64"]) {
+    if (
+      !spec.nodeImages.some(
+        (image) => image.fixture === "keydb" && image.architecture === architecture,
+      )
+    )
+      issues.push(`Missing KeyDB image architecture: ${architecture}`);
+  }
+  if (!spec.nodeImages.some((image) => image.fixture === "ryuk"))
+    issues.push("Missing Testcontainers reaper image");
   const hosted = unique(
     "hosted fixture IDs",
     spec.hosted.map((fixture) => fixture.id),

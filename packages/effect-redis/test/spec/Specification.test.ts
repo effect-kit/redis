@@ -191,3 +191,21 @@ it.live("SPEC-09: transport evidence cannot invent undeclared scenarios", () =>
     );
   }),
 );
+
+it.live("SPEC-10: Testcontainers helper and both KeyDB architectures are required", () =>
+  Effect.gen(function* () {
+    const spec = yield* loadSpecification;
+    expect(
+      validateSpecification({
+        ...spec,
+        nodeImages: spec.nodeImages.filter((image) => image.fixture !== "ryuk"),
+      }),
+    ).toContain("Missing Testcontainers reaper image");
+    expect(
+      validateSpecification({
+        ...spec,
+        nodeImages: spec.nodeImages.filter((image) => image.architecture !== "x64"),
+      }),
+    ).toContain("Missing KeyDB image architecture: x64");
+  }),
+);

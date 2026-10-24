@@ -375,7 +375,12 @@
         "redis-7.4",
         "valkey",
         "valkey-7.2",
-        "valkey-8.0"
+        "valkey-8.0",
+        "dragonfly",
+        "keydb",
+        "redict",
+        "garnet",
+        "kvrocks"
       ],
       "requiredCapabilities": ["node-native"],
       "isolation": "process",
@@ -384,7 +389,8 @@
       "setup": "Acquire disposable pinned server container and isolated loopback connection.",
       "operation": "real $fixture pinned build exchanges PING and binary ECHO",
       "assertions": [
-        "Each pinned build reports its expected version, returns PONG and preserves all 200000 binary ECHO bytes. Built-in MODULE LIST inventory matches the pinned image profile; no extra image-entrypoint modules are loaded."
+        "Pinned builds exchange PING, a 200000-byte binary ECHO and isolated binary SET/GET/DEL.",
+        "Observed module inventories or explicit unsupported MODULE LIST replies match each fixture profile."
       ],
       "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
       "expectedAvailability": "supported",
@@ -635,6 +641,24 @@
         "Pinned Node 24.22.0 without a network interface exchanges intact PING/ECHO through the shared Unix socket using the built library."
       ],
       "cleanup": "Close the connection; await container removal; remove the Unix volume and temporary artifact state.",
+      "expectedAvailability": "supported",
+      "expectedSemantics": "matching"
+    },
+    {
+      "id": "SOCKET-36",
+      "family": "SOCKET",
+      "ownerPhase": 3,
+      "fixtures": ["redis"],
+      "requiredCapabilities": ["node-native"],
+      "isolation": "process",
+      "clock": "live",
+      "deadlineMillis": 45000,
+      "setup": "Own an isolated pinned container name, then start an invalid executable.",
+      "operation": "Testcontainers start failure before a StartedTestContainer exists",
+      "assertions": [
+        "Startup fails with FixtureError and scope exit removes the partially allocated container."
+      ],
+      "cleanup": "Close connections, proxies and listeners; await child/container exit; remove temporary state.",
       "expectedAvailability": "supported",
       "expectedSemantics": "matching"
     }

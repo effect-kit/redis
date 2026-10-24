@@ -9,6 +9,7 @@ catalog:
   klarity: "^0.3.0"
   typescript: "~7.0.2"
   tsdown: ">=0.23.1 <0.23.2"
+  testcontainers: "^12.2.1"
   publint: "^0.3.25"
   turbo: "^2.11.10"
   oxlint: "^1.89.0"
@@ -25,3 +26,6 @@ strictPeerDependencies: true
 autoInstallPeers: false
 allowBuilds:
   lefthook: true
+  cpu-features: false
+  protobufjs: false
+  ssh2: false

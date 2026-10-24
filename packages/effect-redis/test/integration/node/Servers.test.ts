@@ -1,82 +1,19 @@
 import { existsSync } from "node:fs";
 
 import { expect, it } from "@effect/vitest";
-import { Deferred, Effect, Fiber, Redacted, Result } from "effect";
+import { Deferred, Effect, Fiber, Result } from "effect";
 
 import { connect } from "../../../src/node.js";
 import { encodeCommand } from "../../../src/protocol/encode.js";
 import { decodeRedisConfig } from "../../../src/RedisConfig.js";
 import { exchange } from "../../support/networking/Exchange.js";
 import { faultProxy } from "../../support/networking/FaultProxy.js";
-import { command } from "../../support/servers/Command.js";
+import {
+  containerExists,
+  FixtureContainer,
+  scopedContainer,
+} from "../../support/servers/Containers.js";
 import { allocateServer, dockerServer, serverTargets } from "../../support/servers/DockerServer.js";
-import { unixRuntimeSmoke } from "../../support/servers/UnixRuntime.js";
-import { certificates } from "../../support/tls/Certificates.js";
-
-it.live.each(serverTargets)(
-  "SOCKET-21: real $fixture pinned build exchanges PING and binary ECHO",
-  (target) =>
-    Effect.gen(function* () {
-      const server = yield* dockerServer(target);
-      const connection = yield* connect(
-        yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: server.port } }),
-      );
-      expect(yield* exchange(connection, ["PING"])).toEqual({
-        _tag: "SimpleString",
-        value: new TextEncoder().encode("PONG"),
-      });
-      const modules = yield* exchange(connection, ["MODULE", "LIST"]);
-      expect(modules._tag).toBe("Array");
-      const observed: Record<string, string> = {};
-      if (modules._tag === "Array")
-        for (const module of modules.values) {
-          expect(module._tag).toBe("Array");
-          if (module._tag !== "Array") continue;
-          const name = module.values[1];
-          const version = module.values[3];
-          expect(name?._tag).toBe("BlobString");
-          expect(version?._tag).toBe("Integer");
-          if (name?._tag === "BlobString" && version?._tag === "Integer")
-            observed[new TextDecoder().decode(name.value)] = String(version.value);
-        }
-      expect(observed).toEqual(target.modules);
-      const payload = new Uint8Array(200_000);
-      for (let index = 0; index < payload.length; index++) payload[index] = index % 256;
-      expect(yield* exchange(connection, ["ECHO", payload])).toEqual({
-        _tag: "BlobString",
-        value: payload,
-      });
-      expect(server.build).toContain(`v=${target.version} `);
-      expect(server.configurationDigest).toMatch(/^[a-f0-9]{64}$/);
-    }),
-);
-
-it.live.each(
-  serverTargets.filter((target) => target.fixture === "redis" || target.fixture === "valkey"),
-)("SOCKET-22: real $fixture verifies mutual TLS and exchanges PING", (target) =>
-  Effect.gen(function* () {
-    const identity = yield* certificates();
-    const server = yield* dockerServer(target, identity);
-    const connection = yield* connect(
-      yield* decodeRedisConfig({
-        endpoint: {
-          host: "127.0.0.1",
-          port: server.port,
-          tls: {
-            ca: identity.ca,
-            serverName: "redis.test",
-            certificate: identity.clientCertificate,
-            privateKey: Redacted.value(identity.clientKey),
-          },
-        },
-      }),
-    );
-    expect(yield* exchange(connection, ["PING"])).toEqual({
-      _tag: "SimpleString",
-      value: new TextEncoder().encode("PONG"),
-    });
-  }),
-);
 
 const redis = serverTargets.find((target) => target.fixture === "redis");
 if (redis === undefined) throw new Error("Missing primary Redis fixture");
@@ -137,9 +74,7 @@ it.live("SOCKET-25: failed readiness removes the already-created container and s
       }),
     );
     expect(Result.isFailure(failed.result) && failed.result.failure.stage).toBe("server-readiness");
-    expect(
-      yield* command("docker", ["ps", "--all", "--quiet", "--filter", `name=^${failed.name}$`]),
-    ).toBe("");
+    expect(yield* containerExists(failed.name)).toBe(false);
     expect(existsSync(failed.directory)).toBe(false);
   }),
 );
@@ -160,9 +95,7 @@ it.live("SOCKET-26: canceled fixture startup awaits container removal and state 
     );
     const fixture = yield* Effect.raceFirst(Deferred.await(allocated), Fiber.join(opening));
     yield* Fiber.interrupt(opening);
-    expect(
-      yield* command("docker", ["ps", "--all", "--quiet", "--filter", `name=^${fixture.name}$`]),
-    ).toBe("");
+    expect(yield* containerExists(fixture.name)).toBe(false);
     expect(existsSync(fixture.directory)).toBe(false);
   }),
 );
@@ -185,11 +118,15 @@ it.live("SOCKET-34: proxy request pause resumes without dropping buffered bytes"
   }),
 );
 
-it.live.each(
-  serverTargets.filter((target) => target.fixture === "redis" || target.fixture === "valkey"),
-)("SOCKET-35: compiled Node runtime exchanges PING/ECHO with real $fixture over Unix", (target) =>
-  Effect.gen(function* () {
-    const result = yield* unixRuntimeSmoke(target);
-    expect(result).toEqual({ node: "24.22.0", transport: "unix", exchanges: 2 });
-  }),
+it.live(
+  "SOCKET-36: failed Testcontainers start removes a container before any handle returns",
+  () =>
+    Effect.gen(function* () {
+      const container = new FixtureContainer(redis.reference).withEntrypoint([
+        "/missing-fixture-executable",
+      ]);
+      const result = yield* Effect.scoped(Effect.result(scopedContainer(container)));
+      expect(Result.isFailure(result) && result.failure.stage).toBe("container-start");
+      expect(yield* containerExists(container.fixtureName)).toBe(false);
+    }),
 );

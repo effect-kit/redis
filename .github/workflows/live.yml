@@ -1,0 +1,137 @@
+name: Live conformance
+
+on:
+  push:
+    branches: [main]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number (blank tests the default branch)
+        type: string
+        default: ""
+      suite:
+        description: Live test suite
+        type: choice
+        options: [all, core, redis, valkey, dragonfly, keydb, redict, garnet, kvrocks]
+        default: all
+
+permissions:
+  contents: read
+
+jobs:
+  request:
+    if: (github.event_name != 'issue_comment' || (github.event.issue.pull_request && startsWith(github.event.comment.body, '/test live'))) && (github.event_name != 'workflow_dispatch' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run: ${{ steps.request.outputs.run }}
+      sha: ${{ steps.request.outputs.sha }}
+      matrix: ${{ steps.request.outputs.matrix }}
+      target: ${{ steps.request.outputs.target }}
+      suite: ${{ steps.request.outputs.suite }}
+    steps:
+      # Controller code always comes from the default branch, including comment/dispatch events.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        id: request
+        with:
+          script: |
+            const { parseLiveCommand, canRunLive, liveMatrix, pullNumber, verifiedSha } = await import(`${process.env.GITHUB_WORKSPACE}/.github/scripts/live-request.mjs`);
+            let suite = 'all';
+            let pr;
+            if (context.eventName === 'issue_comment') {
+              suite = parseLiveCommand(context.payload.comment.body);
+              if (suite === undefined) return core.setOutput('run', 'false');
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ ...context.repo, username: context.actor });
+              if (!canRunLive(data.permission)) return core.setOutput('run', 'false');
+              pr = context.issue.number;
+            } else if (context.eventName === 'workflow_dispatch') {
+              suite = context.payload.inputs.suite;
+              if (context.payload.inputs.pr) pr = pullNumber(context.payload.inputs.pr);
+            }
+            let sha = context.sha;
+            if (pr !== undefined) {
+              const { data } = await github.rest.pulls.get({ ...context.repo, pull_number: pr });
+              if (data.state !== 'open') throw new Error('PR must be open');
+              sha = data.head.sha;
+            } else if (context.eventName === 'workflow_dispatch') {
+              const { data } = await github.rest.repos.getBranch({ ...context.repo, branch: context.payload.repository.default_branch });
+              sha = data.commit.sha;
+            }
+            core.setOutput('target', pr === undefined ? `run-${context.runId}` : `pr-${pr}`);
+            core.setOutput('suite', suite);
+            core.setOutput('sha', verifiedSha(sha));
+            core.setOutput('matrix', JSON.stringify(liveMatrix(suite)));
+            core.setOutput('run', 'true');
+            core.summary.addHeading('Live test request').addRaw(`Commit: ${verifiedSha(sha)}; suite: ${suite}`).write();
+
+  live:
+    needs: request
+    if: needs.request.outputs.run == 'true'
+    name: Live (${{ matrix.suite }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only authorized requests reach this job; untrusted comments cannot cancel a valid run.
+    concurrency:
+      group: live-${{ needs.request.outputs.target }}-${{ matrix.suite }}
+      cancel-in-progress: ${{ github.event_name != 'push' }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.request.outputs.matrix) }}
+    env:
+      EFFECT_REDIS_TEST_ENGINE: ${{ matrix.suite }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.request.outputs.sha }}
+          persist-credentials: false
+      - name: Verify requested commit
+        env:
+          REQUESTED_SHA: ${{ needs.request.outputs.sha }}
+        run: test "$(git rev-parse HEAD)" = "$REQUESTED_SHA"
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .node-version
+          cache: ${{ github.event_name == 'push' && 'pnpm' || '' }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm fixtures:pull
+        if: matrix.suite != 'core'
+      - run: pnpm test:live
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: live-${{ matrix.suite }}-${{ needs.request.outputs.sha }}
+          path: packages/effect-redis/test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  report:
+    needs: [request, live]
+    if: always() && needs.request.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          TEST_SHA: ${{ needs.request.outputs.sha }}
+          TEST_SUITE: ${{ needs.request.outputs.suite }}
+          TEST_RESULT: ${{ needs.live.result }}
+        with:
+          script: |
+            const conclusion = { success: 'success', failure: 'failure', cancelled: 'cancelled', skipped: 'neutral' }[process.env.TEST_RESULT] || 'failure';
+            await github.rest.checks.create({ ...context.repo, head_sha: process.env.TEST_SHA,
+              name: `Live conformance (${process.env.TEST_SUITE})`, status: 'completed', conclusion,
+              details_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              output: { title: `Live tests: ${conclusion}`, summary: `Exact commit: ${process.env.TEST_SHA}. See individual matrix jobs and artifacts for engine results.` } });

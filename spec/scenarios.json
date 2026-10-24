@@ -112,9 +112,9 @@
     "execution": "passed",
     "clock": "live",
     "evidence": {
-      "runId": "phase03-node24-darwin-arm64",
+      "runId": "phase03-testcontainers12-node24-darwin-arm64",
       "date": "2026-10-25",
-      "configuration": "43 live cases: host Node loopback TCP/TLS/Unix; pinned Docker Linux arm64 Redis/Valkey; pinned Node Alpine compiled Unix-socket smoke; synthetic bytes only.",
+      "configuration": "49 live cases: 12 pinned server versions across 7 engines; independent wire readiness; native host socket/fault/TLS tests; compiled Node Alpine Unix socket smoke; disposable fixtures only.",
       "scenarioIds": [
         "SOCKET-01",
         "SOCKET-02",
@@ -150,20 +150,23 @@
         "SOCKET-32",
         "SOCKET-33",
         "SOCKET-34",
-        "SOCKET-35"
+        "SOCKET-35",
+        "SOCKET-36"
       ],
-      "artifact": "research/docs/progress/reports/03-node-transport.md",
-      "engineVersion": "Redis 6.2.19/7.2.11/7.4.6/8.10.2; Valkey 7.2.11/8.0.3/9.1.2 (network smoke only)",
-      "runtimeVersion": "Node 24.22.0 on Darwin arm64; Node 24.22.0 Alpine Linux arm64 Unix smoke; Docker 29.8.2; OpenSSL CLI 4.0.3",
+      "artifact": "research/docs/progress/reports/03a-testcontainers-migration.md",
+      "engineVersion": "Redis 6.2.19/7.2.11/7.4.6/8.10.2; Valkey 7.2.11/8.0.3/9.1.2; Dragonfly 2.0.2; KeyDB 6.3.4; Redict 7.3.6; Garnet 2.2.4; Kvrocks 2.17.0 (transport/state smoke only)",
+      "runtimeVersion": "Node 24.22.0 Darwin arm64; Node 24.22.0 Alpine Linux arm64 Unix smoke; Docker 29.8.2; Testcontainers 12.2.1; OpenSSL CLI 4.0.3",
       "moduleVersions": {
         "redis-8.10.2/vectorset": "1 (built-in inventory only)",
-        "valkey-9.1.2/lua": "1 (built-in inventory only)"
+        "valkey-9.1.2/lua": "1 (built-in inventory only)",
+        "dragonfly-2.0.2/ReJSON": "20808 (built-in inventory only)",
+        "dragonfly-2.0.2/search": "21015 (built-in inventory only)"
       },
       "transport": "tcp/tls/unix; transparent forwarding fault proxy",
-      "protocol": "RESP2 PING/ECHO byte smoke; no Redis protocol negotiation",
+      "protocol": "RESP2 PING/ECHO and isolated binary SET/GET/DEL, MODULE LIST profiles; no HELLO negotiation",
       "topology": "isolated standalone fixtures and loopback byte peers",
       "authentication": "no Redis AUTH; TLS CA/server identity and optional client certificate",
-      "configurationDigest": "a830b79a0e85fb6dc7f2d0fb67c52331478e8afa536ce993cb2d29993c010581"
+      "configurationDigest": "07fec4c57a68c3d7923f1c7c1ee296cac47ed9b306ba9928e21b50dfb2d43f57"
     }
   },
   {

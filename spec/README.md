@@ -21,10 +21,10 @@ protocol-only execution evidence, kept separate from those target records.
 - `fixtures/native.json` pins seven engines, representative older Redis/Valkey
   releases, four module builds and four runtimes. Git revisions pin source fixtures;
   adapters must later record actual build options, artifact hashes and runtime versions.
-- `fixtures/node-images.json` pins immutable multi-platform image digests for the
-  seven phase-03 Redis/Valkey versions (including observed built-in module inventories)
-  and a Node Alpine runtime for real-server
-  Unix socket tests. Explicit fixture preparation downloads and
+- `fixtures/node-images.json` pins immutable image digests for twelve server
+  versions across seven engines, architecture-specific KeyDB images, a Node Alpine
+  Unix runtime and the Testcontainers Ryuk reaper. Module inventories and explicit
+  unsupported MODULE LIST profiles preserve actual backend differences. Explicit fixture preparation downloads and
   tags them; test execution uses the digest without pulling. The spec gate checks
   target/version alignment and completeness. These are networking fixtures, not
   complete command/engine certification.
@@ -38,8 +38,8 @@ protocol-only execution evidence, kept separate from those target records.
 - `protocol.json` defines the implemented grammar, boundaries and 27 controlled-byte
   scenarios. WIRE/SPLIT/LIMIT evidence in scenarios.json refers only to these codec
   cases; native/command/provider records remain not-run.
-- `transport.json` defines 35 executable Node networking scenarios. SOCKET evidence
-  covers 43 parameterized live cases; it does not mark native engine/command/provider
+- `transport.json` defines 36 executable Node networking scenarios. SOCKET evidence
+  covers 49 parameterized live cases; it does not mark native engine/command/provider
   conformance targets as passed.
 - `scenarios.json` assigns 31 scenario families. Owning phases add executable IDs,
   setup/assertion/cleanup definitions and actual execution evidence with their code.

@@ -7,14 +7,18 @@ import type { Certificates } from "../tls/Certificates.js";
 import { FixtureError } from "./FixtureError.js";
 
 /** Independent wire probe: readiness cannot pass because our codec and adapter share a bug. */
-export const probe = (port: number, tls?: Certificates) =>
+export const probe = (endpoint: number | string, tls?: Certificates) =>
   Effect.callback<void, FixtureError>((resume) => {
     const socket =
       tls === undefined
-        ? createConnection({ host: "127.0.0.1", port })
+        ? createConnection(
+            typeof endpoint === "number"
+              ? { host: "127.0.0.1", port: endpoint }
+              : { path: endpoint },
+          )
         : connect({
             host: "127.0.0.1",
-            port,
+            port: typeof endpoint === "number" ? endpoint : 6379,
             servername: "redis.test",
             ca: tls.ca,
             cert: tls.clientCertificate,

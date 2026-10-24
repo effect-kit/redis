@@ -5,25 +5,29 @@
     "digest": "sha256:97ec88159e6d7cfb5ddef9015386087d58a912de80112f06ebdfa78fa5989901",
     "modules": {
       "vectorset": "1"
-    }
+    },
+    "version": "8.10.2"
   },
   {
     "fixture": "redis-6.2",
     "image": "redis:6.2.19",
     "digest": "sha256:1a1394b2feea67b9984ff7a12cab6d5e30c54b8dd3524a637f995dbc376dd1db",
-    "modules": {}
+    "modules": {},
+    "version": "6.2.19"
   },
   {
     "fixture": "redis-7.2",
     "image": "redis:7.2.11",
     "digest": "sha256:76dc61f6ca42748060aa86080ef8393d0c118660db0a1dead26c2b8e94bf601b",
-    "modules": {}
+    "modules": {},
+    "version": "7.2.11"
   },
   {
     "fixture": "redis-7.4",
     "image": "redis:7.4.6",
     "digest": "sha256:a9cc41d6d01da2aa26c219e4f99ecbeead955a7b656c1c499cce8922311b2514",
-    "modules": {}
+    "modules": {},
+    "version": "7.4.6"
   },
   {
     "fixture": "valkey",
@@ -31,24 +35,81 @@
     "digest": "sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd",
     "modules": {
       "lua": "1"
-    }
+    },
+    "version": "9.1.2"
   },
   {
     "fixture": "valkey-7.2",
     "image": "valkey/valkey:7.2.11",
     "digest": "sha256:9d09cdba3c2fc12605404d87b5e4adab15822bdada00bf3a19d9fd9d74c99e01",
-    "modules": {}
+    "modules": {},
+    "version": "7.2.11"
   },
   {
     "fixture": "valkey-8.0",
     "image": "valkey/valkey:8.0.3",
     "digest": "sha256:4e78d8ccab4d8978afca140a3dd75b4e45d683d1e51602ee71e976bcc2bd939e",
-    "modules": {}
+    "modules": {},
+    "version": "8.0.3"
   },
   {
     "fixture": "node",
     "image": "node:24.22.0-alpine",
     "variant": "alpine",
-    "digest": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f"
+    "digest": "sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f",
+    "version": "24.22.0"
+  },
+  {
+    "fixture": "dragonfly",
+    "image": "docker.dragonflydb.io/dragonflydb/dragonfly:v2.0.2",
+    "version": "2.0.2",
+    "digest": "sha256:061f00b201b58e12f974e4e96c761a881ee1c05e9d8ee967466a604b7299753b",
+    "modules": {
+      "ReJSON": "20808",
+      "search": "21015"
+    }
+  },
+  {
+    "fixture": "keydb",
+    "image": "eqalpha/keydb:arm64_v6.3.4",
+    "version": "6.3.4",
+    "digest": "sha256:acf2f4c443276bf071ab90861fd9644b22c9b6440e544fa655d287981dd8cd0a",
+    "architecture": "arm64",
+    "modules": {}
+  },
+  {
+    "fixture": "keydb",
+    "image": "eqalpha/keydb:x86_64_v6.3.4",
+    "version": "6.3.4",
+    "digest": "sha256:eceb1806730c7850395b8262300182c2e15a6e5dacbf0b72cbab110518caf43f",
+    "architecture": "x64",
+    "modules": {}
+  },
+  {
+    "fixture": "redict",
+    "image": "registry.redict.io/redict:7.3.6",
+    "version": "7.3.6",
+    "digest": "sha256:e1236e9424ac93989e8b4824c5816f1fcb772a384280478e15902f6de17a6372",
+    "modules": {}
+  },
+  {
+    "fixture": "garnet",
+    "image": "ghcr.io/microsoft/garnet:2.2.4",
+    "version": "2.2.4",
+    "digest": "sha256:45cf705af3cd6e03bc6d331b4a9c15fbb1b3aff5b3bf0e0cc7c0ab8cd0448067",
+    "moduleList": "unsupported"
+  },
+  {
+    "fixture": "kvrocks",
+    "image": "apache/kvrocks:2.17.0",
+    "version": "2.17.0",
+    "digest": "sha256:a1e99b3653fb900d5a17b80a9487f74079edc6d5e9b70e3103c01cbfc0d5146a",
+    "moduleList": "unsupported"
+  },
+  {
+    "fixture": "ryuk",
+    "image": "testcontainers/ryuk:0.14.0",
+    "version": "0.14.0",
+    "digest": "sha256:7c1a8a9a47c780ed0f983770a662f80deb115d95cce3e2daa3d12115b8cd28f0"
   }
 ]

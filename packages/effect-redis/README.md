@@ -27,10 +27,16 @@ Run from the workspace root:
 - `pnpm check:spec`: tracked inventory/fixture/scenario validation.
 - `pnpm check`: the complete workspace checks.
 
-Default tests require no Redis process, credentials or network access. `pnpm test:node`
-is a separate live lane requiring Docker, OpenSSL and images prepared with
-`pnpm fixtures:pull`. It runs disposable Redis/Valkey fixtures; it never uses hosted
-endpoints or automatically downloads prerequisites. Provider certification is pending.
+Default tests require no Redis process, credentials or network access. `pnpm test:live`
+(`test:node` alias) uses scoped Testcontainers fixtures for twelve versions across
+Redis, Valkey, Dragonfly, KeyDB, Redict, Garnet and Kvrocks. Prepare digest-pinned
+images explicitly with `pnpm fixtures:pull`; tests require a local Docker-compatible
+daemon and OpenSSL. `--engine valkey` selects an engine. Explicit `--mode binary`
+owns a supplied Redis/Valkey executable; `--mode endpoint` reads
+`EFFECT_REDIS_TEST_URL` and runs read-only PING/ECHO, with connection-only AUTH when
+needed. Optional `EFFECT_REDIS_TEST_CA` names a custom CA file. See the workspace
+README for commands and manual PR CI triggers. Full engine/provider certification
+remains pending.
 
 Licensed under Apache-2.0. Package archives include the license and built artifacts;
 `prepack` rebuilds them, and pnpm replaces catalog references with compatible ranges.

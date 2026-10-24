@@ -5,7 +5,7 @@ complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities ac
 Redis-compatible servers and transports.
 
 **Status:** Phase 03 adds scoped native Node TCP/TLS/Unix byte transports and
-real Redis/Valkey networking fixtures to the bounded RESP codec and validated
+Testcontainers fixtures for seven engines to the bounded RESP codec and validated
 configuration. The ordinary command connection engine is not implemented. Broad
 server/command compatibility remains a target.
 
@@ -34,7 +34,8 @@ Publint checking package exports.
 | `pnpm test:protocol:fuzz` | Build and run the watchdog protocol corpus               |
 | `pnpm check:spec`         | Validate tracked release/fixture/scenario specifications |
 | `pnpm fixtures:pull`      | Explicitly download pinned integration-test images       |
-| `pnpm test:node`          | Run live Node socket/TLS and Redis/Valkey fixture tests  |
+| `pnpm test:node`          | Alias for the full live suite                            |
+| `pnpm test:live`          | Run live socket/fault and twelve server-version cases    |
 | `pnpm check`              | Formatting, lint, typecheck, test, and build             |
 
 ## Workspace
@@ -73,7 +74,30 @@ our compiler. Use frozen installs in CI and review lockfile updates.
 
 Licensed under [Apache-2.0](LICENSE). The library remains private during development.
 
-Node networking is exposed through `@envoy1084/effect-redis/node`. Live tests need
-Docker, OpenSSL and `pnpm fixtures:pull`; `pnpm check` remains independent of those
-prerequisites. CI runs the live lane separately. Fixture ports are loopback-only,
-state is temporary, and all fixture containers are removed after each scope.
+Node networking is exposed through `@envoy1084/effect-redis/node`. Default live tests
+use disposable Testcontainers fixtures and require a local Docker-compatible daemon,
+OpenSSL and explicitly prepared images. `pnpm check` stays offline.
+
+```sh
+pnpm fixtures:pull                     # or --engine valkey
+pnpm test:live                         # all engines and socket/fault tests
+pnpm test:live --engine valkey         # selected engine, all pinned versions
+pnpm test:live --mode binary --engine redis --binary /absolute/path/redis-server
+# Explicit existing endpoint: set EFFECT_REDIS_TEST_URL privately in your shell.
+pnpm test:live --mode endpoint         # AUTH if needed, PING/ECHO only; no writes
+```
+
+The matrix pins Redis 6.2.19/7.2.11/7.4.6/8.10.2, Valkey 7.2.11/8.0.3/9.1.2,
+Dragonfly 2.0.2, KeyDB 6.3.4, Redict 7.3.6, Garnet 2.2.4 and Kvrocks 2.17.0.
+These tests verify transport and isolated binary state smoke; full command, topology,
+module and hosted-provider certification remains pending. Bun is a runtime, rather
+than a server fixture. Endpoint mode also accepts `EFFECT_REDIS_TEST_CA` for a custom
+CA file; it never downloads images or starts/stops the external server.
+
+Live CI runs on every push to `main`. PRs run offline checks automatically. Writers
+can comment `/test live` on a PR for the full suite, or `/test live valkey` for a
+selected engine (`core` selects socket/TLS fault tests). The **Live conformance**
+workflow also supports manual dispatch with an optional PR number and suite. Manual
+PR runs test the exact resolved head SHA with read-only permissions; reports link
+that SHA to individual matrix results and artifacts. The workflow must be present on
+the default branch before comment/dispatch triggers become available.

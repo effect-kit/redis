@@ -92,8 +92,26 @@ Never describe planned command or server compatibility as implemented or verifie
   tests/tools separately. Do not test placeholder exports or merely Effect itself.
 - Run `pnpm test:node` when native transport, fixtures or socket ownership changes.
   It needs Docker, OpenSSL and explicitly prepared images (`pnpm fixtures:pull`).
-  The lane uses disposable loopback fixtures and never auto-pulls or reads deployment
-  endpoints/credentials. Missing prerequisites fail; they are not passing skips.
+  The default lane uses scoped Testcontainers fixtures, digest-pinned engine/Node/Ryuk
+  images, loopback ports and awaited cleanup. Never reuse containers across runs or
+  automatically pull images during tests. Own cleanup before starting; use the
+  Testcontainers runtime API for lifecycle/volumes, not Docker CLI subprocesses.
+  Backend startup profiles must preserve actual configuration/module differences.
+  Missing prerequisites fail; they are not passing skips.
+- `pnpm test:live --engine redis|valkey|dragonfly|keydb|redict|garnet|kvrocks|core`
+  selects a live suite. Default `all` runs every engine and socket/fault case.
+  `--mode binary --engine redis|valkey --binary /absolute/path` owns a temporary native
+  server process. `--mode endpoint` requires explicit `EFFECT_REDIS_TEST_URL` and uses
+  connection-only AUTH plus read-only PING/ECHO; optional `EFFECT_REDIS_TEST_CA` supplies
+  a CA file. Never mutate or clean deployment state in endpoint mode. Mutating tests
+  need owned disposable fixtures and unique key prefixes; never FLUSH shared servers.
+- Live CI runs on every push to main, without canceling earlier main runs. PRs run
+  offline checks automatically; live tests require an authorized `/test live [engine]`
+  comment or default-branch workflow dispatch with a PR number. Resolve and verify
+  the immutable PR head SHA. Keep trusted authorization/reporting jobs separate from
+  untrusted checkout/install/test jobs; no write tokens, deployment secrets or shared
+  dependency-cache writes in PR test jobs. Unauthorized comments must not cancel runs.
+  Report each engine independently and retain build/configuration/JUnit evidence.
 - Run `pnpm test:protocol:fuzz` when protocol/byte ownership changes; CI also runs
   its built-artifact corpus under an external deadline. Keep its seed/replay evidence.
 - Run `pnpm check` after meaningful changes. It covers format, lint, root/package

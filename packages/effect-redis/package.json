@@ -60,8 +60,9 @@
     "check:spec": "node tools/check-spec.ts",
     "test:protocol:fuzz": "node tools/fuzz-protocol.ts",
     "prepack": "pnpm run build",
-    "test:node": "pnpm run build && vitest run --config vitest.node.config.ts",
-    "fixtures:pull": "node tools/prepare-node-fixtures.ts"
+    "test:node": "pnpm run test:live",
+    "fixtures:pull": "node tools/prepare-node-fixtures.ts",
+    "test:live": "node tools/run-live-tests.ts"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
@@ -70,6 +71,7 @@
     "klarity": "catalog:",
     "oxlint": "catalog:",
     "publint": "catalog:",
+    "testcontainers": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

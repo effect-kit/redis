@@ -2,6 +2,8 @@
   "extends": "klarity/tsconfig/app/node",
   "include": ["src/**/*.ts", "test/**/*.ts"],
   "compilerOptions": {
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "checkJs": true
   }
 }

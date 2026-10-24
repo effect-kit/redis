@@ -1,4 +1,8 @@
 {
   "extends": "klarity/tsconfig/app/node",
-  "include": ["*.config.ts"]
+  "include": ["*.config.ts", ".github/scripts/*.mjs"],
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true
+  }
 }
