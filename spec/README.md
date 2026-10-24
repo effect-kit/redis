@@ -2,7 +2,8 @@
 
 This tracked directory is the phase-01 v1 planning baseline. It is self-contained:
 normal builds, tests and the specification check never read ignored research or
-fetch upstream data. No command, native runtime or hosted service is certified here.
+fetch upstream data. No command, native runtime or hosted service is certified here. Phase 02 adds
+protocol-only execution evidence, kept separate from those target records.
 
 - `release.json` preserves the required engines, provider families, modules,
   version window, runtime pairs and topologies. Review scope changes explicitly.
@@ -27,6 +28,9 @@ fetch upstream data. No command, native runtime or hosted service is certified h
   build/configuration fingerprint remains a release-blocking B005 evidence gate.
 - `fixtures/runtime-pairs.json` names 14 native/HTTP/SSE combinations.
   `fixtures/topologies.json` names Redis/Valkey Cluster and Sentinel fixtures.
+- `protocol.json` defines the implemented grammar, boundaries and 27 controlled-byte
+  scenarios. WIRE/SPLIT/LIMIT evidence in scenarios.json refers only to these codec
+  cases; native/command/provider records remain not-run.
 - `scenarios.json` assigns 31 scenario families. Owning phases add executable IDs,
   setup/assertion/cleanup definitions and actual execution evidence with their code.
 

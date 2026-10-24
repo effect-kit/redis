@@ -1,8 +1,9 @@
 # Foundation contracts
 
 Phase 01 implements configuration decoding and offline test/specification validation.
-There is no network adapter, RESP encoder/decoder, connection scheduler or command
-client yet. Those later implementations must enforce the settings defined here.
+Phase 02 adds the [RESP codec](protocol.md), which enforces protocol limits. There
+is no network adapter, connection scheduler or command client yet. Those later
+implementations must enforce their remaining settings.
 
 ## Configuration
 
@@ -69,8 +70,8 @@ integer; TCP ports are 1–65535. Header and blob limits must fit the buffered-b
 | limits.maxQueuedBytes      | 16,777,216 | bytes        |
 | limits.maxInFlightBytes    | 16,777,216 | bytes        |
 
-These are initial policy defaults, not measured throughput/memory guarantees. The
-codec and scheduler implement enforcement in phases 02/04; phase 19 measures budgets.
+These are initial policy defaults, not measured throughput/memory guarantees. The codec now enforces protocol limits (phase 02); the scheduler enforces its
+remaining budgets in phase 04. Phase 19 measures process/workload budgets.
 
 ## Values and transport
 
@@ -78,7 +79,7 @@ codec and scheduler implement enforcement in phases 02/04; phase 19 measures bud
 preserving bytes, exact integers/big numbers, null wire variants, ordered map pairs,
 sets, arrays, nested errors, verbatim format bytes, pushes and decorating attributes.
 Doubles retain their wire token so special values and decimal spelling are not lost.
-Representation does not validate framing; the phase-02 codec owns wire grammar.
+The representation itself does not validate framing; the phase-02 codec owns wire grammar.
 
 The internal `transport/Transport` service acquires one scoped physical byte
 connection. A single owner reads nonempty chunks (undefined denotes EOF), and a

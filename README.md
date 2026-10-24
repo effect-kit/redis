@@ -4,9 +4,10 @@ A Redis protocol client built with Effect v4 and runtime platform APIs. The goal
 complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities across
 Redis-compatible servers and transports.
 
-**Status:** Phase 01 foundation: validated configuration, lossless value/transport
-contracts, Effect-native offline tests and tracked release specifications. Network
-connections and Redis commands are not implemented. Compatibility remains a target.
+**Status:** Phase 02: bounded binary RESP request encoding and incremental RESP2/RESP3
+decoding, including declared streamed forms, with validated configuration and offline
+tests. Network connections and command execution are not implemented. Server
+compatibility remains a target.
 
 ## Development
 
@@ -22,16 +23,17 @@ Commitlint, and Git hook conventions. TypeScript 7 checks types;
 tsdown uses Klarity’s library preset to build unbundled ESM and declarations, with
 Publint checking package exports.
 
-| Command             | Purpose                                                  |
-| ------------------- | -------------------------------------------------------- |
-| `pnpm build`        | Build workspace packages through Turborepo               |
-| `pnpm typecheck`    | Check root configs, source, tests and tooling            |
-| `pnpm lint`         | Lint root configs, source, tests and tooling             |
-| `pnpm format`       | Format tracked project files with Oxfmt                  |
-| `pnpm format:check` | Check formatting                                         |
-| `pnpm test`         | Run offline Effect Vitest/unit/specification tests       |
-| `pnpm check:spec`   | Validate tracked release/fixture/scenario specifications |
-| `pnpm check`        | Formatting, lint, typecheck, test, and build             |
+| Command                   | Purpose                                                  |
+| ------------------------- | -------------------------------------------------------- |
+| `pnpm build`              | Build workspace packages through Turborepo               |
+| `pnpm typecheck`          | Check root configs, source, tests and tooling            |
+| `pnpm lint`               | Lint root configs, source, tests and tooling             |
+| `pnpm format`             | Format tracked project files with Oxfmt                  |
+| `pnpm format:check`       | Check formatting                                         |
+| `pnpm test`               | Run offline Effect Vitest/unit/specification tests       |
+| `pnpm test:protocol:fuzz` | Build and run the watchdog protocol corpus               |
+| `pnpm check:spec`         | Validate tracked release/fixture/scenario specifications |
+| `pnpm check`              | Formatting, lint, typecheck, test, and build             |
 
 ## Workspace
 
@@ -40,6 +42,7 @@ Publint checking package exports.
 - `AGENTS.md`: engineering policy and architecture guidance for contributors and agents.
 - [Implementation progress](docs/progress/README.md): phase status, acceptance gates,
   reports and deferred-work tracking.
+- [RESP codec](docs/architecture/protocol.md): current grammar, byte ownership and limits.
 - [Foundation contracts](docs/architecture/foundation.md): current configuration and byte contracts.
 - [Release specifications](spec/README.md): tracked command/fixture/scenario inventory.
 - `research/`: ignored local Markdown investigations and upstream metadata; never commit it.

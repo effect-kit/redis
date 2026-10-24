@@ -57,6 +57,7 @@ export const loadSpecification: Effect.Effect<Spec.Specification, SpecificationE
       { concurrency: 4 },
     );
     return {
+      protocol: yield* load("protocol.json", Spec.ProtocolProfile),
       index,
       commands: groups.flat(),
       release: yield* load("release.json", Spec.Release),

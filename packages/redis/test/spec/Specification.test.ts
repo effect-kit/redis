@@ -2,7 +2,11 @@ import { expect, it } from "@effect/vitest";
 import { Effect, Result, Schema } from "effect";
 
 import { loadSpecification } from "../../tools/spec/Load.ts";
-import { CompatibilityRecord, ScenarioDefinition } from "../../tools/spec/Schema.ts";
+import {
+  CompatibilityRecord,
+  ProtocolProfile,
+  ScenarioDefinition,
+} from "../../tools/spec/Schema.ts";
 import { validateSpecification } from "../../tools/spec/Validate.ts";
 
 it.live("SPEC-01: tracked release inventory has intact hashes, owners and target coverage", () =>
@@ -139,5 +143,17 @@ it.effect.each([
         yield* Effect.result(Schema.decodeUnknownEffect(CompatibilityRecord)(input)),
       ),
     ).toBe(true);
+  }),
+);
+
+it.live("SPEC-07: protocol evidence must reference declared scenario IDs", () =>
+  Effect.gen(function* () {
+    const spec = yield* loadSpecification;
+    const protocol = yield* Schema.decodeUnknownEffect(ProtocolProfile)({
+      ...spec.protocol,
+      scenarios: spec.protocol.scenarios.filter((scenario) => scenario.id !== "WIRE-01"),
+    });
+    const broken = { ...spec, protocol };
+    expect(validateSpecification(broken)).toContain("Missing protocol evidence scenario: WIRE-01");
   }),
 );

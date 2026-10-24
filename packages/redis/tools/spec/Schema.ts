@@ -44,6 +44,16 @@ export const ScenarioDefinition = Schema.Struct({
   expectedSemantics: Schema.Literals(["matching", "different", "unverified"]),
 });
 
+export const ProtocolProfile = Schema.Struct({
+  fixtureId: Name,
+  specification: Name,
+  sources: Schema.NonEmptyArray(Url),
+  versions: Schema.NonEmptyArray(Schema.Literals(["RESP2", "RESP3"])),
+  streamed: Schema.NonEmptyArray(Schema.Literals(["blob-string", "array", "map", "set"])),
+  boundaries: Names,
+  scenarios: Schema.NonEmptyArray(ScenarioDefinition),
+});
+
 /** Documentation availability and executed semantic evidence are independent. */
 export const CompatibilityRecord = Schema.Struct({
   feature: Name,
@@ -201,6 +211,7 @@ export const Release = Schema.Struct({
 });
 
 export interface Specification {
+  readonly protocol: typeof ProtocolProfile.Type;
   readonly release: typeof Release.Type;
   readonly index: typeof CommandIndex.Type;
   readonly commands: ReadonlyArray<typeof Command.Type>;

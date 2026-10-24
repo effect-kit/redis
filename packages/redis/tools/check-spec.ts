@@ -9,6 +9,7 @@ const check = Effect.gen(function* () {
   if (issues.length > 0)
     return yield* new SpecificationError({ file: "spec", reason: issues.join("; ") });
   return {
+    protocolScenarios: spec.protocol.scenarios.length,
     commands: spec.commands.length,
     categories: spec.index.categories.length,
     nativeFixtures: spec.native.length,

@@ -17,22 +17,93 @@
     "id": "WIRE",
     "ownerPhase": 2,
     "contract": "Lossless RESP2/3 values, attributes, pushes, nested errors and exact numbers",
-    "execution": "not-run",
-    "clock": "none"
+    "execution": "passed",
+    "clock": "none",
+    "evidence": {
+      "runId": "phase02-protocol-node24",
+      "date": "2026-10-25",
+      "configuration": "Pure byte codec; default and explicit boundary limits; synthetic data only",
+      "scenarioIds": [
+        "WIRE-01",
+        "WIRE-02",
+        "WIRE-03",
+        "WIRE-04",
+        "WIRE-05",
+        "WIRE-06",
+        "WIRE-07",
+        "WIRE-08",
+        "WIRE-09"
+      ],
+      "artifact": "docs/progress/reports/02-protocol.md",
+      "engineVersion": "none-pure-protocol",
+      "runtimeVersion": "Node 24.22.0",
+      "moduleVersions": {},
+      "transport": "in-memory-bytes",
+      "protocol": "RESP2/RESP3 fixed and declared streamed forms",
+      "topology": "none",
+      "authentication": "none-synthetic",
+      "configurationDigest": "b8db0cd91aa3f58062fdb216bdf4bf7d362009e73554a3cad7717a05f1ae6a94"
+    }
   },
   {
     "id": "SPLIT",
     "ownerPhase": 2,
     "contract": "All split positions, one-byte/coalesced chunks and multibyte boundaries",
-    "execution": "not-run",
-    "clock": "none"
+    "execution": "passed",
+    "clock": "none",
+    "evidence": {
+      "runId": "phase02-protocol-node24",
+      "date": "2026-10-25",
+      "configuration": "Pure byte codec; default and explicit boundary limits; synthetic data only",
+      "scenarioIds": ["SPLIT-01", "SPLIT-02", "SPLIT-03"],
+      "artifact": "docs/progress/reports/02-protocol.md",
+      "engineVersion": "none-pure-protocol",
+      "runtimeVersion": "Node 24.22.0",
+      "moduleVersions": {},
+      "transport": "in-memory-bytes",
+      "protocol": "RESP2/RESP3 fixed and declared streamed forms",
+      "topology": "none",
+      "authentication": "none-synthetic",
+      "configurationDigest": "b8db0cd91aa3f58062fdb216bdf4bf7d362009e73554a3cad7717a05f1ae6a94"
+    }
   },
   {
     "id": "LIMIT",
     "ownerPhase": 2,
     "contract": "Malformed/truncated data, bounded lengths, depth and allocations",
-    "execution": "not-run",
-    "clock": "none"
+    "execution": "passed",
+    "clock": "none",
+    "evidence": {
+      "runId": "phase02-protocol-node24",
+      "date": "2026-10-25",
+      "configuration": "Pure byte codec; default and explicit boundary limits; synthetic data only",
+      "scenarioIds": [
+        "LIMIT-01",
+        "LIMIT-02",
+        "LIMIT-03",
+        "LIMIT-04",
+        "LIMIT-05",
+        "LIMIT-06",
+        "LIMIT-07",
+        "LIMIT-08",
+        "LIMIT-09",
+        "LIMIT-10",
+        "LIMIT-11",
+        "LIMIT-12",
+        "LIMIT-13",
+        "LIMIT-14",
+        "LIMIT-15"
+      ],
+      "artifact": "docs/progress/reports/02-protocol.md",
+      "engineVersion": "none-pure-protocol",
+      "runtimeVersion": "Node 24.22.0",
+      "moduleVersions": {},
+      "transport": "in-memory-bytes",
+      "protocol": "RESP2/RESP3 fixed and declared streamed forms",
+      "topology": "none",
+      "authentication": "none-synthetic",
+      "configurationDigest": "b8db0cd91aa3f58062fdb216bdf4bf7d362009e73554a3cad7717a05f1ae6a94"
+    }
   },
   {
     "id": "SOCKET",

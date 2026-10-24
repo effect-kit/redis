@@ -58,6 +58,31 @@ export const validateSpecification = (spec: Specification): ReadonlyArray<string
       issues.push(`Missing executed evidence: ${label}`);
     }
   };
+  const protocolIds = unique(
+    "protocol scenario IDs",
+    spec.protocol.scenarios.map((scenario) => scenario.id),
+  );
+  requireAll("protocol version", ["RESP2", "RESP3"], new Set(spec.protocol.versions));
+  requireAll(
+    "streamed encoding",
+    ["blob-string", "array", "map", "set"],
+    new Set(spec.protocol.streamed),
+  );
+  for (const scenario of spec.protocol.scenarios) {
+    requireAll("protocol scenario family", [scenario.family], scenarios);
+    requireAll(
+      "protocol controlled fixture",
+      scenario.fixtures,
+      new Set([spec.protocol.fixtureId]),
+    );
+    if (scenario.ownerPhase !== 2) issues.push(`Wrong protocol scenario owner: ${scenario.id}`);
+  }
+  for (const family of spec.scenarios.filter((scenario) =>
+    ["WIRE", "SPLIT", "LIMIT"].includes(scenario.id),
+  )) {
+    if (family.evidence !== undefined)
+      requireAll("protocol evidence scenario", family.evidence.scenarioIds, protocolIds);
+  }
   if (
     spec.commands.length !== spec.release.commandCount ||
     spec.index.commandCount !== spec.release.commandCount

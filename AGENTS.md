@@ -3,8 +3,8 @@
 ## Scope and status
 
 Build a native Redis-compatible client with Effect v4. This repository currently
-contains validated configuration, value/transport contracts, offline Effect Vitest
-tests and tracked release specifications, not a working Redis client.
+contains a bounded RESP codec, validated configuration, value/transport contracts,
+offline tests and tracked release specifications, not a networked Redis client.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -82,6 +82,8 @@ Never describe planned command or server compatibility as implemented or verifie
   Keep typed fixtures/support modules reusable and focused; do not build a fake Redis
   implementation or use broad mocks that bypass the production scheduler. Typecheck
   tests/tools separately. Do not test placeholder exports or merely Effect itself.
+- Run `pnpm test:protocol:fuzz` when protocol/byte ownership changes; CI also runs
+  its built-artifact corpus under an external deadline. Keep its seed/replay evidence.
 - Run `pnpm check` after meaningful changes. It covers format, lint, root/package
   typechecks, offline Effect Vitest/specification tests, and builds. Run `pnpm check:spec`
   for the tracked release inventory; never depend on ignored research. Report skipped
@@ -122,7 +124,11 @@ Never describe planned command or server compatibility as implemented or verifie
 
 ## Architecture decisions
 
-Implemented phase-01 contracts are documented in [foundation contracts](docs/architecture/foundation.md).
+Implemented contracts are documented in [foundation contracts](docs/architecture/foundation.md)
+and [RESP codec](docs/architecture/protocol.md). Read the codec byte/EOF/ownership
+contract before integrating native sockets. Drain results between feeds and partition
+chunks to fit remaining retained-wire capacity. Codec Results compose through
+Effect.fromResult; parser errors retire a decoder and later its physical generation.
 The tracked [specification inventory](spec/README.md) owns release/fixture/scenario
 inputs; its command modes are planning seeds, not production routing metadata.
 

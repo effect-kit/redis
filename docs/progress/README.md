@@ -4,10 +4,10 @@ This tracked index records implementation state. Detailed local investigations m
 exist under ignored research, but no build, test or maintained document requires it.
 The root [AGENTS.md](../../AGENTS.md) owns engineering and architecture policy.
 
-**Current:** phase 01 complete; next: phase 02 (RESP codec).
-The package has validated configuration, lossless value/transport contracts, 55
-offline tests and tracked release/fixture/scenario specifications. Network connections,
-command execution, server certification and publication remain unimplemented.
+**Current:** phase 02 complete; next: phase 03 (native Node transport).
+The package has a bounded binary RESP codec, validated configuration, scoped transport
+contracts, 343 offline tests and tracked release/fixture/scenario specifications. Network
+connections, command execution, server certification and publication remain unimplemented.
 
 ## Status and gates
 
@@ -20,7 +20,7 @@ refer to verified phases, not merely files or merge commits.
 | --- | ------------------------------------------------------------------------------------------------ | ------------ | -------- | -------------------------------------- |
 | 00  | Planning: architecture, tests, phase gates and reporting guide                                   | None         | Complete | [Planning](reports/00-planning.md)     |
 | 01  | Contracts/test foundation: Effect Vitest, validated config and pinned release/scenario manifests | 00           | Complete | [Foundation](reports/01-foundation.md) |
-| 02  | Protocol: lossless bounded RESP codec, fragmented/malformed/property corpus                      | 01           | Pending  | —                                      |
+| 02  | Protocol: lossless bounded RESP codec, fragmented/malformed/property corpus                      | 01           | Complete | [Protocol](reports/02-protocol.md)     |
 | 03  | Node transport: scoped native TCP/TLS and real Redis/Valkey fixture lifecycle                    | 01, 02       | Pending  | —                                      |
 | 04  | Connection: handshake/admission/pending ownership, cancellation and no unsafe replay             | 02, 03       | Pending  | —                                      |
 | 05  | Command system: descriptors, typed facade/Schema slice and inference contracts                   | 04           | Pending  | —                                      |
