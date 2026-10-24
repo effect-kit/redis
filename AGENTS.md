@@ -202,6 +202,21 @@ real-server conformance before making public compatibility promises.
 - Use supported/unsupported/unknown capabilities with recorded evidence. COMMAND
   INFO/DOCS, HELLO, MODULE LIST and INFO may be unavailable under ACL/provider rules.
   Unknown is not unsupported; server banners alone are not reliable feature tests.
+- Track command/option availability separately from semantic parity. An accepted
+  command can differ in atomicity, ordering, consistency or durability. Preserve
+  documented differences in compatibility reports; do not silently rewrite commands
+  into an allegedly equivalent sequence. Unknown evidence must not block arbitrary
+  raw/module commands through a stale provider-wide allowlist.
+- Treat engine, version, runtime, transport, topology, authentication and enabled
+  modules as independent compatibility dimensions. Reuse the protocol core across
+  Redis, Valkey and other RESP engines. Hosted services usually need profiles and
+  configuration, not another client implementation; add adapters for mechanisms
+  that actually differ, such as an HTTP command API.
+- Support Effect-based credential acquisition/refresh at the connection boundary,
+  in addition to fixed credentials. Capture redacted credentials and optional
+  expiry, refresh for new/re-established connections, and coordinate reauthentication
+  with exclusive sessions. Cloud identity SDKs must not become core dependencies;
+  callers can supply credentials from their existing identity system.
 
 ### Upstash and Bun
 
@@ -258,3 +273,5 @@ total is promised. Sources remain accessible without ignored research:
 - [Sentinel client specification](https://redis.io/docs/latest/develop/reference/sentinel-clients/)
 - [Upstash REST](https://upstash.com/docs/redis/features/restapi)
 - [Upstash compatibility](https://upstash.com/docs/redis/overall/compatibility)
+- [Garnet semantic compatibility](https://microsoft.github.io/garnet/docs/welcome/compatibility)
+- [Cloud credential refresh example](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/auth-iam.html)
