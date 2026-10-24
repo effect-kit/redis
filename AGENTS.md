@@ -241,6 +241,31 @@ real-server conformance before making public compatibility promises.
   than a native protocol implementation. Add an optional integration adapter later;
   its string-oriented API and buffering choices must not constrain our core model.
 
+### V1 coverage target
+
+The user prioritizes broad production coverage over an early release. These are
+planned release targets, not implemented or certified support. Internal milestones
+must not silently defer them to v1.1 merely to ship sooner.
+
+- Target Redis and Valkey as primary command baselines, plus tested backend profiles
+  for Dragonfly, KeyDB, Redict, Garnet and Apache Kvrocks. Preserve each backend's
+  actual supported subset and semantic differences; do not invent missing features.
+- Target named configurations of Redis Cloud/Software, AWS ElastiCache and MemoryDB,
+  Google Memorystore Redis/Valkey, Azure Managed Redis, Upstash, Aiven Valkey,
+  DigitalOcean Valkey and Alibaba Tair. Certify exact products/versions/configurations;
+  a successful local engine test is not provider certification.
+- Include Cluster, Sentinel, provider-routed endpoints, Upstash HTTP/SSE, Node/Bun
+  native runtimes and tested HTTP execution on Deno/Cloudflare Workers in v1 planning.
+  HTTP support does not imply native TCP support on every runtime.
+- Include typed public application-command families for declared Redis/Valkey
+  baselines, sessions, Streams/PubSub, scripting/functions and selected versioned
+  JSON/search/time-series/probabilistic/vector module families. Retain raw/custom
+  descriptors for other extensions and explicit boundaries for advanced wire modes.
+- Require scenario-level conformance, fault/recovery tests, bounded-resource soaks
+  and real provider tests before advertising a configuration as supported. Record
+  missing tests as pending. Do not claim an 80–90% market share without evidence or
+  accept an aggregate pass percentage in place of passing every promised capability.
+
 ### Implementation milestones and verification
 
 1. Binary RESP codec and limits, with fragmented/malformed input fixtures.
