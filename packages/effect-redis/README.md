@@ -4,19 +4,21 @@ A runtime-neutral Redis client foundation for Effect v4. The package remains pri
 The public API includes configuration decoding, binary `encodeCommand`, incremental
 `makeRespDecoder`, lossless `RespValue`/`RespPairs`, `RedisArgument`/`RedisCommand`,
 codec limits and typed errors. The Node-only `/node` entrypoint exports `connect`,
-`layer`, `Transport` and `TransportConnection` for scoped TCP/TLS/Unix byte I/O.
+`layer`, `Transport` and `TransportConnection` for scoped TCP/TLS/Unix byte I/O,
+plus an optional `cryptoLayer` for Effect Crypto.
 The universal entrypoint also exports `makeConnection`, the `Connection` service and
 its scoped Layer, connection options/snapshots, and typed admission/handshake/connection
 failures. The engine executes caller-declared ordinary single-reply commands. `Redis`,
 `CommandExecutor`, `Commands`, `Reply`, `RedisKey` and `PayloadCodec` add typed
 ordinary commands across strings, hashes, lists, sets, keys/TTL, sorted sets, bitmaps,
 HyperLogLog, geo and arrays, plus custom descriptors and explicit payload codecs.
-There are 187 reviewed ordinary commands; available commands/options depend on the
+The data families cover 187 reviewed ordinary commands; available commands/options depend on the
 actual server. Native sessions add pipelines, transactions, WATCH, connection controls
 and blocking leases. Scan commands, Redis Streams and scoped consumer workflows have
 unit, controlled, primary Redis/Valkey and packed-consumer coverage. Scoped Pub/Sub,
-client tracking and bounded GET-byte caches extend event delivery. Topology routing
-remains pending.
+client tracking and bounded GET-byte caches extend event delivery. Lua/functions,
+administration, native hash imports/backups and diagnostic modes are implemented.
+Topology routing remains pending.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -232,8 +234,8 @@ Local AOF acknowledgment counts are zero or one. These APIs do not promise stron
 consistency or protection from every failover/storage failure.
 
 `session.caching(mode, command)` keeps CLIENT CACHING adjacent to its command; the caller
-must configure a compatible tracking mode. Full tracking/invalidation handling follows
-in the subscriptions phase. `withoutReplies(commands)` and `skipReply(command)` restore
+must configure a compatible tracking mode. `RedisTracking` owns managed tracking and
+invalidation lifetimes. `withoutReplies(commands)` and `skipReply(command)` restore
 REPLY ON with a fenced compound write and intentionally discard individual results/errors.
 Failure of that fence can leave mutations uncertain. RESET and QUIT retire the lease;
 Valkey capability/import-source flags are isolated to the owning scope.
@@ -383,3 +385,82 @@ eviction uses LRU. Broadcast caches store only keys under tracked prefixes.
 Invalidation before a delayed GET reply prevents insertion. Declared local writes,
 flushes, connection gaps and restart invalidate affected state. Invalidation delivery
 is asynchronous; these helpers do not create strong consistency or exactly-once delivery.
+
+Lua and function calls require explicit keys, arguments and a reply decoder:
+`redis.evalScript(source, { keys, args }, Reply.integer)` and
+`redis.fcall(name, { keys, args }, Reply.blob)`. Read-only variants are separately
+named. Builders under `Commands` retain decoder requirements and key indexes.
+SCRIPT/FUNCTION lifecycle operations are explicit; function libraries are installed
+by the caller.
+
+```ts
+import { Effect } from "effect";
+
+import {
+  RedisScript,
+  Reply,
+  decodeRedisConfig,
+  makeRedisScripts,
+  makeRedisSessions,
+} from "@envoy1084/effect-redis";
+import { cryptoLayer as NodeCrypto, layer as NodeTransport } from "@envoy1084/effect-redis/node";
+
+const scriptProgram = Effect.scoped(
+  Effect.gen(function* () {
+    const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
+    const sessions = yield* makeRedisSessions(config);
+    const scripts = yield* makeRedisScripts(sessions);
+    const counter = yield* RedisScript.make({
+      source: "return redis.call('INCR', KEYS[1])",
+      decode: Reply.integer,
+    });
+
+    return yield* scripts.execute(counter, { keys: ["counter"] });
+  }),
+).pipe(Effect.provide(NodeTransport), Effect.provide(NodeCrypto));
+```
+
+`RedisScripts.layer()` captures `RedisSessions`. A canonical server NOSCRIPT rejection
+permits one coordinated load and one retry on the same leased backend. Managed Lua
+source must reserve Redis's canonical NOSCRIPT errors for server cache rejection.
+Other errors, decoder failures and uncertain writes propagate. In-flight load
+failure/cancellation reaches its waiters. Defaults bound concurrent loads to 64 and
+additional binary argument snapshots to 16 MiB per active lease. Immutable strings are
+borrowed; keep queued input unchanged. Each wire operation uses the native deadline.
+Explicitly preload scripts before batches; pipelines/transactions never replay siblings.
+
+`RedisAdmin.layer` captures `RedisSessions`; `makeRedisAdmin(sessions)` provides the
+same explicit composition. ACL/configuration, INFO, memory, command introspection,
+client controls, persistence, backups and MIGRATE use that configured backend.
+Each operation leases a connection. `admin.withSession(use)` groups related controls;
+exclusive operations retire their lease on release. Secret-bearing configuration,
+ACL rules and diagnostic logs use `Redacted`. INFO preserves strings, duplicate fields
+and unknown sections; open-ended structured reports retain lossless fields.
+MIGRATE errors can follow partial transfers. No rollback or automatic retry is implied.
+
+`session.authenticate`, `selectDatabase` and `hello()` expose reviewed connection
+controls. AUTH/SELECT changes retire their physical lease. `hello()` inspects the
+current protocol; initial negotiation belongs to configuration. Redis 8.10 HIMPORT
+uses `session.himportPrepare/Set/Discard/DiscardAll`: positional fieldsets belong to
+that client and HIMPORT SET replaces the hash. BACKUP controls expose the server's
+snapshot/abort/seal/cleanup lifecycle, with exact times and redacted file paths.
+
+`RedisMonitor.layer(config)` / `makeRedisMonitor(config)` acquires a dedicated scoped
+connection. `events` is a single-consumer Stream of Command/Unknown records. Timestamps
+remain decimal text; database IDs are bigint; client/command/raw content is redacted.
+Defaults allow 64 queued events, 1 MiB retained bytes and 64 KiB diagnostic lines, bounded
+by the decoder buffer. Raw bytes plus text are charged at three times wire size.
+`close` ends the stream. Overflow, framing errors and disconnect fail it; recovery is
+explicit. Ordinary connections keep their existing header limits.
+
+`RedisShutdown.layer(config)` / `makeRedisShutdown(config)` owns each control socket.
+`shutdown({ save: "NOSAVE" })` reports ConnectionClosed with `execution: "unknown"`
+after EOF. `abort()` requires a real OK reply. One shutdown and one abort may run
+concurrently; additional same-kind calls fail unsent. Cleanup defects prevent implicit
+replacement. QUIT/RESET/reply suppression retain their reviewed session APIs.
+
+Availability remains version/configuration-specific. ACL DIGEST's 9.2 descriptor has
+no positive claim on pinned Valkey 9.1; topology/module scenarios keep their own gates.
+Private replication/RDB, protected debug and interactive Lua debugger protocols are
+excluded. Four BLESS catalog records describe Redis 8.12 without a verified
+reply contract in the pinned baselines; they have no invented typed wrappers.

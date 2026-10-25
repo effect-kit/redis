@@ -4,15 +4,17 @@ A Redis protocol client built with Effect v4 and runtime platform APIs. The goal
 complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities across
 Redis-compatible servers and transports.
 
-**Status:** The typed Redis service covers 187 ordinary commands across strings,
+**Status:** The typed Redis service covers 187 ordinary data commands across strings,
 hashes, lists, sets, keys/TTL, sorted sets, bitmaps, HyperLogLog, geo and arrays.
 Scoped Node TCP/TLS/Unix, bounded scheduling and lossless RESP2/RESP3 are implemented.
 Native sessions add scoped leases, typed pipelines/transactions, WATCH workflows,
 nine blocking list/sorted-set commands and connection-relative controls. Cursor scans
 and Redis Streams add typed commands, scoped readers and consumer recovery/processing.
 Scoped Pub/Sub adds acknowledged subscriptions and explicit delivery gaps. Client
-tracking adds invalidations and bounded GET-byte caches. Scripting, topologies and
-broader runtime/provider certification follow.
+tracking adds invalidations and bounded GET-byte caches. Typed Lua/functions,
+bounded script loading, explicit administration, session-local hash imports,
+server backups, MONITOR and SHUTDOWN modes are implemented. Topologies and broader
+runtime/provider certification follow.
 
 ## Development
 

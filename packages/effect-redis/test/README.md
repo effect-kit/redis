@@ -52,6 +52,13 @@ counterparts use real backends. Subscription tests include acknowledgment/readin
 shared interests, gaps, tracking modes, cache invalidation and byte/codec identity;
 proxy faults prove restart and publication uncertainty without automatic replay.
 
+`integration/scripting/`, `integration/admin/` and `integration/diagnostics/` cover
+load coordination, mode isolation, cancellation and cleanup with mechanical bytes.
+Their real-backend `e2e/` suites verify script/function lifecycle and interruption,
+ACL/configuration, migration between two owned servers, public HIMPORT/BACKUP and
+MONITOR/SHUTDOWN. Destructive cases own their servers. Positive backup/module/topology
+availability is distinguished from expected rejections on restricted/older fixtures.
+
 The live runner also supports `--mode binary --engine redis|valkey --binary /absolute/path`
 for an owned local process. `--mode endpoint` requires `EFFECT_REDIS_TEST_URL` and
 only authenticates and sends read-only PING/ECHO; optional `EFFECT_REDIS_TEST_CA`

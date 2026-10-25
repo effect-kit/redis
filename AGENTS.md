@@ -17,7 +17,9 @@ policies and explicit payload envelopes with controlled/type/primary Redis/Valke
 conformance and packed/fresh-consumer verification.
 Phase 09 adds scoped Pub/Sub, explicit recovery gaps, managed tracking and bounded
 GET-byte caches with controlled/type/primary Redis/Valkey conformance.
-Scripting and topology remain pending.
+Phase 10 adds typed Lua/functions, bounded script loading, explicit administration,
+public HIMPORT/BACKUP operations and isolated MONITOR/SHUTDOWN modes.
+Topology remains pending.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -432,6 +434,41 @@ Implemented scan/stream policy:
 - Stream payload fields are explicit codec envelopes. Snapshot wire options before
   user codec Effects; reject missing/duplicate/tombstoned fields without losing raw data.
   Keep all detailed coverage/version records and progress under ignored research.
+
+Implemented scripting/administration policy:
+
+- EVAL/FCALL builders require explicit keys and actual decoders. Preserve decoder
+  requirements and derive numkeys/key indexes from the prepared arrays. Read-only
+  variants retain server/version restrictions without fallback to writes.
+- RedisScript.make uses Effect Crypto and redacts an owned source snapshot. Optional
+  native cryptoLayer belongs behind /node; universal code never imports Node crypto.
+  Managed source must not forge Redis's reserved canonical NOSCRIPT response.
+- RedisScripts captures one backend's RedisSessions. Recover only a canonical server
+  cache rejection, with one coordinated load and one retry on the same lease. Decode
+  outside recovery. Propagate loader failure/cancellation to its waiters; never retry
+  mutation errors, uncertain replies, application decoders or whole batches.
+- Bound additional binary recovery snapshots before copying, after pool admission;
+  queued callers borrow unchanged intent. Keep pending loads bounded and complete
+  receipts on every exit. Cluster node-specific coordination belongs to its executor.
+- RedisAdmin targets its configured native backend, never an implicit broadcast.
+  Group client-local controls through withSession. AUTH/SELECT, HIMPORT fieldsets and
+  exclusive descriptors retire their physical lease; HELLO without arguments only
+  inspects the current protocol. Initial negotiation belongs to configuration.
+- Inspect pinned code before accepting an inventory classification. Redis HIMPORT
+  and BACKUP are public session/admin operations, distinct from private RDB transfer.
+  HIMPORT SET replaces a hash with values in prepared field order. Backup lifecycle
+  state and MIGRATE partial-transfer errors require explicit application decisions.
+- Redact secret-bearing ACL/config/log/file-path responses. INFO keeps exact strings,
+  duplicate/unknown fields and sections; open-ended replies retain lossless extensions.
+- MONITOR owns a dedicated event socket, bounded single-consumer mailbox and explicit
+  diagnostic line limit. Preserve redacted raw frames when parsing is uncertain;
+  never log command text or silently drop/reconnect. Ordinary header limits stay intact.
+- SHUTDOWN EOF reports an observed close with unknown execution. ABORT requires OK.
+  Bound shutdown and abort separately so abort can cancel a pending shutdown. Keep
+  cleanup defects visible and poison implicit replacement; never replay controls.
+- Keep private replication/stream-repair, protected debug, interactive SCRIPT DEBUG
+  and source-unverified newer catalog records as explicit boundaries. Encoding them
+  or observing server rejection is not proof that the advanced protocol is implemented.
 
 ### Streams, subscriptions and recovery
 
