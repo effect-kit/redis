@@ -130,3 +130,27 @@ export type { BlockingOptions } from "#/commands/blocking/Timing";
 export type { ScanPage } from "#/commands/scan/Page";
 export type { ScanOptions, KeyScanOptions } from "#/commands/scan/Build";
 export type { ArrayScanOptions } from "#/commands/arrays/Scan";
+
+export { StreamId, StreamPosition, StreamBound } from "#/commands/streams/Id";
+export type { AddId, ReadId, GroupReadId } from "#/commands/streams/Id";
+export type * from "#/commands/streams/Types";
+export type * from "#/commands/streams/InfoTypes";
+export type {
+  StreamAddOptions,
+  StreamFieldInput,
+  StreamRangeOptions,
+  StreamConfigOptions,
+} from "#/commands/streams/Entries";
+export type {
+  StreamReadOptions,
+  GroupReadOptions,
+  ReadStreams,
+  GroupReadStreams,
+  BlockingReadOptions,
+  BlockingGroupOptions,
+} from "#/commands/streams/Read";
+export type { StreamTrim, ReferencePolicy } from "#/commands/streams/Trim";
+export type { ClaimOptions, AutoClaimOptions } from "#/commands/streams/Claims";
+export type { PendingOptions } from "#/commands/streams/Pending";
+export type { GroupCreateOptions, GroupSetIdOptions, GroupStart } from "#/commands/streams/Groups";
+export type { StreamIds, StreamNackOptions } from "#/commands/streams/Retention";

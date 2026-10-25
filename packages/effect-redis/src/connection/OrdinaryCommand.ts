@@ -51,7 +51,7 @@ export const commandToken = (value: string | Uint8Array | undefined) =>
         : ""
       : "";
 
-const blockingRead = (command: RedisCommand, group: boolean) => {
+export const blockingRead = (command: RedisCommand, group: boolean) => {
   let index = group ? 4 : 1;
 
   // After STREAMS, tokens are keys and IDs; a key named BLOCK must not change the mode.

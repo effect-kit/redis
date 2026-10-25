@@ -33,6 +33,9 @@ export const arscan = (
       const last = yield* index(end);
       const lower = BigInt(first);
       const upper = BigInt(last);
+      // UINT64_MAX is the insertion-cursor sentinel, not a readable index.
+      if (lower === 18446744073709551615n || upper === 18446744073709551615n)
+        return yield* parse(Schema.Never, start);
       const reverse = lower > upper;
       const tail = [
         first,

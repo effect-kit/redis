@@ -31,7 +31,9 @@ export const commandCases = (family: string, cases: ReadonlyArray<CommandCase>) 
 
         expect(prepared.tokens).toEqual(tokens);
         expect(prepared.metadata.name).toBe(
-          tokens[0] === "OBJECT" ? `OBJECT ${String(tokens[1])}` : tokens[0],
+          ["OBJECT", "XGROUP", "XINFO"].includes(String(tokens[0]))
+            ? `${String(tokens[0])} ${String(tokens[1])}`
+            : tokens[0],
         );
         expect(
           prepared.routing._tag === "Keys" || prepared.routing._tag === "Dynamic"

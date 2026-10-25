@@ -1,0 +1,121 @@
+// Reviewed pinned Redis 8.10.2 / Valkey 9.1.2 public stream command baselines.
+import { metadata } from "#/commands/Metadata";
+
+export const catalog = {
+  XACK: metadata("XACK", "streams", ["STREAM"], ["Redis since 5.0.0", "Valkey since 5.0.0"]),
+  XACKDEL: metadata(
+    "XACKDEL",
+    "streams",
+    ["STREAM"],
+    ["Redis since 8.2.0", "Absent from Valkey 9.1.2 source baseline"],
+  ),
+  XADD: metadata("XADD", "streams", ["STREAM"], ["Redis since 5.0.0", "Valkey since 5.0.0"]),
+  XAUTOCLAIM: metadata(
+    "XAUTOCLAIM",
+    "streams",
+    ["STREAM"],
+    ["Redis since 6.2.0", "Valkey since 6.2.0"],
+  ),
+  XCFGSET: metadata(
+    "XCFGSET",
+    "streams",
+    ["STREAM"],
+    ["Redis since 8.6.0", "Absent from Valkey 9.1.2 source baseline"],
+  ),
+  XCLAIM: metadata("XCLAIM", "streams", ["STREAM"], ["Redis since 5.0.0", "Valkey since 5.0.0"]),
+  XDEL: metadata("XDEL", "streams", ["STREAM"], ["Redis since 5.0.0", "Valkey since 5.0.0"]),
+  XDELEX: metadata(
+    "XDELEX",
+    "streams",
+    ["STREAM"],
+    ["Redis since 8.2.0", "Absent from Valkey 9.1.2 source baseline"],
+  ),
+  "XGROUP CREATE": metadata(
+    "XGROUP CREATE",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  "XGROUP CREATECONSUMER": metadata(
+    "XGROUP CREATECONSUMER",
+    "streams",
+    ["STREAM"],
+    ["Redis since 6.2.0", "Valkey since 6.2.0"],
+  ),
+  "XGROUP DELCONSUMER": metadata(
+    "XGROUP DELCONSUMER",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  "XGROUP DESTROY": metadata(
+    "XGROUP DESTROY",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  "XGROUP HELP": metadata(
+    "XGROUP HELP",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  "XGROUP SETID": metadata(
+    "XGROUP SETID",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  "XINFO CONSUMERS": metadata(
+    "XINFO CONSUMERS",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  "XINFO GROUPS": metadata(
+    "XINFO GROUPS",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  "XINFO HELP": metadata(
+    "XINFO HELP",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  "XINFO STREAM": metadata(
+    "XINFO STREAM",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  XLEN: metadata("XLEN", "streams", ["STREAM"], ["Redis since 5.0.0", "Valkey since 5.0.0"]),
+  XNACK: metadata(
+    "XNACK",
+    "streams",
+    ["STREAM"],
+    ["Redis since 8.8.0", "Absent from Valkey 9.1.2 source baseline"],
+  ),
+  XPENDING: metadata(
+    "XPENDING",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  XRANGE: metadata("XRANGE", "streams", ["STREAM"], ["Redis since 5.0.0", "Valkey since 5.0.0"]),
+  XREAD: metadata("XREAD", "streams", ["STREAM"], ["Redis since 5.0.0", "Valkey since 5.0.0"]),
+  XREADGROUP: metadata(
+    "XREADGROUP",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  XREVRANGE: metadata(
+    "XREVRANGE",
+    "streams",
+    ["STREAM"],
+    ["Redis since 5.0.0", "Valkey since 5.0.0"],
+  ),
+  XTRIM: metadata("XTRIM", "streams", ["STREAM"], ["Redis since 5.0.0", "Valkey since 5.0.0"]),
+};

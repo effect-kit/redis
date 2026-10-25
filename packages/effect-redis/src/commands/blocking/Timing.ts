@@ -6,6 +6,7 @@ import { CommandInputError } from "#/errors/CommandInputError";
 
 const Wait = Schema.Union([Schema.Duration, Schema.Literal("forever")]);
 const Options = Schema.Struct({ blockFor: Wait, timeout: Schema.optionalKey(Wait) });
+export { Options as BlockingOptionsSchema };
 
 export type BlockingOptions = typeof Options.Type;
 

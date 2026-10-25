@@ -7,8 +7,8 @@ import { array, blob, bytes, commandCases, integer } from "#test/support/command
 commandCases("SCAN", [
   {
     label: "SCAN filters",
-    command: Commands.scan("18446744073709551615", { match: "a*", count: 2, type: "string" }),
-    tokens: ["SCAN", "18446744073709551615", "MATCH", "a*", "COUNT", "2", "TYPE", "string"],
+    command: Commands.scan("18446744073709551614", { match: "a*", count: 2, type: "string" }),
+    tokens: ["SCAN", "18446744073709551614", "MATCH", "a*", "COUNT", "2", "TYPE", "string"],
     reply: array(blob("7"), array(blob("a"))),
     expected: { cursor: "7", entries: [bytes("a")] },
     keys: [],
@@ -61,10 +61,10 @@ commandCases("SCAN", [
   },
   {
     label: "ARSCAN reverse uint64",
-    command: Commands.arscan("a", 18446744073709551615n, 0, { limit: 1 }),
-    tokens: ["ARSCAN", "a", "18446744073709551615", "0", "LIMIT", "1"],
-    reply: array(array(blob("18446744073709551615"), blob("v"))),
-    expected: [[18446744073709551615n, bytes("v")]],
+    command: Commands.arscan("a", 18446744073709551614n, 0, { limit: 1 }),
+    tokens: ["ARSCAN", "a", "18446744073709551614", "0", "LIMIT", "1"],
+    reply: array(array(blob("18446744073709551614"), blob("v"))),
+    expected: [[18446744073709551614n, bytes("v")]],
     keys: [1],
   },
 ]);

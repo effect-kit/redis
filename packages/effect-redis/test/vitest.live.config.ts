@@ -10,6 +10,7 @@ if (!["containers", "binary", "endpoint"].includes(mode))
 
 const backend = (name: string) => `test/integration/backends/${name}.test.ts`;
 const commandFiles = "test/e2e/commands/*.test.ts";
+const streamFiles = "test/e2e/streams/*.test.ts";
 const sessionFiles = "test/e2e/sessions/*.test.ts";
 
 const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
@@ -18,15 +19,17 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
     "test/integration/backends/*.test.ts",
     commandFiles,
     sessionFiles,
+    streamFiles,
   ],
   core: ["test/integration/transport/node/*.test.ts"],
-  redis: ["test/integration/backends/*.test.ts", commandFiles, sessionFiles],
+  redis: ["test/integration/backends/*.test.ts", commandFiles, sessionFiles, streamFiles],
   valkey: [
     backend("Transport"),
     backend("Connection"),
     backend("Recovery"),
     commandFiles,
     sessionFiles,
+    streamFiles,
   ],
 };
 
