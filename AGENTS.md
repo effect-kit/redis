@@ -4,8 +4,9 @@
 
 Build a native Redis-compatible client with Effect v4. This repository currently
 contains a bounded RESP codec, validated configuration, scoped Node byte transports,
-offline and live networking tests, and tracked release specifications. The ordinary
-Redis request/reply connection engine is not implemented.
+offline/live networking tests, and tracked specifications. The ordinary connection
+engine implements handshake, bounded admission/reply ownership, cancellation, shutdown
+and future-work reconnection. Typed command families remain planned.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -250,6 +251,26 @@ real-server conformance before making public compatibility promises.
   or connection behavior. Route them through explicit reviewed session/mode APIs.
   Unknown raw stateful commands require an explicit session/node; do not corrupt
   the shared request/reply scheduler to claim broad raw-command support.
+
+Implemented ordinary-engine policy:
+
+- `Connection.layer`/`makeConnection` capture the Transport and credential services.
+  Credential Effects are reacquired per physical generation with that generation's
+  Scope. Choose fixed configuration credentials or an Effect source, never both.
+- `executeOrdinary` declares one ordinary reply and returns lossless RESP, including
+  raw server errors. Typed command decoding is phase 05. Known session/blocking
+  controls are rejected; future/custom operations require reviewed caller semantics.
+- Admission reserves encoded count/byte capacity before waiting for recovery. Full
+  queues fail explicitly; accepted work has a whole-command deadline. Encoding
+  measures against available capacity before allocation. Fast replies retain write
+  ownership/budget until the local write finishes.
+- Cancellation after possible write retires the whole generation; this implementation
+  does not retain tombstones. Fail old queued work as unsent and written work as
+  possibly-written. Reconnect lazily for new work only, after old cleanup completes.
+  Preserve defects; cleanup failure must prevent replacement acquisition.
+- Raw push buffering is bounded by count and retained wire bytes, generation-tagged
+  and single-consumer. Attributes stay attached. Overflow retires the connection;
+  phase 09 owns full subscription/gap semantics. Diagnostics must stay payload-free.
 
 ### Streams, subscriptions and recovery
 

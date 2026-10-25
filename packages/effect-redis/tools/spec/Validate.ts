@@ -137,6 +137,26 @@ export const validateSpecification = (spec: Specification): ReadonlyArray<string
   const socketEvidence = spec.scenarios.find((scenario) => scenario.id === "SOCKET")?.evidence;
   if (socketEvidence !== undefined)
     requireAll("transport evidence scenario", socketEvidence.scenarioIds, transportIds);
+  const connectionIds = unique(
+    "connection scenario IDs",
+    spec.connection.scenarios.map((scenario) => scenario.id),
+  );
+  unique("executable scenario IDs", [...protocolIds, ...transportIds, ...connectionIds]);
+  for (const scenario of spec.connection.scenarios) {
+    if (scenario.ownerPhase !== 4) issues.push(`Wrong connection scenario owner: ${scenario.id}`);
+    requireAll("connection family", [scenario.family], scenarios);
+    requireAll(
+      "connection fixture",
+      scenario.fixtures,
+      new Set([...native, spec.connection.fixtureId]),
+    );
+  }
+  for (const family of spec.scenarios.filter((scenario) =>
+    ["HANDSHAKE", "OWNERSHIP", "UNKNOWN", "ADMISSION"].includes(scenario.id),
+  )) {
+    if (family.evidence !== undefined)
+      requireAll("connection evidence scenario", family.evidence.scenarioIds, connectionIds);
+  }
   if (spec.native.find((fixture) => fixture.id === "node")?.version !== spec.transport.baseline)
     issues.push("Node transport baseline differs from native runtime");
   if (

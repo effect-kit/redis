@@ -11,6 +11,7 @@ const check = Effect.gen(function* () {
   return {
     protocolScenarios: spec.protocol.scenarios.length,
     transportScenarios: spec.transport.scenarios.length,
+    connectionScenarios: spec.connection.scenarios.length,
     commands: spec.commands.length,
     categories: spec.index.categories.length,
     nativeFixtures: spec.native.length,

@@ -5,7 +5,9 @@ The public API includes configuration decoding, binary `encodeCommand`, incremen
 `makeRespDecoder`, lossless `RespValue`/`RespPairs`, `RedisArgument`/`RedisCommand`,
 codec limits and typed errors. The Node-only `/node` entrypoint exports `connect`,
 `layer`, `Transport` and `TransportConnection` for scoped TCP/TLS/Unix byte I/O.
-The ordinary Redis command connection engine arrives in phase 04.
+The universal entrypoint also exports `makeConnection`, the `Connection` service and
+its scoped Layer, connection options/snapshots, and typed admission/handshake/connection
+failures. The engine executes caller-declared ordinary single-reply commands.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -49,4 +51,44 @@ a prefix may have been sent. Local write completion does not prove server execut
 
 TLS verifies trust and identity by default and supports explicit SNI, custom CAs and
 client certificates. Acquisition includes the TLS handshake and connect deadline;
-Redis AUTH/HELLO/SELECT and reconnection policies belong to the later connection engine.
+The connection engine completes AUTH, HELLO, optional naming and database selection
+before admission. Automatic protocol fallback requires a reviewed unsupported HELLO/
+protocol response. Authentication, ACL and malformed responses remain failures.
+
+```ts
+import { Effect } from "effect";
+
+import { decodeRedisConfig, makeConnection } from "@envoy1084/effect-redis";
+import { layer as NodeTransport } from "@envoy1084/effect-redis/node";
+
+const ping = Effect.scoped(
+  Effect.gen(function* () {
+    const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
+    const connection = yield* makeConnection(config);
+    return yield* connection.executeOrdinary(["PING"]);
+  }),
+).pipe(Effect.provide(NodeTransport));
+```
+
+`executeOrdinary` returns lossless RESP values, including raw server errors. Typed
+command decoding arrives in phase 05. Known stateful/blocking operations require
+session APIs; custom commands must obey the caller-declared single-reply contract.
+
+Admission bounds queued/in-flight counts and encoded bytes. Full queues fail with
+`AdmissionError`; accepted work waits fairly within its command deadline. Cancellation
+before write removes work. Cancellation after possible write retires that generation;
+sibling failures retain `unsent` or `possibly-written` evidence. Neither queued old
+work nor uncertain requests are replayed. New work may acquire a fresh generation.
+A local write keeps the original deadline even if its reply arrives before the write
+callback; a stalled callback cannot retain capacity indefinitely.
+
+Options default to three acquisition attempts, 100 ms initial exponential backoff
+(capped at 60 seconds), a 5-second graceful drain, 64 push messages and a 1 MiB push wire-byte budget. `credentials` accepts an Effect source captured at acquisition
+and rerun for each physical connection; choose it or fixed config credentials. Supply
+redacted credentials and map expected source failures to `HandshakeError`.
+
+`close` stops admission and drains with a deadline; `abort` retires immediately and
+awaits scoped cleanup. Cleanup defects propagate and prevent replacement acquisition.
+`takePush` permits one waiting consumer, preserves attributes and tags generations;
+overflow retires the connection. This is the bounded push boundary for later
+subscriptions. `snapshot` exposes safe counters without arguments or payloads.

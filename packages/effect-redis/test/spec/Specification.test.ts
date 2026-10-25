@@ -4,6 +4,7 @@ import { Effect, Result, Schema } from "effect";
 import { loadSpecification } from "../../tools/spec/Load.ts";
 import {
   CompatibilityRecord,
+  ConnectionProfile,
   ProtocolProfile,
   ScenarioDefinition,
   TransportProfile,
@@ -207,5 +208,42 @@ it.live("SPEC-10: Testcontainers helper and both KeyDB architectures are require
         nodeImages: spec.nodeImages.filter((image) => image.architecture !== "x64"),
       }),
     ).toContain("Missing KeyDB image architecture: x64");
+  }),
+);
+
+it.live("SPEC-11: connection scenario ownership and evidence cannot drift", () =>
+  Effect.gen(function* () {
+    const spec = yield* loadSpecification;
+    const first = spec.connection.scenarios[0];
+    if (first === undefined) return yield* Effect.die("Missing connection scenario");
+    const connection = yield* Schema.decodeUnknownEffect(ConnectionProfile)({
+      ...spec.connection,
+      scenarios: [{ ...first, ownerPhase: 5 }, ...spec.connection.scenarios.slice(1)],
+    });
+    expect(validateSpecification({ ...spec, connection })).toContain(
+      `Wrong connection scenario owner: ${first.id}`,
+    );
+    const missing = yield* Schema.decodeUnknownEffect(ConnectionProfile)({
+      ...spec.connection,
+      scenarios: spec.connection.scenarios.slice(1),
+    });
+    expect(validateSpecification({ ...spec, connection: missing })).toContain(
+      `Missing connection evidence scenario: ${first.id}`,
+    );
+  }),
+);
+
+it.live("SPEC-12: executable scenario IDs cannot be reused across phases", () =>
+  Effect.gen(function* () {
+    const spec = yield* loadSpecification;
+    const first = spec.connection.scenarios[0];
+    if (first === undefined) return yield* Effect.die("Missing connection scenario");
+    const connection = yield* Schema.decodeUnknownEffect(ConnectionProfile)({
+      ...spec.connection,
+      scenarios: [{ ...first, id: "SOCKET-01" }, ...spec.connection.scenarios.slice(1)],
+    });
+    expect(validateSpecification({ ...spec, connection })).toContain(
+      "Duplicate executable scenario IDs",
+    );
   }),
 );

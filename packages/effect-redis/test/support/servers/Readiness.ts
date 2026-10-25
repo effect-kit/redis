@@ -7,7 +7,11 @@ import type { Certificates } from "../tls/Certificates.js";
 import { FixtureError } from "./FixtureError.js";
 
 /** Independent wire probe: readiness cannot pass because our codec and adapter share a bug. */
-export const probe = (endpoint: number | string, tls?: Certificates) =>
+export const probe = (
+  endpoint: number | string,
+  tls?: Certificates,
+  password?: Redacted.Redacted<string>,
+) =>
   Effect.callback<void, FixtureError>((resume) => {
     const socket =
       tls === undefined
@@ -31,12 +35,33 @@ export const probe = (endpoint: number | string, tls?: Certificates) =>
       result = outcome;
       socket.destroy();
     };
-    const onReady = () => socket.write("*1\r\n$4\r\nPING\r\n");
+    let authenticating = password !== undefined;
+    const ping = () => socket.write("*1\r\n$4\r\nPING\r\n");
+    const onReady = () => {
+      if (password === undefined) {
+        ping();
+        return;
+      }
+      const secret = Buffer.from(Redacted.value(password));
+      socket.write(
+        Buffer.concat([
+          Buffer.from(`*2\r\n$4\r\nAUTH\r\n$${secret.length}\r\n`),
+          secret,
+          Buffer.from("\r\n"),
+        ]),
+      );
+    };
     const onError = (cause: Error) =>
       finish(Effect.fail(new FixtureError({ stage: "readiness", cause: Redacted.make(cause) })));
     const onData = (bytes: Buffer) => {
       response += bytes.toString("ascii");
-      if (response === "+PONG\r\n") finish(Effect.void);
+      if (authenticating && response === "+OK\r\n") {
+        authenticating = false;
+        response = "";
+        ping();
+        return;
+      }
+      if (!authenticating && response === "+PONG\r\n") finish(Effect.void);
       else if (response.length >= 7)
         finish(Effect.fail(new FixtureError({ stage: "readiness-reply" })));
     };

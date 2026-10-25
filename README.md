@@ -4,10 +4,11 @@ A Redis protocol client built with Effect v4 and runtime platform APIs. The goal
 complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities across
 Redis-compatible servers and transports.
 
-**Status:** Phase 03 adds scoped native Node TCP/TLS/Unix byte transports and
-Testcontainers fixtures for seven engines to the bounded RESP codec and validated
-configuration. The ordinary command connection engine is not implemented. Broad
-server/command compatibility remains a target.
+**Status:** Phase 04 adds a scoped ordinary request/reply engine with ordered
+handshake, bounded scheduling, delivery-aware failures and reconnection without
+command replay. Native Node TCP/TLS/Unix, RESP codecs and Testcontainers fixtures
+are implemented. Typed command families and broad server/provider certification
+remain planned.
 
 ## Development
 

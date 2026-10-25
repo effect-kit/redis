@@ -62,6 +62,14 @@ export const TransportProfile = Schema.Struct({
   scenarios: Schema.NonEmptyArray(ScenarioDefinition),
 });
 
+export const ConnectionProfile = Schema.Struct({
+  fixtureId: Name,
+  effectVersion: Name,
+  sources: Schema.NonEmptyArray(Url),
+  boundaries: Names,
+  scenarios: Schema.NonEmptyArray(ScenarioDefinition),
+});
+
 /** Documentation availability and executed semantic evidence are independent. */
 export const CompatibilityRecord = Schema.Struct({
   feature: Name,
@@ -146,7 +154,7 @@ export const Scenario = Schema.Struct({
   ownerPhase: Phase,
   contract: Name,
   execution: Execution,
-  clock: Schema.Literals(["virtual", "live", "none"]),
+  clock: Schema.Literals(["virtual", "live", "none", "mixed"]),
   evidence: Schema.optionalKey(RunEvidence),
 });
 
@@ -232,6 +240,7 @@ export const Release = Schema.Struct({
 export interface Specification {
   readonly protocol: typeof ProtocolProfile.Type;
   readonly transport: typeof TransportProfile.Type;
+  readonly connection: typeof ConnectionProfile.Type;
   readonly release: typeof Release.Type;
   readonly index: typeof CommandIndex.Type;
   readonly commands: ReadonlyArray<typeof Command.Type>;

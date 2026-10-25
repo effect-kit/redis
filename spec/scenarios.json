@@ -173,29 +173,151 @@
     "id": "HANDSHAKE",
     "ownerPhase": 4,
     "contract": "Authentication, HELLO fallback policy, SELECT and naming before admission",
-    "execution": "not-run",
-    "clock": "live"
+    "execution": "passed",
+    "clock": "mixed",
+    "evidence": {
+      "runId": "phase04-node24-darwin-arm64",
+      "date": "2026-10-25",
+      "configuration": "48 controlled connection cases plus 20 real ordinary-engine cases; 416 offline and 69 total live workspace cases. Mechanical I/O/clock boundaries and disposable pinned standalone engines; no hosted-provider certification.",
+      "scenarioIds": [
+        "CONNECTION-02",
+        "CONNECTION-04",
+        "HANDSHAKE-01",
+        "HANDSHAKE-02",
+        "HANDSHAKE-03",
+        "HANDSHAKE-04",
+        "HANDSHAKE-05",
+        "HANDSHAKE-06",
+        "HANDSHAKE-07",
+        "HANDSHAKE-08",
+        "HANDSHAKE-09",
+        "HANDSHAKE-10",
+        "HANDSHAKE-11",
+        "HANDSHAKE-12",
+        "HANDSHAKE-13"
+      ],
+      "artifact": "research/docs/progress/reports/04-connection.md",
+      "engineVersion": "Redis 6.2.19/7.2.11/7.4.6/8.10.2; Valkey 7.2.11/8.0.3/9.1.2; Dragonfly 2.0.2; KeyDB 6.3.4; Redict 7.3.6; Garnet 2.2.4; Kvrocks 2.17.0 (ordinary engine scenarios only)",
+      "runtimeVersion": "Effect 4.0.6; Node 24.22.0 Darwin arm64; Node 24.22.0 Alpine Linux arm64 Unix; Testcontainers 12.2.1; Docker 29.8.2; OpenSSL CLI 4.0.3",
+      "moduleVersions": {
+        "redis-8.10.2/vectorset": "1 (inventory only)",
+        "valkey-9.1.2/lua": "1 (inventory only)",
+        "dragonfly-2.0.2/ReJSON": "20808 (inventory only)",
+        "dragonfly-2.0.2/search": "21015 (inventory only)"
+      },
+      "transport": "controlled bytes; real Node TCP/TLS/Unix; transparent fault proxy",
+      "protocol": "auto HELLO3 negotiation; forced RESP2 replay-loss fixtures; controlled reviewed fallback and RESP3 push/attribute scenarios",
+      "topology": "isolated standalone fixtures only",
+      "authentication": "fixed/Effect credentials; real Redis/Valkey AUTH and mTLS; ACL denial during client naming",
+      "configurationDigest": "41aee0accff5711c074481caacded7e975f92cb34be9786d80b97bfb336da10e"
+    }
   },
   {
     "id": "OWNERSHIP",
     "ownerPhase": 4,
     "contract": "Admission/write/reply cancellation races and connection generations",
-    "execution": "not-run",
-    "clock": "virtual"
+    "execution": "passed",
+    "clock": "mixed",
+    "evidence": {
+      "runId": "phase04-node24-darwin-arm64",
+      "date": "2026-10-25",
+      "configuration": "48 controlled connection cases plus 20 real ordinary-engine cases; 416 offline and 69 total live workspace cases. Mechanical I/O/clock boundaries and disposable pinned standalone engines; no hosted-provider certification.",
+      "scenarioIds": [
+        "CONNECTION-01",
+        "CONNECTION-05",
+        "OWNERSHIP-01",
+        "OWNERSHIP-02",
+        "OWNERSHIP-03",
+        "OWNERSHIP-04",
+        "OWNERSHIP-05",
+        "OWNERSHIP-06",
+        "OWNERSHIP-07",
+        "OWNERSHIP-08",
+        "OWNERSHIP-09",
+        "OWNERSHIP-10",
+        "OWNERSHIP-11",
+        "OWNERSHIP-12",
+        "OWNERSHIP-13",
+        "OWNERSHIP-14"
+      ],
+      "artifact": "research/docs/progress/reports/04-connection.md",
+      "engineVersion": "Redis 6.2.19/7.2.11/7.4.6/8.10.2; Valkey 7.2.11/8.0.3/9.1.2; Dragonfly 2.0.2; KeyDB 6.3.4; Redict 7.3.6; Garnet 2.2.4; Kvrocks 2.17.0 (ordinary engine scenarios only)",
+      "runtimeVersion": "Effect 4.0.6; Node 24.22.0 Darwin arm64; Node 24.22.0 Alpine Linux arm64 Unix; Testcontainers 12.2.1; Docker 29.8.2; OpenSSL CLI 4.0.3",
+      "moduleVersions": {
+        "redis-8.10.2/vectorset": "1 (inventory only)",
+        "valkey-9.1.2/lua": "1 (inventory only)",
+        "dragonfly-2.0.2/ReJSON": "20808 (inventory only)",
+        "dragonfly-2.0.2/search": "21015 (inventory only)"
+      },
+      "transport": "controlled bytes; real Node TCP/TLS/Unix; transparent fault proxy",
+      "protocol": "auto HELLO3 negotiation; forced RESP2 replay-loss fixtures; controlled reviewed fallback and RESP3 push/attribute scenarios",
+      "topology": "isolated standalone fixtures only",
+      "authentication": "fixed/Effect credentials; real Redis/Valkey AUTH and mTLS; ACL denial during client naming",
+      "configurationDigest": "41aee0accff5711c074481caacded7e975f92cb34be9786d80b97bfb336da10e"
+    }
   },
   {
     "id": "UNKNOWN",
     "ownerPhase": 4,
     "contract": "Mutation followed by reply loss: no automatic replay",
-    "execution": "not-run",
-    "clock": "none"
+    "execution": "passed",
+    "clock": "mixed",
+    "evidence": {
+      "runId": "phase04-node24-darwin-arm64",
+      "date": "2026-10-25",
+      "configuration": "48 controlled connection cases plus 20 real ordinary-engine cases; 416 offline and 69 total live workspace cases. Mechanical I/O/clock boundaries and disposable pinned standalone engines; no hosted-provider certification.",
+      "scenarioIds": ["CONNECTION-03", "UNKNOWN-01", "UNKNOWN-02"],
+      "artifact": "research/docs/progress/reports/04-connection.md",
+      "engineVersion": "Redis 6.2.19/7.2.11/7.4.6/8.10.2; Valkey 7.2.11/8.0.3/9.1.2; Dragonfly 2.0.2; KeyDB 6.3.4; Redict 7.3.6; Garnet 2.2.4; Kvrocks 2.17.0 (ordinary engine scenarios only)",
+      "runtimeVersion": "Effect 4.0.6; Node 24.22.0 Darwin arm64; Node 24.22.0 Alpine Linux arm64 Unix; Testcontainers 12.2.1; Docker 29.8.2; OpenSSL CLI 4.0.3",
+      "moduleVersions": {
+        "redis-8.10.2/vectorset": "1 (inventory only)",
+        "valkey-9.1.2/lua": "1 (inventory only)",
+        "dragonfly-2.0.2/ReJSON": "20808 (inventory only)",
+        "dragonfly-2.0.2/search": "21015 (inventory only)"
+      },
+      "transport": "controlled bytes; real Node TCP/TLS/Unix; transparent fault proxy",
+      "protocol": "auto HELLO3 negotiation; forced RESP2 replay-loss fixtures; controlled reviewed fallback and RESP3 push/attribute scenarios",
+      "topology": "isolated standalone fixtures only",
+      "authentication": "fixed/Effect credentials; real Redis/Valkey AUTH and mTLS; ACL denial during client naming",
+      "configurationDigest": "41aee0accff5711c074481caacded7e975f92cb34be9786d80b97bfb336da10e"
+    }
   },
   {
     "id": "ADMISSION",
     "ownerPhase": 4,
     "contract": "Count/byte bounds, stalled peer and canceled waiters",
-    "execution": "not-run",
-    "clock": "virtual"
+    "execution": "passed",
+    "clock": "virtual",
+    "evidence": {
+      "runId": "phase04-node24-darwin-arm64",
+      "date": "2026-10-25",
+      "configuration": "48 controlled connection cases plus 20 real ordinary-engine cases; 416 offline and 69 total live workspace cases. Mechanical I/O/clock boundaries and disposable pinned standalone engines; no hosted-provider certification.",
+      "scenarioIds": [
+        "ADMISSION-01",
+        "ADMISSION-02",
+        "ADMISSION-03",
+        "ADMISSION-04",
+        "ADMISSION-05",
+        "ADMISSION-06",
+        "ADMISSION-07",
+        "ADMISSION-08"
+      ],
+      "artifact": "research/docs/progress/reports/04-connection.md",
+      "engineVersion": "Redis 6.2.19/7.2.11/7.4.6/8.10.2; Valkey 7.2.11/8.0.3/9.1.2; Dragonfly 2.0.2; KeyDB 6.3.4; Redict 7.3.6; Garnet 2.2.4; Kvrocks 2.17.0 (ordinary engine scenarios only)",
+      "runtimeVersion": "Effect 4.0.6; Node 24.22.0 Darwin arm64; Node 24.22.0 Alpine Linux arm64 Unix; Testcontainers 12.2.1; Docker 29.8.2; OpenSSL CLI 4.0.3",
+      "moduleVersions": {
+        "redis-8.10.2/vectorset": "1 (inventory only)",
+        "valkey-9.1.2/lua": "1 (inventory only)",
+        "dragonfly-2.0.2/ReJSON": "20808 (inventory only)",
+        "dragonfly-2.0.2/search": "21015 (inventory only)"
+      },
+      "transport": "controlled bytes; real Node TCP/TLS/Unix; transparent fault proxy",
+      "protocol": "auto HELLO3 negotiation; forced RESP2 replay-loss fixtures; controlled reviewed fallback and RESP3 push/attribute scenarios",
+      "topology": "isolated standalone fixtures only",
+      "authentication": "fixed/Effect credentials; real Redis/Valkey AUTH and mTLS; ACL denial during client naming",
+      "configurationDigest": "41aee0accff5711c074481caacded7e975f92cb34be9786d80b97bfb336da10e"
+    }
   },
   {
     "id": "COMMAND",

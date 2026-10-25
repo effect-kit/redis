@@ -14,8 +14,12 @@ import { FixtureError } from "./FixtureError.js";
 import { temporaryDirectory } from "./TemporaryDirectory.js";
 
 /** Shares a Linux Unix socket with an actual Node process, including on macOS Docker hosts. */
-export const unixRuntimeSmoke = Effect.fnUntraced(function* (target: ServerTarget) {
+export const unixRuntimeSmoke = Effect.fnUntraced(function* (
+  target: ServerTarget,
+  program: "bytes" | "connection" = "bytes",
+) {
   const directory = yield* temporaryDirectory;
+  const script = program === "bytes" ? "unix-smoke.ts" : "connection-unix-smoke.ts";
   yield* Effect.tryPromise({
     try: async () => {
       await mkdir(join(directory, "tools"));
@@ -34,8 +38,8 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (target: ServerTarge
         join(directory, "node_modules/effect/package.json"),
       );
       await cp(
-        fileURLToPath(new URL("../../../tools/unix-smoke.ts", import.meta.url)),
-        join(directory, "tools/unix-smoke.ts"),
+        fileURLToPath(new URL(`../../../tools/${script}`, import.meta.url)),
+        join(directory, `tools/${script}`),
       );
       await writeFile(join(directory, "package.json"), '{"type":"module"}');
     },
@@ -47,7 +51,7 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (target: ServerTarge
     .withNetworkMode("none")
     .withBindMounts([{ source: directory, target: "/client", mode: "ro" }])
     .sharedVolume(volume, "/socket")
-    .withCommand(["node", "/client/tools/unix-smoke.ts", "/socket/redis.sock"])
+    .withCommand(["node", `/client/tools/${script}`, "/socket/redis.sock"])
     .withWaitStrategy(Wait.forOneShotStartup())
     .withStartupTimeout(15_000);
   const started = yield* scopedContainer(container);
@@ -72,6 +76,7 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (target: ServerTarge
       node: Schema.NonEmptyString,
       transport: Schema.Literal("unix"),
       exchanges: Schema.Literal(2),
+      engine: Schema.optionalKey(Schema.Literal(true)),
     }),
   )(decoded).pipe(Effect.mapError(() => new FixtureError({ stage: "unix-runtime-result" })));
 });

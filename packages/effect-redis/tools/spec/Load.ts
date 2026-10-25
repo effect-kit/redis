@@ -59,6 +59,7 @@ export const loadSpecification: Effect.Effect<Spec.Specification, SpecificationE
     return {
       protocol: yield* load("protocol.json", Spec.ProtocolProfile),
       transport: yield* load("transport.json", Spec.TransportProfile),
+      connection: yield* load("connection.json", Spec.ConnectionProfile),
       index,
       commands: groups.flat(),
       release: yield* load("release.json", Spec.Release),

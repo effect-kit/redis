@@ -22,6 +22,7 @@ export const allocateServer = Effect.fnUntraced(function* (
   target: ServerTarget,
   options?: {
     readonly tls?: Certificates;
+    readonly password?: Redacted.Redacted<string>;
     readonly extraConfig?: ReadonlyArray<string>;
     readonly readinessMillis?: number;
     readonly unixVolume?: string;
@@ -44,7 +45,10 @@ export const allocateServer = Effect.fnUntraced(function* (
   const profile = serverProfile(target);
   if (
     profile.configuration !== undefined &&
-    (tls !== undefined || options?.unixVolume !== undefined || options?.extraConfig !== undefined)
+    (tls !== undefined ||
+      options?.unixVolume !== undefined ||
+      options?.extraConfig !== undefined ||
+      options?.password !== undefined)
   )
     return yield* new FixtureError({ stage: "unsupported-fixture-mode" });
   const configuration =
@@ -69,6 +73,9 @@ export const allocateServer = Effect.fnUntraced(function* (
       ...(options?.unixVolume === undefined
         ? []
         : ["unixsocket /socket/redis.sock", "unixsocketperm 777"]),
+      ...(options?.password === undefined
+        ? []
+        : [`requirepass ${JSON.stringify(Redacted.value(options.password))}`]),
       ...(options?.extraConfig ?? []),
       "",
     ].join("\n");
@@ -90,7 +97,7 @@ export const allocateServer = Effect.fnUntraced(function* (
   const name = container.fixtureName;
   const port = started.getMappedPort(profile.port);
   const start = Effect.gen(function* () {
-    yield* probe(port, tls).pipe(
+    yield* probe(port, tls, options?.password).pipe(
       Effect.retry({ schedule: Schedule.spaced(50), times: 60 }),
       Effect.timeoutOrElse({
         duration: options?.readinessMillis ?? 10_000,

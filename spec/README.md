@@ -41,6 +41,10 @@ protocol-only execution evidence, kept separate from those target records.
 - `transport.json` defines 36 executable Node networking scenarios. SOCKET evidence
   covers 49 parameterized live cases; it does not mark native engine/command/provider
   conformance targets as passed.
+- `connection.json` defines the phase-04 handshake, admission, ownership, recovery,
+  push and cleanup scenarios, including controlled clock/byte boundaries and real
+  server/compiled Unix execution. These remain ordinary-engine evidence; typed
+  commands, sessions, topologies and providers have their own later gates.
 - `scenarios.json` assigns 31 scenario families. Owning phases add executable IDs,
   setup/assertion/cleanup definitions and actual execution evidence with their code.
 
