@@ -32,7 +32,20 @@ export const scanCommand = <A>(
   flag?: "NOVALUES" | "NOSCORES",
 ) =>
   ordinary(
-    metadata(name, "scan", ["SCAN"], ["Redis/Valkey since 2.8.0; option availability varies"]),
+    metadata(
+      name,
+      { SCAN: "keys", HSCAN: "hashes", SSCAN: "sets", ZSCAN: "sorted-sets" }[name],
+      ["SCAN"],
+      [
+        "Redis/Valkey since 2.8.0",
+        ...(flag === "NOVALUES"
+          ? ["NOVALUES verified: Redis 7.4.6/8.10.2; Valkey 8.0.3/9.1.2"]
+          : []),
+        ...(flag === "NOSCORES"
+          ? ["NOSCORES verified: Valkey 8.0.3/9.1.2; absent from Redis 8.10.2 source baseline"]
+          : []),
+      ],
+    ),
     page(decode),
     Effect.gen(function* () {
       const selected = yield* parse(Options, options);

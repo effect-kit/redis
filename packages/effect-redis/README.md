@@ -13,8 +13,9 @@ ordinary commands across strings, hashes, lists, sets, keys/TTL, sorted sets, bi
 HyperLogLog, geo and arrays, plus custom descriptors and explicit payload codecs.
 There are 187 reviewed ordinary commands; available commands/options depend on the
 actual server. Native sessions add pipelines, transactions, WATCH, connection controls
-and blocking leases; Phase 07 verification is in progress. Scans/Streams, subscriptions
-and topology routing are pending.
+and blocking leases. Scan commands, Redis Streams and scoped consumer workflows are
+implemented; Phase 08 final verification is in progress. Subscriptions and topology
+routing remain pending.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -242,3 +243,54 @@ and 256 commands per batch. Both socket lanes are lazy and separately bounded; t
 ordinary Connection remains separately owned. Existing wire count/byte limits also
 apply. `connection.credentials` captures an Effect credential source for each newly
 opened physical lease connection, or configuration supplies fixed credentials.
+
+Scan commands return typed pages with opaque decimal cursors. `scanKeys`, `scanHash`,
+`scanHashFields`, `scanSet`, `scanSortedSet` and `scanSortedMembers` return lazy Effect
+Streams. Empty nonterminal pages and duplicate values are preserved; COUNT is a hint,
+and scans provide no snapshot/deduplication guarantee. `scanArray` uses ARSCAN's
+ordered index ranges in either direction, with a default LIMIT of 128. UINT64_MAX is
+reserved for the array insertion cursor and cannot be used as an ARSCAN bound.
+
+Redis Streams commands preserve exact IDs and ordered binary field/value pairs.
+Named variants include xaddIfExists, xclaimIds, xautoclaimIds, xpendingEntries,
+xinfoStreamFull and xreadgroupClaim. Nonblocking reads are ordinary Effects; blocking
+reads use `RedisSessions.xreadBlocking`/`xreadgroupBlocking` or a leased client.
+CLAIM readers retain their additional delivery metadata. Older claim responses can
+contain unavailable entries without IDs: Option.none preserves this evidence.
+XAUTOCLAIM's deleted-ID list is also optional because older replies omit it.
+
+`RedisStreams.layer` captures Redis and RedisSessions; compose it over the existing
+native Layer. `makeRedisStreams(redis, sessions)` supports explicit composition.
+
+```ts
+const streamsLive = RedisStreams.layer.pipe(Layer.provideMerge(live));
+
+const events = streams.read([["events", "$"]]);
+const pending = streams.pending("jobs", "workers", "worker-1", { count: 64 });
+const claims = streams.claim("jobs", "workers", "worker-2", 60_000);
+```
+
+`read` resolves $ once and advances concrete per-stream IDs. `readGroup` requests new
+entries; `pending` reads this consumer's history; `claim` emits complete recovery pages,
+including empty continuation pages and deletion evidence. Readers hold dedicated
+blocking capacity, buffer one entry locally, and default to COUNT 64 and a five-second
+server wait. Explicit count/cumulative-size options retain server availability rules.
+Connection failure terminates the reader; resumption/recovery is explicit.
+
+`process(group, messages, handle, options)` acknowledges after the application Effect
+succeeds. `consume(group, consumer, keys, handle, options, readOptions)` first finishes
+this consumer's pending processing, then processes new deliveries. Defaults are one
+worker and one attempt; concurrency is bounded at 256 and attempts at 100. Optional
+onFailure decisions are Retry with an Effect Duration, LeavePending with a redacted
+visible outcome, or explicit Acknowledge. Tombstones require explicit policy; defects,
+interruption and failed acknowledgments never retry the application automatically.
+
+A dead-letter Effect must succeed before an Acknowledge decision. Its write and XACK
+have no implicit atomicity. Processing may succeed before a crash prevents acknowledgment,
+so applications must account for redelivery and external-effect idempotency.
+
+`StreamPayload.field(name, PayloadCodec.json(schema))` selects an explicit single-field
+envelope. `redis.xaddPayload` retains encoding services; payload.decode/decodeGroup
+retain decoding services. Missing, duplicate, malformed and tombstoned payload fields
+fail with PayloadError. Raw stream entries remain available and no raw value is
+implicitly JSON-encoded or acknowledged because decoding failed.

@@ -30,6 +30,14 @@ export const makeRedisSessions = Effect.fnUntraced(function* <R = never>(
       return Effect.suspend(() => body(session.client)).pipe(Effect.onExit(() => session.finish));
     });
 
+  const withBlockingSession = <A, E, RUse>(
+    body: (session: RedisSession) => Effect.Effect<A, E, RUse>,
+  ) =>
+    pool.use("blocking", (wire) => {
+      const session = makeSession(wire, policy);
+      return Effect.suspend(() => body(session.client)).pipe(Effect.onExit(() => session.finish));
+    });
+
   const batches: BatchExecutorService = {
     pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
       prepareBatch(commands, policy.maxBatchCommands).pipe(
@@ -74,6 +82,7 @@ export const makeRedisSessions = Effect.fnUntraced(function* <R = never>(
     executeBlocking: blockingExecutor.execute,
     ...batches,
     withSession,
+    withBlockingSession,
     watch: <A, E, RUse>(
       keys: readonly [RedisArgument, ...RedisArgument[]],
       body: (session: RedisSession) => Effect.Effect<A, E, RUse>,

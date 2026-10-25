@@ -5,24 +5,16 @@ import { array } from "#/command/reply/Collections";
 import { unsigned } from "#/command/reply/Data";
 import { optional, status } from "#/command/reply/Scalars";
 import { keyed } from "#/commands/internal/Command";
-import { Argument, Pairs, parse, Positive } from "#/commands/internal/Input";
+import { Pairs, parse, Positive } from "#/commands/internal/Input";
 import { catalog } from "#/commands/streams/Catalog";
 import { AddId, streamId, StreamBound } from "#/commands/streams/Id";
+import { AddOptions } from "#/commands/streams/internal/AddOptions";
+import type { StreamAddOptions } from "#/commands/streams/internal/AddOptions";
 import { entry } from "#/commands/streams/reply/Entries";
-import { ReferencePolicy, Trim, trimTokens } from "#/commands/streams/Trim";
+import { trimTokens } from "#/commands/streams/Trim";
 import type { RedisArgument } from "#/RedisArgument";
 
-const AddOptions = Schema.Struct({
-  trim: Schema.optionalKey(Trim),
-  references: Schema.optionalKey(ReferencePolicy),
-  idempotency: Schema.optionalKey(
-    Schema.Union([
-      Schema.Struct({ mode: Schema.Literal("IDMPAUTO"), producer: Argument }),
-      Schema.Struct({ mode: Schema.Literal("IDMP"), producer: Argument, id: Argument }),
-    ]),
-  ),
-});
-export type StreamAddOptions = typeof AddOptions.Type;
+export type { StreamAddOptions } from "#/commands/streams/internal/AddOptions";
 export type StreamFieldInput = readonly [
   readonly [RedisArgument, RedisArgument],
   ...Array<readonly [RedisArgument, RedisArgument]>,

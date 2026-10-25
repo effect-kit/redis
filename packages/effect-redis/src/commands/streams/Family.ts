@@ -1,9 +1,20 @@
 import type { RedisExecutor } from "#/command/Executor";
+import type { StreamAddOptions } from "#/commands/streams/Entries";
+import type { AddId } from "#/commands/streams/Id";
 import * as Commands from "#/commands/streams/index";
 import { streamReadFamily } from "#/commands/streams/ReadFamily";
+import type { RedisArgument } from "#/RedisArgument";
+import type { StreamPayload } from "#/streams/Payload";
 
 export const streamFamily = (executor: RedisExecutor) => ({
   ...streamReadFamily(executor),
+  xaddPayload: <A, RD, RE>(
+    key: RedisArgument,
+    id: AddId,
+    payload: StreamPayload<A, RD, RE>,
+    value: NoInfer<A>,
+    options?: StreamAddOptions,
+  ) => executor.execute(Commands.xaddPayload(key, id, payload, value, options)),
   xadd: (...args: Parameters<typeof Commands.xadd>) => executor.execute(Commands.xadd(...args)),
   xaddIfExists: (...args: Parameters<typeof Commands.xaddIfExists>) =>
     executor.execute(Commands.xaddIfExists(...args)),

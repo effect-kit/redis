@@ -154,3 +154,13 @@ export type { ClaimOptions, AutoClaimOptions } from "#/commands/streams/Claims";
 export type { PendingOptions } from "#/commands/streams/Pending";
 export type { GroupCreateOptions, GroupSetIdOptions, GroupStart } from "#/commands/streams/Groups";
 export type { StreamIds, StreamNackOptions } from "#/commands/streams/Retention";
+
+export { RedisStreams, makeRedisStreams } from "#/streams/RedisStreams";
+export type { RedisStreamsClient } from "#/streams/RedisStreams";
+export { StreamConsumerError } from "#/errors/StreamConsumerError";
+export type { StreamMessage, GroupMessage, ProcessingOutcome } from "#/streams/Types";
+export type { ContinuousReadStreams, ReaderOptions, GroupReaderKeys } from "#/streams/Reader";
+export type { FailureDecision, ProcessingOptions } from "#/streams/Processing";
+export * as StreamPayload from "#/streams/Payload";
+
+export type { PendingReadOptions } from "#/streams/Recovery";

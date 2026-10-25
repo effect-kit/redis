@@ -5,3 +5,5 @@ export * from "#/commands/streams/Read";
 export * from "#/commands/streams/Pending";
 export * from "#/commands/streams/Claims";
 export * from "#/commands/streams/Info";
+
+export { xaddPayload } from "#/commands/streams/Payload";
