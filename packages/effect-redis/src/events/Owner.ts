@@ -2,6 +2,7 @@ import { Context, Effect, Exit, Scope } from "effect";
 import type { Cause } from "effect";
 
 import type { ConnectionOptions } from "#/connection/Options";
+import { RoleExpectation } from "#/connection/Role";
 import { RedisConfigError } from "#/errors/RedisConfigError";
 import type { EventError } from "#/events/Types";
 import { makeEventWire } from "#/events/Wire";
@@ -29,6 +30,7 @@ export const makeEventOwner = Effect.fnUntraced(function* <R>(
     });
 
   const transport = yield* Transport;
+  const expectedRole = yield* RoleExpectation;
   const context = yield* Effect.context<R>();
   const parent = yield* Effect.scope;
   let resource: Scope.Closeable | undefined;
@@ -73,6 +75,7 @@ export const makeEventOwner = Effect.fnUntraced(function* <R>(
         (reply, cost) => receive(reply, cost, id),
         (cause) => failed(cause, id),
         maxWaiters,
+        expectedRole,
       ).pipe(Scope.provide(scope), Effect.provideService(Transport, transport)),
     );
 

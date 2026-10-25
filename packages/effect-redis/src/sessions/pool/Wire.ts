@@ -7,6 +7,7 @@ import { handshake } from "#/connection/Handshake";
 import type { ConnectionPolicy } from "#/connection/Options";
 import type { ConnectionOptions } from "#/connection/Options";
 import { makeReplyReader } from "#/connection/ReplyReader";
+import { RoleExpectation } from "#/connection/Role";
 import { AdmissionError } from "#/errors/AdmissionError";
 import { BatchError } from "#/errors/BatchError";
 import { ConnectionError } from "#/errors/ConnectionError";
@@ -30,6 +31,7 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
 ) {
   const { credentials } = options;
   const transport = yield* Transport;
+  const expectedRole = yield* RoleExpectation;
   const admission = new Admission(config.limits);
 
   const physical = yield* transport.open(config);
@@ -59,6 +61,7 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
     credentials ?? Effect.succeed(config.credentials),
     generation.push,
     id,
+    expectedRole,
   ).pipe(
     Effect.timeoutOrElse({
       duration: config.connectTimeoutMillis,

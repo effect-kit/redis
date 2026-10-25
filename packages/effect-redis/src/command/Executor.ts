@@ -8,6 +8,7 @@ import type { RedisConnection } from "#/connection/Connection";
 import type { ClusterError } from "#/errors/ClusterError";
 import type { CommandInputError } from "#/errors/CommandInputError";
 import type { ReplyError } from "#/errors/ReplyError";
+import type { SentinelError } from "#/errors/SentinelError";
 import type { ServerError } from "#/errors/ServerError";
 import type { SessionError } from "#/errors/SessionError";
 import { UnsupportedCommandError } from "#/errors/UnsupportedCommandError";
@@ -19,6 +20,7 @@ export type RedisError =
   | ReplyError
   | SessionError
   | ClusterError
+  | SentinelError
   | UnsupportedCommandError;
 
 export interface RedisExecutor {

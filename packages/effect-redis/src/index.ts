@@ -20,6 +20,15 @@ export type {
 export { keySlot } from "#/cluster/Slot";
 export { ClusterError } from "#/errors/ClusterError";
 
+export { RedisSentinel, makeRedisSentinel } from "#/sentinel/RedisSentinel";
+export type { RedisSentinelClient } from "#/sentinel/RedisSentinel";
+export { decodeSentinelConfig } from "#/sentinel/Config";
+export type { SentinelConfig } from "#/sentinel/Config";
+export type { SentinelOptions } from "#/sentinel/Options";
+export type { SentinelAddress } from "#/commands/sentinel/Discovery";
+export type { SentinelView } from "#/sentinel/discovery/Discovery";
+export { SentinelError } from "#/errors/SentinelError";
+
 export { RedisConfigError } from "#/errors/RedisConfigError";
 export { TransportError } from "#/errors/TransportError";
 

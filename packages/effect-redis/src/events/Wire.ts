@@ -3,6 +3,7 @@ import { Cause, Deferred, Effect, Exit, Fiber, Redacted, Semaphore } from "effec
 import { handshake } from "#/connection/Handshake";
 import type { ConnectionOptions } from "#/connection/Options";
 import { makeReplyReader } from "#/connection/ReplyReader";
+import type { ExpectedRole } from "#/connection/Role";
 import { ConnectionError } from "#/errors/ConnectionError";
 import { HandshakeError } from "#/errors/HandshakeError";
 import { SubscriptionError } from "#/errors/SubscriptionError";
@@ -26,6 +27,7 @@ export const makeEventWire = Effect.fnUntraced(function* <R>(
   receive: (reply: RespValue, cost: number) => Effect.Effect<boolean, EventError>,
   failed: (cause: Cause.Cause<EventError>) => void,
   maxWaiters: number,
+  expectedRole?: ExpectedRole,
 ) {
   if (options.credentials !== undefined && config.credentials !== undefined)
     return yield* new HandshakeError({
@@ -82,6 +84,7 @@ export const makeEventWire = Effect.fnUntraced(function* <R>(
         ),
       ),
     id,
+    expectedRole,
   ).pipe(
     Effect.timeoutOrElse({
       duration: config.connectTimeoutMillis,

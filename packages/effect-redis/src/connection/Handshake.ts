@@ -2,6 +2,8 @@ import { Effect, Redacted, Schema } from "effect";
 
 import { Credentials } from "#/config/Endpoint";
 import type { ReplyReader } from "#/connection/ReplyReader";
+import { verifyRole } from "#/connection/Role";
+import type { ExpectedRole } from "#/connection/Role";
 import { ConnectionError } from "#/errors/ConnectionError";
 import { HandshakeError } from "#/errors/HandshakeError";
 import { encodeCommand } from "#/protocol/encode";
@@ -38,6 +40,7 @@ export const handshake = Effect.fnUntraced(function* <R = never>(
   credentials: Effect.Effect<typeof Credentials.Type | undefined, HandshakeError, R>,
   push: (reply: RespValue, cost: number) => Effect.Effect<void, ConnectionError>,
   generation: number,
+  expectedRole?: ExpectedRole,
 ) {
   const exchange = Effect.fnUntraced(function* (command: RedisCommand) {
     yield* transport.write(yield* Effect.fromResult(encodeCommand(command, config.limits)));
@@ -116,6 +119,8 @@ export const handshake = Effect.fnUntraced(function* <R = never>(
   if (config.clientName !== undefined)
     yield* expectOk("name", ["CLIENT", "SETNAME", config.clientName]);
   if (config.database !== 0) yield* expectOk("database", ["SELECT", String(config.database)]);
+
+  if (expectedRole !== undefined) yield* verifyRole(yield* exchange(["ROLE"]), expectedRole);
 
   return protocol;
 });

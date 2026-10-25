@@ -18,6 +18,7 @@ export default defineConfig({
       "test/integration/admin/**/*.test.ts",
       "test/integration/diagnostics/**/*.test.ts",
       "test/integration/cluster/**/*.test.ts",
+      "test/integration/sentinel/**/*.test.ts",
     ],
     passWithNoTests: false,
     testTimeout: 5000,

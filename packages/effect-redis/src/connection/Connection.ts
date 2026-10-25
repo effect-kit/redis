@@ -21,6 +21,7 @@ import { decodePolicy } from "#/connection/Options";
 import type { ConnectionOptions } from "#/connection/Options";
 import { checkOrdinary } from "#/connection/OrdinaryCommand";
 import { makeReplyReader } from "#/connection/ReplyReader";
+import { RoleExpectation } from "#/connection/Role";
 import { AdmissionError } from "#/errors/AdmissionError";
 import { ConnectionError } from "#/errors/ConnectionError";
 import { HandshakeError } from "#/errors/HandshakeError";
@@ -72,6 +73,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
   options?: ConnectionOptions<R>,
 ) {
   const transport = yield* Transport;
+  const expectedRole = yield* RoleExpectation;
   const context = yield* Effect.context<R>();
 
   const { credentials, ...policyInput } = options ?? {};
@@ -147,6 +149,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
             identity(resourceScope),
             next.push,
             id,
+            expectedRole,
           );
 
           return { next, negotiated };
