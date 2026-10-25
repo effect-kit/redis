@@ -4,13 +4,14 @@ import { Effect, Option, Redacted } from "effect";
 import { Commands, makeRedisAdmin } from "#/index";
 import { atLeast, primaryCases } from "#test/support/commands/Backend";
 import { bytes } from "#test/support/commands/CoreCase";
+import { recordFixture } from "#test/support/servers/Evidence";
 import { sessionBackend } from "#test/support/sessions/Backend";
 
 it.live.each(primaryCases)(
   "ADMIN: $target.fixture $protocol explicit inspection, secrets and version gaps",
   ({ target, protocol }) =>
     Effect.gen(function* () {
-      const { sessions, redis, prefix } = yield* sessionBackend(target, protocol);
+      const { sessions, redis, prefix, server } = yield* sessionBackend(target, protocol);
       const admin = makeRedisAdmin(sessions);
       const key = `${prefix}:memory`;
       yield* redis.set(key, "value");
@@ -75,6 +76,8 @@ it.live.each(primaryCases)(
       expect(Redacted.value(yield* admin.configGet(["maxmemory"]))).toHaveLength(1);
       expect(yield* admin.configHelp()).not.toHaveLength(0);
       expect(yield* admin.echo(new Uint8Array([0, 255]))).toEqual(new Uint8Array([0, 255]));
+      expect(yield* redis.echo(new Uint8Array([0, 255]))).toEqual(new Uint8Array([0, 255]));
+      expect(yield* redis.pingMessage("")).toEqual(new Uint8Array());
 
       yield* sessions.withSession((session) =>
         Effect.gen(function* () {
@@ -101,5 +104,14 @@ it.live.each(primaryCases)(
       expect(yield* admin.clientKill({ id: 9223372036854775807n, skipMe: true })).toBe(0n);
       yield* admin.clientPause(1, "WRITE");
       yield* admin.clientUnpause();
+      yield* recordFixture(`phase10-admin-inspection-${target.fixture}-${protocol}`, {
+        fixture: target.fixture,
+        version: target.version,
+        image: target.reference,
+        protocol,
+        build: server.build,
+        configurationDigest: server.configurationDigest,
+        scenarios: ["ADMIN-INSPECTION"],
+      });
     }),
 );

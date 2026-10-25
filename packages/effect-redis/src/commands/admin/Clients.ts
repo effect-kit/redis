@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import { boolean, unsigned } from "#/command/reply/Data";
-import { blob, integer, optional, status, text } from "#/command/reply/Scalars";
+import { integer, optional, status, text } from "#/command/reply/Scalars";
 import { help, nodeCommand, reportText, sensitive } from "#/commands/admin/Build";
 import { Argument, NonNegative, Positive, parse } from "#/commands/internal/Input";
 import type { Integer } from "#/commands/internal/Input";
@@ -19,8 +19,7 @@ export const clientGetName = () => nodeCommand("CLIENT GETNAME", optional(text))
 export const clientGetRedir = () => nodeCommand("CLIENT GETREDIR", integer);
 export const clientInfo = () => nodeCommand("CLIENT INFO", sensitive(reportText));
 export const clientHelp = () => nodeCommand("CLIENT HELP", help);
-export const echo = (value: RedisArgument) =>
-  nodeCommand("ECHO", blob, parse(Argument, value).pipe(Effect.map((selected) => [selected])));
+export { echo } from "#/commands/connection/Echo";
 
 export const clientList = (options: ClientListOptions = {}) =>
   nodeCommand(

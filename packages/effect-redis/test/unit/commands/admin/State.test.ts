@@ -34,6 +34,7 @@ adminCases("client", [
   { command: Commands.clientHelp(), tokens: ["CLIENT", "HELP"], reply: array(), expected: [] },
   {
     command: Commands.echo(bytes("binary")),
+    execution: "ordinary",
     tokens: ["ECHO", bytes("binary")],
     reply: blob("binary"),
     expected: bytes("binary"),

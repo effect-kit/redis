@@ -9,6 +9,7 @@ export interface AdminCase {
   readonly tokens: RedisCommand;
   readonly reply: RespValue;
   readonly expected: unknown;
+  readonly execution?: "ordinary" | "exclusive";
 }
 
 export const adminCases = (group: string, cases: ReadonlyArray<AdminCase>) => {
@@ -20,7 +21,7 @@ export const adminCases = (group: string, cases: ReadonlyArray<AdminCase>) => {
           const prepared = yield* scenario.command.prepare;
 
           expect(prepared.tokens).toEqual(scenario.tokens);
-          expect(prepared.metadata.execution).toBe("exclusive");
+          expect(prepared.metadata.execution).toBe(scenario.execution ?? "exclusive");
           expect(prepared.metadata.replay).toBe("never");
           const result = yield* prepared.decode(scenario.reply);
           const decoded = Redacted.isRedacted(result) ? Redacted.value(result) : result;
