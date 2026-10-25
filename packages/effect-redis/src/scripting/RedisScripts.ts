@@ -11,12 +11,15 @@ import type { ServerError } from "#/errors/ServerError";
 import { SessionError } from "#/errors/SessionError";
 import type { RespValue } from "#/protocol/RespValue";
 import type { RedisScript } from "#/scripting/RedisScript";
+import { snapshotArguments } from "#/scripting/Snapshot";
 import { RedisSessions } from "#/sessions/RedisSessions";
 import type { RedisSessionsClient } from "#/sessions/RedisSessions";
 import type { RedisSession } from "#/sessions/Session";
 
 export interface ScriptOptions {
   readonly maxConcurrentLoads?: number;
+  /** Additional binary-argument ownership per active lease; immutable strings are borrowed. */
+  readonly maxSnapshotBytes?: number;
 }
 
 const missingScript = (error: ServerError) => {
@@ -41,11 +44,16 @@ export const makeRedisScripts = Effect.fnUntraced(function* (
   sessions: RedisSessionsClient,
   options: ScriptOptions = {},
 ) {
-  const { maxConcurrentLoads } = yield* parse(
+  const { maxConcurrentLoads, maxSnapshotBytes } = yield* parse(
     Schema.Struct({
-      maxConcurrentLoads: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 65536 })),
+      maxConcurrentLoads: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 65536 })).pipe(
+        Schema.withDecodingDefaultKey(Effect.succeed(64)),
+      ),
+      maxSnapshotBytes: Schema.Int.check(
+        Schema.isBetween({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }),
+      ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(16 * 1024 * 1024))),
     }),
-    { maxConcurrentLoads: options.maxConcurrentLoads ?? 64 },
+    options,
   );
   // This coordinator belongs to one backend/DB identity, never a process-global cache.
   const loads = new Map<string, Deferred.Deferred<void, RedisError>>();
@@ -90,31 +98,28 @@ export const makeRedisScripts = Effect.fnUntraced(function* (
     input: ScriptArguments,
   ) {
     const selected = yield* parse(Invocation, input);
-    // Freeze caller-owned binary intent before waiting for a lease or a concurrent load.
-    const snapshot = {
-      keys: selected.keys.map((key) => (typeof key === "string" ? key : key.slice())),
-      args: (selected.args ?? []).map((arg) => (typeof arg === "string" ? arg : arg.slice())),
-    };
+    const reply = yield* sessions.withSession((session) =>
+      Effect.gen(function* () {
+        // Pool admission bounds retained copies; queued callers still borrow their original intent.
+        const snapshot = yield* snapshotArguments(selected, maxSnapshotBytes);
+        const prepared = yield* invocation(
+          script.readOnly ? "EVALSHA_RO" : "EVALSHA",
+          script.sha1,
+          snapshot,
+          Effect.succeed,
+        ).prepare;
+        const run = session.executePrepared(prepared);
 
-    const prepared = yield* invocation(
-      script.readOnly ? "EVALSHA_RO" : "EVALSHA",
-      script.sha1,
-      snapshot,
-      Effect.succeed,
-    ).prepare;
+        return yield* run.pipe(
+          Effect.catchTag("ServerError", (error) => {
+            if (!missingScript(error)) return Effect.fail(error);
 
-    const reply = yield* sessions.withSession((session) => {
-      const run = session.executePrepared(prepared);
-
-      return run.pipe(
-        Effect.catchTag("ServerError", (error) => {
-          if (!missingScript(error)) return Effect.fail(error);
-
-          // Definite rejection proves this call did not execute. A second rejection is returned as-is.
-          return load(session, script).pipe(Effect.andThen(run));
-        }),
-      );
-    });
+            // Definite rejection proves this call did not execute. A second rejection is returned as-is.
+            return load(session, script).pipe(Effect.andThen(run));
+          }),
+        );
+      }),
+    );
 
     // Application decoder errors cannot authorize wire replay.
     return yield* script.decode(reply);

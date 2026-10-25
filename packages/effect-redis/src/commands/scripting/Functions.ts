@@ -88,5 +88,7 @@ export const functionFlush = (mode?: ScriptFlushMode) =>
   );
 
 export const functionKill = () => command("KILL", status("OK"));
+
 export const functionHelp = () => command("HELP", array(simpleText));
+
 export const functionStats = () => command("STATS", fields);

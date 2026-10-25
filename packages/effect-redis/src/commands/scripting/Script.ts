@@ -23,9 +23,9 @@ export const scriptLoad = (source: RedisArgument) =>
     ),
   );
 
-export const scriptExists = (digests: ReadonlyArray<string>) => ({
+export const scriptExists = (digests: readonly [string, ...string[]]) => ({
   prepare: Effect.gen(function* () {
-    const values = yield* parse(Schema.Array(Schema.String), digests);
+    const values = yield* parse(Schema.NonEmptyArray(Schema.String), digests);
 
     return yield* ordinary(
       metadata("SCRIPT EXISTS", "scripting", ["SCRIPT"]),
@@ -67,7 +67,7 @@ export const scriptHelp = () =>
 /** Valkey extension. An absent digest remains a server error rather than a fabricated body. */
 export const scriptShow = (digest: string) =>
   ordinary(
-    metadata("SCRIPT SHOW", "scripting", ["SCRIPT"], ["Valkey extension"]),
+    metadata("SCRIPT SHOW", "scripting", ["SCRIPT"], ["Valkey since 8.0.0"]),
     blob,
     parse(Schema.String, digest).pipe(
       Effect.map((sha) => ({

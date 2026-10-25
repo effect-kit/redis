@@ -11,7 +11,7 @@ export interface RedisScript<A, E = never, R = never> {
   readonly decode: ReplyDecoder<A, E, R>;
 }
 
-/** SHA-1 is the Redis script identifier, not a password/security digest. */
+/** SHA-1 identifies Redis scripts. Source must not forge Redis's reserved NOSCRIPT response. */
 export const make = Effect.fnUntraced(function* <A, E, R>(input: {
   readonly source: RedisArgument;
   readonly decode: ReplyDecoder<A, E, R>;

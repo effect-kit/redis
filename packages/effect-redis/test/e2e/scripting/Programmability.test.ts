@@ -1,7 +1,8 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Option } from "effect";
 
-import { Commands, makeRedisScripts, RedisScript, Reply } from "#/index";
+import { Commands, makeRedisScripts, makeRedisSessions, RedisScript, Reply } from "#/index";
+import { layer } from "#/node";
 import { atLeast, primaryCases } from "#test/support/commands/Backend";
 import { bytes } from "#test/support/commands/CoreCase";
 import { cryptoLayer } from "#test/support/commands/Crypto";
@@ -11,7 +12,7 @@ it.live.each(primaryCases)(
   "SCRIPT: $target.fixture $protocol lifecycle, cache loss and no mutation replay",
   ({ target, protocol }) =>
     Effect.gen(function* () {
-      const { redis, sessions, prefix } = yield* sessionBackend(target, protocol);
+      const { redis, sessions, config, prefix } = yield* sessionBackend(target, protocol);
       const scripts = yield* makeRedisScripts(sessions);
       const script = yield* RedisScript.make({
         source: "return redis.call('INCR', KEYS[1])",
@@ -78,6 +79,31 @@ it.live.each(primaryCases)(
       ]);
       expect(piped[0]).toMatchObject({ _tag: "Failure", failure: { code: "NOSCRIPT" } });
       expect(yield* redis.get(key)).toEqual(Option.some("5"));
+
+      const parallel = yield* makeRedisSessions(config, { maxSessionConnections: 4 }).pipe(
+        Effect.provide(layer),
+      );
+      const coordinated = yield* makeRedisScripts(parallel);
+      const raceKey = `${prefix}:concurrent`;
+      const increments = yield* Effect.forEach(
+        Array.from({ length: 10 }),
+        () => coordinated.execute(script, { keys: [raceKey] }),
+        { concurrency: 4 },
+      );
+
+      expect(increments.toSorted((a, b) => (a < b ? -1 : a > b ? 1 : 0))).toEqual([
+        1n,
+        2n,
+        3n,
+        4n,
+        5n,
+        6n,
+        7n,
+        8n,
+        9n,
+        10n,
+      ]);
+      expect(yield* redis.get(raceKey)).toEqual(Option.some("10"));
     }),
 );
 

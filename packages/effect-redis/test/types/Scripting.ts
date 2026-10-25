@@ -34,3 +34,5 @@ Commands.evalScript<number>("return 1", { keys: [] });
 Commands.fcall("f", {}, Reply.integer);
 // @ts-expect-error Binary data must remain bytes or explicitly encoded text.
 Commands.evalSha("sha", { keys: [], args: [12] }, Reply.integer);
+// @ts-expect-error SCRIPT EXISTS requires at least one digest.
+Commands.scriptExists([]);

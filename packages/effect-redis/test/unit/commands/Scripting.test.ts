@@ -183,7 +183,7 @@ it.effect("SCRIPT: key access, arity snapshots and malformed options remain expl
 
     expect(prepared.tokens).toEqual(["EVALSHA_RO", "sha", "1", "a"]);
     expect(prepared.routing).toEqual({ _tag: "Keys", keys: [{ index: 3, access: "read" }] });
-    const digests = ["sha"];
+    const digests: [string, ...string[]] = ["sha"];
     const exists = yield* Commands.scriptExists(digests).prepare;
     digests.push("later");
     expect(yield* Effect.flip(exists.decode(array(integer(1n), integer(0n))))).toMatchObject({
