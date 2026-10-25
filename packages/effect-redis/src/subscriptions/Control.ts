@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import { checkServerReply } from "#/command/Decode";
+import { undecorate } from "#/command/reply/Scalars";
 import { SubscriptionError } from "#/errors/SubscriptionError";
 import type { EventWire } from "#/events/Wire";
 import { byteIdentity, eventFrame } from "#/subscriptions/Frames";
@@ -13,7 +14,9 @@ export const subscriptionControl = Effect.fnUntraced(function* (
   const remaining = new Set(targets.map(byteIdentity));
   const reply = yield* wire.request([kind.toUpperCase(), ...targets], (value, handled) =>
     Effect.gen(function* () {
-      yield* checkServerReply(value);
+      const scalar = undecorate(value);
+      // Definite rejection completes this control; existing acknowledged interests remain valid.
+      if (scalar._tag === "SimpleError" || scalar._tag === "BlobError") return true;
       const frame = yield* eventFrame(value);
       if (frame?._tag !== "Acknowledgment") {
         if (!handled)

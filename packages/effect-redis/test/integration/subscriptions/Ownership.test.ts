@@ -7,6 +7,26 @@ import { acknowledgment, channelMessage, pubsubFixture } from "#test/support/sub
 import { makeControlledTransport } from "#test/support/transport/ControlledTransport";
 
 it.effect(
+  "PUSH: rejected unsubscribe fails its close receipt and remains visible at service disposal",
+  () =>
+    Effect.gen(function* () {
+      const scope = yield* Scope.make();
+      yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
+      const fixture = yield* pubsubFixture().pipe(Scope.provide(scope));
+      const opening = yield* Effect.forkChild(fixture.pubsub.subscribe(["c"]));
+      yield* sent(fixture.primary, ["SUBSCRIBE", "c"], acknowledgment("subscribe"));
+      const subscription = yield* Fiber.join(opening);
+      const closing = yield* Effect.forkChild(Effect.flip(subscription.close()));
+      yield* sent(fixture.primary, ["UNSUBSCRIBE", "c"], "-NOPERM unsubscribe denied\r\n");
+
+      expect(yield* Fiber.join(closing)).toMatchObject({ _tag: "ServerError", code: "NOPERM" });
+      const disposed = yield* Effect.exit(Scope.close(scope, Exit.void));
+      expect(disposed._tag).toBe("Failure");
+      if (Exit.isFailure(disposed)) expect(Cause.hasDies(disposed.cause)).toBe(true);
+    }),
+);
+
+it.effect(
   "PUSH: simultaneous consumers fail explicitly rather than splitting a subscription stream",
   () =>
     Effect.gen(function* () {

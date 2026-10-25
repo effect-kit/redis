@@ -4,6 +4,28 @@ import { Deferred, Effect, Fiber, Stream } from "effect";
 import { bytes, sent } from "#test/support/connection/Controlled";
 import { acknowledgment, channelMessage, pubsubFixture } from "#test/support/subscriptions/Fixture";
 
+it.effect("PUSH: a rejected new subscription preserves existing acknowledged listeners", () =>
+  Effect.gen(function* () {
+    const fixture = yield* pubsubFixture();
+    const first = yield* Effect.forkChild(fixture.pubsub.subscribe(["c"]));
+    yield* sent(fixture.primary, ["SUBSCRIBE", "c"], acknowledgment("subscribe"));
+    const subscription = yield* Fiber.join(first);
+    const unsupported = yield* Effect.forkChild(Effect.flip(fixture.pubsub.ssubscribe(["other"])));
+    yield* sent(fixture.primary, ["SSUBSCRIBE", "other"], "-ERR unsupported subscription\r\n");
+
+    expect(yield* Fiber.join(unsupported)).toMatchObject({
+      _tag: "ServerError",
+      delivery: "replied",
+    });
+    yield* fixture.primary.receive(bytes(channelMessage("still-live")));
+    expect(yield* Stream.runCollect(subscription.messages.pipe(Stream.take(1)))).toMatchObject([
+      { payload: bytes("still-live"), generation: 1 },
+    ]);
+    expect(fixture.opens()).toBe(1);
+    yield* fixture.finish;
+  }),
+);
+
 it.effect("PUSH: acquisition waits for every acknowledgment and then exposes messages", () =>
   Effect.gen(function* () {
     const fixture = yield* pubsubFixture();

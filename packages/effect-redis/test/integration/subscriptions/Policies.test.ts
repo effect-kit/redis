@@ -6,6 +6,25 @@ import { bytes, sent } from "#test/support/connection/Controlled";
 import { acknowledgment, pubsubFixture } from "#test/support/subscriptions/Fixture";
 
 it.effect(
+  "PUSH: canceling a queued acquisition leaves the current acknowledgment owner intact",
+  () =>
+    Effect.gen(function* () {
+      const fixture = yield* pubsubFixture({ maxWaiters: 2 });
+      const first = yield* Effect.forkChild(fixture.pubsub.subscribe(["c"]));
+      yield* sent(fixture.primary, ["SUBSCRIBE", "c"]);
+      const queued = yield* Effect.forkChild(fixture.pubsub.subscribe(["d"]));
+      yield* Effect.yieldNow;
+      yield* Fiber.interrupt(queued);
+      yield* fixture.primary.receive(bytes(acknowledgment("subscribe")));
+      yield* Fiber.join(first);
+
+      expect((yield* fixture.primary.written).length).toBe(1);
+      expect(yield* fixture.pubsub.snapshot).toMatchObject({ listeners: 1, interests: 1 });
+      yield* fixture.finish;
+    }),
+);
+
+it.effect(
   "PUSH: full control admission rejects an unregistered listener without cleanup defects",
   () =>
     Effect.gen(function* () {

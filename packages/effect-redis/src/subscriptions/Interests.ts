@@ -1,6 +1,7 @@
-import type { Scope } from "effect";
+import type { Deferred, Scope } from "effect";
 
 import type { Mailbox } from "#/events/Mailbox";
+import type { EventError } from "#/events/Types";
 import { byteIdentity, sameBytes } from "#/subscriptions/Frames";
 import type { EventFrame, SubscriptionMode } from "#/subscriptions/Frames";
 import type { SubscribeOptions, SubscriptionEvent } from "#/subscriptions/Types";
@@ -15,6 +16,7 @@ export interface Interest {
 
 export interface Listener {
   readonly scope: Scope.Closeable;
+  readonly released: Deferred.Deferred<void, EventError>;
   readonly mode: SubscriptionMode;
   readonly interests: Interest[];
   readonly recovery: NonNullable<SubscribeOptions["recovery"]>;

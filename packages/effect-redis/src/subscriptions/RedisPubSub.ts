@@ -1,8 +1,8 @@
 import {
   Cause,
   Context,
+  Deferred,
   Effect,
-  Exit,
   Layer,
   Queue,
   Schedule,
@@ -30,12 +30,12 @@ import {
   byteIdentity,
   eventFrame,
   subscribeKind,
-  unsubscribeKind,
 } from "#/subscriptions/Frames";
 import { copyMessage, interestId, messageMatches } from "#/subscriptions/Interests";
 import type { Interest, Listener } from "#/subscriptions/Interests";
 import { decodeSubscriptionPolicy } from "#/subscriptions/Options";
 import type { SubscriptionOptions } from "#/subscriptions/Options";
+import { makeSubscriptionReleases } from "#/subscriptions/Releases";
 import type { PubSubMessage, SubscribeOptions, SubscriptionEvent } from "#/subscriptions/Types";
 
 const Selection = Schema.Struct({
@@ -52,7 +52,6 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
   const wake = yield* Queue.make<void>({ capacity: 1, strategy: "dropping" });
   const interests = new Map<string, Interest>();
   const listeners = new Set<Listener>();
-  const retiring = new Set<Listener>();
   const budget = { bytes: 0, maximum: policy.maxRetainedBytes };
   let stopped = false;
 
@@ -61,14 +60,8 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
     readonly value: RespValue;
   }>(policy.maxMessages, policy.maxBytes, budget, () => owner.generation());
 
-  const failListener = (listener: Listener, cause: Cause.Cause<EventError>) => {
-    listener.closed = true;
-    retiring.add(listener);
-    listener.mailbox.fail(cause);
-    listeners.delete(listener);
-    for (const interest of interests.values()) interest.listeners.delete(listener);
-    if (!stopped) Queue.offerUnsafe(wake, undefined);
-  };
+  const failListener = (listener: Listener, cause: Cause.Cause<EventError>): void =>
+    releases.fail(listener, cause);
 
   const failed = (cause: Cause.Cause<EventError>, generation: number) => {
     for (const interest of interests.values()) interest.active = false;
@@ -165,34 +158,13 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
     return wire;
   });
 
-  const prune = Effect.gen(function* () {
-    for (const [key, interest] of interests) {
-      if (interest.listeners.size > 0) continue;
-      const wire = owner.current();
-      if (interest.active && wire?.isReady())
-        yield* subscriptionControl(wire, unsubscribeKind(interest.mode), [interest.target]);
-      interests.delete(key);
-    }
-    for (const listener of retiring) {
-      retiring.delete(listener);
-      yield* Scope.close(listener.scope, Exit.void);
-    }
+  const releases = makeSubscriptionReleases({
+    interests,
+    listeners,
+    wake,
+    current: owner.current,
+    generation: owner.generation,
   });
-
-  const remove = (listener: Listener) =>
-    Effect.suspend(() => {
-      if (listener.closed) return Effect.void;
-      listener.closed = true;
-      listeners.delete(listener);
-      listener.mailbox.fail(Cause.fail(Cause.Done()));
-      if (listener.interests.length === 0) return Effect.void;
-
-      retiring.add(listener);
-      for (const interest of listener.interests) interest.listeners.delete(listener);
-      Queue.offerUnsafe(wake, undefined);
-      // One release per listener plus one supervisor has reserved, bounded control admission.
-      return locked(prune, true);
-    });
 
   const acquire = Effect.fnUntraced(function* (
     targets: readonly [RedisArgument, ...RedisArgument[]],
@@ -221,6 +193,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
     );
     const listener: Listener = {
       scope,
+      released: yield* Deferred.make<void, EventError>(),
       mode,
       interests: [],
       recovery: selected.recovery ?? "fail",
@@ -230,7 +203,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
     };
 
     yield* Effect.acquireRelease(Effect.succeed(listener), (acquired) =>
-      Effect.orDie(remove(acquired)),
+      Effect.orDie(releases.remove(acquired)),
     );
     yield* locked(
       Effect.gen(function* () {
@@ -244,7 +217,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
           0,
         );
         if (
-          listeners.size + retiring.size >= policy.maxListeners ||
+          listeners.size + releases.count() >= policy.maxListeners ||
           interests.size + missing.length > policy.maxInterests ||
           interestBytes + missing.reduce((sum, target) => sum + target.length, 0) >
             policy.maxInterestBytes
@@ -296,7 +269,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
     return {
       events: mailbox.stream,
       messages,
-      close: () => remove(listener).pipe(Effect.onExit(() => Scope.close(scope, Exit.void))),
+      close: () => releases.close(listener),
     };
   });
 
@@ -313,8 +286,8 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
   });
 
   const workerFailed = (cause: Cause.Cause<EventError>) => {
+    releases.poison(cause, !stopped);
     stopped = true;
-    for (const listener of listeners) failListener(listener, cause);
     unknown.fail(cause);
   };
 
@@ -324,7 +297,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
         yield* Queue.take(wake);
         yield* locked(
           Effect.gen(function* () {
-            yield* prune;
+            yield* releases.prune;
             if (stopped || ![...listeners].some((listener) => listener.recovery === "resubscribe"))
               return;
             const restored = yield* Effect.result(
@@ -379,14 +352,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
   yield* Effect.addFinalizer(() =>
     Effect.gen(function* () {
       stopped = true;
-      failed(
-        Cause.fail(new SubscriptionError({ reason: "closed", generation: owner.generation() })),
-        owner.generation(),
-      );
-      for (const listener of retiring) {
-        retiring.delete(listener);
-        yield* Scope.close(listener.scope, Exit.void);
-      }
+      yield* releases.finish;
     }),
   );
 
@@ -404,7 +370,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
     snapshot: Effect.sync(() => ({
       generation: owner.generation(),
       listeners: listeners.size,
-      retiring: retiring.size,
+      retiring: releases.count(),
       interests: interests.size,
       retainedBytes: budget.bytes,
     })),
