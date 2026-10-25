@@ -2,7 +2,7 @@
   "name": "@envoy1084/effect-redis",
   "version": "0.0.0",
   "private": true,
-  "description": "Native Effect v4 Redis client foundation with typed commands, explicit Schema codecs, lossless RESP2/RESP3, and scoped bounded connections.",
+  "description": "Native Effect v4 Redis client with typed data commands, explicit Schema codecs, lossless RESP2/RESP3, and scoped bounded connections.",
   "keywords": [
     "binary-safe",
     "effect",

@@ -125,13 +125,12 @@ export const georadiusStore = (
   options: GeoSelection = {},
   storeDistance = false,
 ) =>
-  ordinary(
-    Predicate.hasProperty(origin, "member") ? catalog.GEORADIUSBYMEMBER : catalog.GEORADIUS,
-    integer,
+  fromPreparation(
     Effect.gen(function* () {
-      const args = yield* radiusArgs(origin, radius, unit, options);
+      const center = yield* parse(Origin, origin);
+      const args = yield* radiusArgs(center, radius, unit, options);
       const distance = yield* parse(Schema.Boolean, storeDistance);
-      const name = Predicate.hasProperty(origin, "member") ? "GEORADIUSBYMEMBER" : "GEORADIUS";
+      const name = "member" in center ? "GEORADIUSBYMEMBER" : "GEORADIUS";
       const tokens: [RedisArgument, ...RedisArgument[]] = [
         name,
         key,
@@ -139,15 +138,20 @@ export const georadiusStore = (
         distance ? "STOREDIST" : "STORE",
         destination,
       ];
-      return {
-        tokens,
-        routing: {
-          _tag: "Keys",
-          keys: [
-            { index: 1, access: "read" },
-            { index: tokens.length - 1, access: "write" },
-          ],
-        },
-      };
+
+      return yield* ordinary(
+        catalog[name],
+        integer,
+        Effect.succeed({
+          tokens,
+          routing: {
+            _tag: "Keys",
+            keys: [
+              { index: 1, access: "read" },
+              { index: tokens.length - 1, access: "write" },
+            ],
+          },
+        }),
+      ).prepare;
     }),
   );

@@ -1,6 +1,9 @@
 import { Effect, Schema } from "effect";
 
+import { fromPreparation } from "#/command/Command";
+import type { ReplyDecoder } from "#/command/Command";
 import { array } from "#/command/reply/Collections";
+import { withLength } from "#/command/reply/Data";
 import { integer, optional } from "#/command/reply/Scalars";
 import { catalog } from "#/commands/bitmaps/Catalog";
 import { keyed } from "#/commands/internal/Command";
@@ -11,6 +14,7 @@ const Signed = Schema.Struct({
   signed: Schema.Literal(true),
   bits: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 64 })),
 });
+
 const Unsigned = Schema.Struct({
   signed: Schema.Literal(false),
   bits: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 63 })),
@@ -22,6 +26,7 @@ const Read = Schema.Struct({
   encoding: Encoding,
   offset: Offset,
 });
+
 const Write = Schema.Struct({
   operation: Schema.Literals(["SET", "INCRBY"]),
   encoding: Encoding,
@@ -40,6 +45,7 @@ const encode = (operations: ReadonlyArray<BitfieldOperation>, readOnly: boolean)
       operations,
     );
     const tokens: RedisArgument[] = [];
+
     for (const operation of parsed) {
       // Redis retains overflow mode for following writes until another OVERFLOW token.
       if ("overflow" in operation && operation.overflow !== undefined)
@@ -52,11 +58,32 @@ const encode = (operations: ReadonlyArray<BitfieldOperation>, readOnly: boolean)
       tokens.push(operation.operation, width, offset);
       if ("value" in operation) tokens.push(String(operation.value));
     }
-    return tokens;
+
+    return { tokens, count: parsed.length };
   });
 
+const bitfieldCommand = <A>(
+  key: RedisArgument,
+  operations: ReadonlyArray<BitfieldOperation>,
+  readOnly: boolean,
+  decode: ReplyDecoder<A>,
+) =>
+  fromPreparation(
+    Effect.gen(function* () {
+      const { tokens, count } = yield* encode(operations, readOnly);
+
+      return yield* keyed(
+        readOnly ? catalog.BITFIELD_RO : catalog.BITFIELD,
+        key,
+        Effect.succeed(tokens),
+        withLength(count, array(decode)),
+        readOnly ? "read" : "read-write",
+      ).prepare;
+    }),
+  );
+
 export const bitfield = (key: RedisArgument, operations: ReadonlyArray<BitfieldOperation>) =>
-  keyed(catalog.BITFIELD, key, encode(operations, false), array(optional(integer)), "read-write");
+  bitfieldCommand(key, operations, false, optional(integer));
 
 export const bitfieldRo = (key: RedisArgument, operations: ReadonlyArray<BitfieldRead>) =>
-  keyed(catalog.BITFIELD_RO, key, encode(operations, true), array(integer));
+  bitfieldCommand(key, operations, true, integer);

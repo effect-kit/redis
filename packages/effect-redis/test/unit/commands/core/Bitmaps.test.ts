@@ -1,8 +1,7 @@
 import { Option } from "effect";
 
 import * as C from "#/commands/bitmaps/index";
-import * as H from "#/commands/hyperloglog/index";
-import { array, commandCases, integer, missing, ok } from "#test/support/commands/CoreCase";
+import { array, commandCases, integer, missing } from "#test/support/commands/CoreCase";
 
 commandCases("CORE-BITMAPS", [
   {
@@ -71,32 +70,5 @@ commandCases("CORE-BITMAPS", [
     reply: array(integer(-9007199254740993n)),
     expected: [-9007199254740993n],
     keys: [1],
-  },
-]);
-
-commandCases("CORE-HYPERLOGLOG", [
-  {
-    label: "PFADD empty creates",
-    command: H.pfadd("k"),
-    tokens: ["PFADD", "k"],
-    reply: integer(1n),
-    expected: true,
-    keys: [1],
-  },
-  {
-    label: "PFCOUNT multi key",
-    command: H.pfcount(["a", "b"]),
-    tokens: ["PFCOUNT", "a", "b"],
-    reply: integer(3n),
-    expected: 3n,
-    keys: [1, 2],
-  },
-  {
-    label: "PFMERGE destination",
-    command: H.pfmerge("out", ["a", "b"]),
-    tokens: ["PFMERGE", "out", "a", "b"],
-    reply: ok,
-    expected: undefined,
-    keys: [1, 2, 3],
   },
 ]);

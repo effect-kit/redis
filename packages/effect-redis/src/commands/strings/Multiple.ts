@@ -1,7 +1,8 @@
 import { Effect, Schema } from "effect";
 
+import { fromPreparation } from "#/command/Command";
 import { array } from "#/command/reply/Collections";
-import { boolean } from "#/command/reply/Data";
+import { boolean, withLength } from "#/command/reply/Data";
 import { blob, optional, status } from "#/command/reply/Scalars";
 import { keyIndexes, ordinary } from "#/commands/internal/Command";
 import { Arguments, Pairs, parse } from "#/commands/internal/Input";
@@ -13,19 +14,24 @@ export type KeyValues = readonly [
   readonly [RedisArgument, RedisArgument],
   ...Array<readonly [RedisArgument, RedisArgument]>,
 ];
+
 export const mget = (keys: readonly [RedisArgument, ...RedisArgument[]]) =>
-  ordinary(
-    catalog.MGET,
-    array(optional(blob)),
-    parse(Arguments, keys).pipe(
-      Effect.map((values) => ({
-        tokens: ["MGET", ...values],
-        routing: keyIndexes(
-          values.map((_, index) => index + 1),
-          "read",
-        ),
-      })),
-    ),
+  fromPreparation(
+    Effect.gen(function* () {
+      const values = yield* parse(Arguments, keys);
+
+      return yield* ordinary(
+        catalog.MGET,
+        withLength(values.length, array(optional(blob))),
+        Effect.succeed({
+          tokens: ["MGET", ...values],
+          routing: keyIndexes(
+            values.map((_, index) => index + 1),
+            "read",
+          ),
+        }),
+      ).prepare;
+    }),
   );
 
 export const mset = (entries: KeyValues) =>
@@ -42,6 +48,7 @@ export const mset = (entries: KeyValues) =>
       })),
     ),
   );
+
 export const msetnx = (entries: KeyValues) =>
   ordinary(
     catalog.MSETNX,
@@ -61,6 +68,7 @@ export interface MultiSetOptions {
   readonly condition?: "NX" | "XX";
   readonly expiry?: SetExpiry;
 }
+
 export const msetex = (entries: KeyValues, options: MultiSetOptions = {}) =>
   ordinary(
     catalog.MSETEX,
@@ -75,12 +83,14 @@ export const msetex = (entries: KeyValues, options: MultiSetOptions = {}) =>
         options,
       );
       const tail: RedisArgument[] = [];
+
       if (set.condition !== undefined && typeof set.condition === "string")
         tail.push(set.condition);
       if (set.expiry !== undefined) {
         tail.push(set.expiry.type);
         if (set.expiry.type !== "KEEPTTL") tail.push(String(set.expiry.value));
       }
+
       return {
         tokens: ["MSETEX", String(pairs.length), ...pairs.flat(), ...tail],
         routing: keyIndexes(

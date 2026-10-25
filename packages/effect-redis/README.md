@@ -8,9 +8,11 @@ codec limits and typed errors. The Node-only `/node` entrypoint exports `connect
 The universal entrypoint also exports `makeConnection`, the `Connection` service and
 its scoped Layer, connection options/snapshots, and typed admission/handshake/connection
 failures. The engine executes caller-declared ordinary single-reply commands. `Redis`,
-`CommandExecutor`, `Commands`, `Reply`, `RedisKey` and `PayloadCodec` add a typed
-ordinary string/hash/list/set/key/sorted-set/bitmap/HyperLogLog/geo/array builders,
-custom descriptors and explicit payload codecs. Phase 06 verification is in progress.
+`CommandExecutor`, `Commands`, `Reply`, `RedisKey` and `PayloadCodec` add typed
+ordinary commands across strings, hashes, lists, sets, keys/TTL, sorted sets, bitmaps,
+HyperLogLog, geo and arrays, plus custom descriptors and explicit payload codecs.
+There are 187 reviewed ordinary commands; available commands/options depend on the
+actual server. Sessions, scans/Streams, subscriptions and topology routing are pending.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -157,8 +159,9 @@ The standalone executor rejects nonordinary modes and explicit-node routing. The
 contracts do not imply implemented sessions, topology routing or provider parity.
 
 The development typecheck includes compile-only public inference and codec service
-contracts. Live typed conformance covers pinned Redis/Valkey builds in RESP2/3;
-full command-family and backend certification remain pending.
+contracts. Live ordinary-family conformance covers the seven pinned Redis/Valkey
+builds in RESP2/3, including older-server errors. Other engines have transport/state
+smoke tests; full command, runtime and backend certification remain pending.
 
 Development uses `#/` source imports and `#test/` imports for all test-owned modules.
 Node resolves them through package imports; tsdown rewrites built module references.
@@ -173,3 +176,7 @@ TTL results keep -1/-2 sentinels and array cursors use exact unsigned bigint val
 SORT BY/GET patterns carry unresolved routing metadata: standalone support does not
 imply Cluster execution. Commands/options are sent explicitly; older servers may
 reject them with typed server errors, and no semantic emulation or replay occurs.
+
+Positional replies such as MGET, HMGET and BITFIELD must match the prepared request
+length. Reply shape errors mean the server has already replied; they do not cause
+replay. Binary key/member/value arguments remain bytes throughout encoding/decoding.

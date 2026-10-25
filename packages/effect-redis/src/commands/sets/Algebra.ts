@@ -80,13 +80,16 @@ const cardinality = (
       const values = yield* parse(Arguments, keys);
       const parsed = yield* parse(CardinalityOptions, options);
       const flags: RedisArgument[] = [];
+
       // APPROX is a union-only extension; do not silently discard it for other operations.
       if (parsed.approximate) {
         if (name !== "SUNIONCARD")
           return yield* new CommandInputError({ delivery: "unsent", reason: "options" });
         flags.push("APPROX");
       }
+
       if (parsed.limit !== undefined) flags.push("LIMIT", String(parsed.limit));
+
       return {
         tokens: [name, String(values.length), ...values, ...flags],
         routing: keyIndexes(

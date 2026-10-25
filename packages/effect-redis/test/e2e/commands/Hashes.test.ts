@@ -41,6 +41,13 @@ it.live.each(primaryCases)(
       expect(yield* redis.hsetnx(key, "b", "no")).toBe(false);
       expect(yield* redis.hincrby(key, "counter", 9007199254740993n)).toBe(9007199254740993n);
       expect(yield* redis.hincrbyfloat(key, "float", 0.5)).toBe("0.5");
+      const largeDecimal = yield* redis.hincrbyfloat(key, "large", "1e400");
+      expect(Number(largeDecimal)).toBe(Infinity);
+      expect(yield* exchange(oracle, ["HGET", key, "large"])).toEqual({
+        _tag: "BlobString",
+        value: bytes(largeDecimal),
+      });
+
       expect(yield* exchange(oracle, ["HGET", key, "counter"])).toEqual({
         _tag: "BlobString",
         value: bytes("9007199254740993"),

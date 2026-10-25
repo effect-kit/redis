@@ -7,6 +7,8 @@ import { catalog } from "#/commands/arrays/Catalog";
 import { ArrayIndex, index } from "#/commands/arrays/internal/Index";
 import { keyed } from "#/commands/internal/Command";
 import { Argument, Arguments, integer as inputInteger, parse } from "#/commands/internal/Input";
+import type { Integer } from "#/commands/internal/Input";
+import { keyedVector } from "#/commands/internal/Vector";
 import type { RedisArgument } from "#/RedisArgument";
 
 export type { ArrayIndex } from "#/commands/arrays/internal/Index";
@@ -25,7 +27,7 @@ export const argetrange = (key: RedisArgument, start: ArrayIndex, end: ArrayInde
   keyed(catalog.ARGETRANGE, key, Effect.all([index(start), index(end)]), array(optional(blob)));
 
 export const armget = (key: RedisArgument, positions: readonly [ArrayIndex, ...ArrayIndex[]]) =>
-  keyed(
+  keyedVector(
     catalog.ARMGET,
     key,
     parse(Schema.NonEmptyArray(ArrayIndex), positions).pipe(
@@ -110,7 +112,7 @@ export const arring = (key: RedisArgument, size: ArrayIndex, values: ArrayValues
     "read-write",
   );
 
-export const arlastitems = (key: RedisArgument, count: ArrayIndex, reverse = false) =>
+export const arlastitems = (key: RedisArgument, count: Integer, reverse = false) =>
   keyed(
     catalog.ARLASTITEMS,
     key,

@@ -26,15 +26,18 @@ const intent = (
     const o = yield* parse(Options, options);
     const tokens: [RedisArgument, ...RedisArgument[]] = [name, key];
     const patterns: RedisArgument[] = [];
+
     if (o.by !== undefined) {
       tokens.push("BY", o.by);
       if (o.by !== "nosort") patterns.push(o.by);
     }
+
     if (o.limit !== undefined) tokens.push("LIMIT", String(o.limit.offset), String(o.limit.count));
     for (const get of o.get ?? []) {
       tokens.push("GET", get);
       if (get !== "#") patterns.push(get);
     }
+
     if (o.order !== undefined) tokens.push(o.order);
     if (o.alpha) tokens.push("ALPHA");
 
@@ -42,6 +45,7 @@ const intent = (
       { index: number; access: "read" | "write" },
       ...Array<{ index: number; access: "read" | "write" }>,
     ] = [{ index: 1, access: "read" }];
+
     if (destination !== undefined) {
       tokens.push("STORE", destination);
       keys.push({ index: tokens.length - 1, access: "write" });

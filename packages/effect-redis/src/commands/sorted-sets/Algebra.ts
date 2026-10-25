@@ -30,7 +30,9 @@ const operands = (keys: SortedKeys, options: SortedAlgebraOptions) =>
         return yield* new CommandInputError({ delivery: "unsent", reason: "options" });
       tokens.push("WEIGHTS", ...(yield* Effect.forEach(parsed.weights, score)));
     }
+
     if (parsed.aggregate !== undefined) tokens.push("AGGREGATE", parsed.aggregate);
+
     return { values, tokens };
   });
 

@@ -13,6 +13,7 @@ import {
   parse,
 } from "#/commands/internal/Input";
 import type { Integer } from "#/commands/internal/Input";
+import { keyedVector } from "#/commands/internal/Vector";
 import { catalog } from "#/commands/sorted-sets/Catalog";
 import { Score, score } from "#/commands/sorted-sets/internal/Bounds";
 import { CommandInputError } from "#/errors/CommandInputError";
@@ -90,7 +91,7 @@ export const zrem = (key: RedisArgument, members: readonly [RedisArgument, ...Re
 export const zmscore = (
   key: RedisArgument,
   members: readonly [RedisArgument, ...RedisArgument[]],
-) => keyed(catalog.ZMSCORE, key, parse(Arguments, members), array(optional(scoreToken)));
+) => keyedVector(catalog.ZMSCORE, key, parse(Arguments, members), array(optional(scoreToken)));
 
 export const zrank = (key: RedisArgument, member: RedisArgument) =>
   keyed(catalog.ZRANK, key, Effect.succeed([member]), optional(integer));

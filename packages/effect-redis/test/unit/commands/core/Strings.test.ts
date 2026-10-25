@@ -15,6 +15,39 @@ import {
 
 commandCases("CORE-STRINGS", [
   {
+    label: "GET text",
+    command: C.get("k"),
+    tokens: ["GET", "k"],
+    reply: blob("v"),
+    expected: Option.some("v"),
+    keys: [1],
+  },
+  {
+    label: "GET bytes",
+    command: C.getBytes("k"),
+    tokens: ["GET", "k"],
+    reply: blob("v"),
+    expected: Option.some(bytes("v")),
+    keys: [1],
+  },
+  {
+    label: "SET",
+    command: C.set("k", "v"),
+    tokens: ["SET", "k", "v"],
+    reply: ok,
+    expected: undefined,
+    keys: [1],
+  },
+  {
+    label: "INCR",
+    command: C.incr("k"),
+    tokens: ["INCR", "k"],
+    reply: integer(1n),
+    expected: 1n,
+    keys: [1],
+  },
+
+  {
     label: "APPEND binary",
     command: C.append("k", new Uint8Array([255])),
     tokens: ["APPEND", "k", new Uint8Array([255])],

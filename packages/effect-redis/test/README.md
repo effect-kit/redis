@@ -40,6 +40,12 @@ versions, architectures and actual modules come from `fixtures/backends/` and ar
 validated before image preparation/acquisition. Expected command metadata is reviewed
 separately in `fixtures/commands/` and checked against production descriptors.
 
+Ordinary command contracts are grouped under `unit/commands/core/`; `integration/commands/`
+checks executor composition and preparation snapshots. `e2e/commands/` uses the public
+client against seven pinned Redis/Valkey builds in RESP2/3, with an independent socket
+for selected state observations. Newer commands have explicit availability/error cases
+on older builds. This is separate from the other engines' transport/state smoke tests.
+
 The live runner also supports `--mode binary --engine redis|valkey --binary /absolute/path`
 for an owned local process. `--mode endpoint` requires `EFFECT_REDIS_TEST_URL` and
 only authenticates and sends read-only PING/ECHO; optional `EFFECT_REDIS_TEST_CA`

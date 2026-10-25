@@ -62,9 +62,11 @@ export const bitpos = (key: RedisArgument, value: 0 | 1, range?: BitPositionRang
     Effect.gen(function* () {
       const selected = yield* parse(Schema.Literals([0, 1]), value);
       if (range === undefined) return [String(selected)];
+
       const r = yield* parse(PositionRange, range);
       if (r.unit !== undefined && r.end === undefined)
         return yield* new CommandInputError({ delivery: "unsent", reason: "options" });
+
       return [
         String(selected),
         String(r.start),
@@ -91,6 +93,7 @@ export const bitop = (
       const keys = yield* parse(Arguments, sources);
       if (mode === "NOT" && keys.length !== 1)
         return yield* new CommandInputError({ delivery: "unsent", reason: "arguments" });
+
       return {
         tokens: ["BITOP", mode, destination, ...keys],
         routing: {

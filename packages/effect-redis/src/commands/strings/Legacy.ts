@@ -10,6 +10,7 @@ import type { RedisArgument } from "#/RedisArgument";
 
 export const setnx = (key: RedisArgument, value: RedisArgument) =>
   keyed(catalog.SETNX, key, Effect.succeed([value]), boolean, "write");
+
 export const setex = (key: RedisArgument, seconds: Integer, value: RedisArgument) =>
   keyed(
     catalog.SETEX,
@@ -18,6 +19,7 @@ export const setex = (key: RedisArgument, seconds: Integer, value: RedisArgument
     status("OK"),
     "write",
   );
+
 export const psetex = (key: RedisArgument, milliseconds: Integer, value: RedisArgument) =>
   keyed(
     catalog.PSETEX,

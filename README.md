@@ -4,12 +4,11 @@ A Redis protocol client built with Effect v4 and runtime platform APIs. The goal
 complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities across
 Redis-compatible servers and transports.
 
-**Status:** Phase 06 is in progress: ordinary string/hash/list/set/key/sorted-set,
-bitmap, HyperLogLog, geo and array command builders now extend the typed Redis
-service. Remaining phase gates are tracked privately until complete.
+**Status:** The typed Redis service covers 187 ordinary commands across strings,
+hashes, lists, sets, keys/TTL, sorted sets, bitmaps, HyperLogLog, geo and arrays.
 Scoped Node TCP/TLS/Unix, bounded scheduling and lossless RESP2/RESP3 are implemented.
-Broad typed command families, sessions, topologies and engine/provider certification
-remain in later phases.
+Sessions, scans/Streams, subscriptions, scripting, topologies, runtime adapters and
+engine/provider certification remain in later phases.
 
 ## Development
 
@@ -91,7 +90,9 @@ pnpm test:live --mode endpoint         # AUTH if needed, PING/ECHO only; no writ
 
 The matrix pins Redis 6.2.19/7.2.11/7.4.6/8.10.2, Valkey 7.2.11/8.0.3/9.1.2,
 Dragonfly 2.0.2, KeyDB 6.3.4, Redict 7.3.6, Garnet 2.2.4 and Kvrocks 2.17.0.
-These tests verify transport and isolated binary state smoke; full command, topology,
+All seven engines have transport and isolated binary state smoke tests. Ordinary
+command-family conformance runs on the seven pinned Redis/Valkey builds in RESP2/3,
+including explicit errors for unavailable commands/options. Full engine, topology,
 module and hosted-provider certification remains pending. Bun is a runtime, rather
 than a server fixture. Endpoint mode also accepts `EFFECT_REDIS_TEST_CA` for a custom
 CA file; it never downloads images or starts/stops the external server.

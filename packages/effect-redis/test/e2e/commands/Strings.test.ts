@@ -59,6 +59,14 @@ it.live.each(primaryCases)(
       });
       expect(yield* redis.incrbyfloat(`${number}:float`, 0.5)).toBe("0.5");
 
+      // Redis long doubles can remain finite beyond JavaScript's IEEE-double range.
+      const largeDecimal = yield* redis.incrbyfloat(`${number}:large`, "1e400");
+      expect(Number(largeDecimal)).toBe(Infinity);
+      expect(yield* exchange(oracle, ["GET", `${number}:large`])).toEqual({
+        _tag: "BlobString",
+        value: bytes(largeDecimal),
+      });
+
       yield* redis.mset([
         [a, "abc"],
         [b, "ac"],

@@ -8,8 +8,8 @@ offline/live networking tests, and test-owned fixtures. The ordinary connection
 engine implements handshake, bounded admission/reply ownership, cancellation, shutdown
 and future-work reconnection. Phase 05 adds the Redis service, typed descriptors,
 explicit payload/key codecs and a PING/GET/SET/INCR/ZSCORE slice. Phase 06 adds
-ordinary data-command families; its remaining type/conformance/release checks are
-tracked in the private phase report until complete.
+187 ordinary data commands with unit/type/composition tests and primary Redis/Valkey
+conformance. Sessions, scans/Streams, subscriptions, scripting and topology are pending.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -328,6 +328,9 @@ Implemented command-system policy:
   Preserve per-field/key TTL negative sentinels. Long-double results use decimalToken,
   while score/scoreToken retain sorted-set IEEE-double semantics. Array indexes/cursors
   support uint64 and RESP2 decimal bulk/RESP3 big-number replies without Number coercion.
+- Bind positional reply lengths and option-dependent decoders to validated preparation
+  snapshots. A later caller mutation must not change the meaning of prepared wire flags.
+  Preserve nested ReplyError paths and reject malformed completed replies without replay.
 - SORT BY/GET indirect patterns use Routing.Dynamic with explicit primary/store keys
   plus unresolved patterns. Standalone execution is valid; future topology executors
   must resolve/review or reject this variant, never route only the primary key. COPY

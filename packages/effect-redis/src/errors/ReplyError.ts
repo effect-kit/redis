@@ -10,6 +10,7 @@ export class ReplyError extends Schema.TaggedError<ReplyError>()("ReplyError", {
     "score",
     "status",
     "array",
+    "array-length",
     "set-result",
     "custom",
   ]),

@@ -58,6 +58,7 @@ const encodeRange = (range: SortedRange) =>
     );
     let bounds: string[] | RedisArgument[];
     const flags: RedisArgument[] = [];
+
     if (o.by === "rank") {
       const selected = yield* parse(Schema.Struct({ start: Integer, end: Integer }), {
         start: o.start,
@@ -65,6 +66,7 @@ const encodeRange = (range: SortedRange) =>
       });
       if (o.min !== undefined || o.max !== undefined || o.limit !== undefined)
         return yield* new CommandInputError({ delivery: "unsent", reason: "options" });
+
       bounds = [String(selected.start), String(selected.end)];
     } else {
       const min =
@@ -77,10 +79,13 @@ const encodeRange = (range: SortedRange) =>
           : yield* lexBound(o.max as LexBound);
       if (o.start !== undefined || o.end !== undefined)
         return yield* new CommandInputError({ delivery: "unsent", reason: "options" });
+
       bounds = o.reverse ? [max, min] : [min, max];
       flags.push(o.by === "score" ? "BYSCORE" : "BYLEX");
     }
+
     if (o.reverse) flags.push("REV");
+
     return [...bounds, ...flags, ...(yield* limit(o.limit))];
   });
 

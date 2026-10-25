@@ -16,6 +16,7 @@ export interface ArrayInfoDetails {
   readonly averageDenseFill: number;
   readonly averageSparseSize: number;
 }
+
 export interface ArrayInfo {
   readonly count: bigint;
   readonly length: bigint;

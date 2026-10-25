@@ -9,6 +9,7 @@ import { Latitude, Longitude, Unit } from "#/commands/geo/internal/Query";
 import type { GeoUnit } from "#/commands/geo/internal/Query";
 import { keyed } from "#/commands/internal/Command";
 import { Argument, Arguments, parse } from "#/commands/internal/Input";
+import { keyedVector } from "#/commands/internal/Vector";
 import type { RedisArgument } from "#/RedisArgument";
 
 export type { GeoUnit } from "#/commands/geo/internal/Query";
@@ -49,10 +50,10 @@ export const geoadd = (
 export const geohash = (
   key: RedisArgument,
   members: readonly [RedisArgument, ...RedisArgument[]],
-) => keyed(catalog.GEOHASH, key, parse(Arguments, members), array(optional(text)));
+) => keyedVector(catalog.GEOHASH, key, parse(Arguments, members), array(optional(text)));
 
 export const geopos = (key: RedisArgument, members: readonly [RedisArgument, ...RedisArgument[]]) =>
-  keyed(catalog.GEOPOS, key, parse(Arguments, members), array(nullable(tuple(score, score))));
+  keyedVector(catalog.GEOPOS, key, parse(Arguments, members), array(nullable(tuple(score, score))));
 
 export const geodist = (
   key: RedisArgument,

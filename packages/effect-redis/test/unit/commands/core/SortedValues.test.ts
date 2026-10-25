@@ -12,6 +12,23 @@ import {
 
 commandCases("CORE-SORTED-SETS", [
   {
+    label: "ZSCORE number",
+    command: C.zscore("k", "a"),
+    tokens: ["ZSCORE", "k", "a"],
+    reply: blob("1.25"),
+    expected: Option.some(1.25),
+    keys: [1],
+  },
+  {
+    label: "ZSCORE exact token",
+    command: C.zscoreToken("k", "a"),
+    tokens: ["ZSCORE", "k", "a"],
+    reply: blob("1.250"),
+    expected: Option.some("1.250"),
+    keys: [1],
+  },
+
+  {
     label: "ZADD",
     command: C.zadd("k", [["1.25", "a"]], { condition: "XX", comparison: "GT", changed: true }),
     tokens: ["ZADD", "k", "XX", "GT", "CH", "1.25", "a"],

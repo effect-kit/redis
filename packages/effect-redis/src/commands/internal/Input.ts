@@ -3,9 +3,11 @@ import { Effect, Schema } from "effect";
 import { CommandInputError } from "#/errors/CommandInputError";
 
 export type Integer = number | bigint;
+
 export const Argument = Schema.Union([Schema.String, Schema.Uint8Array]);
 export const Arguments = Schema.NonEmptyArray(Argument);
 export const Pairs = Schema.NonEmptyArray(Schema.Tuple([Argument, Argument]));
+
 export const Integer = Schema.Union([
   Schema.Int.check(
     Schema.isBetween({ minimum: Number.MIN_SAFE_INTEGER, maximum: Number.MAX_SAFE_INTEGER }),
@@ -30,6 +32,7 @@ export const nonNegative = (value: Integer) => parse(NonNegative, value).pipe(Ef
 export const finite = (value: number) => parse(Finite, value).pipe(Effect.map(String));
 
 export type Decimal = number | string;
+
 export const Decimal = Schema.Union([
   Finite,
   Schema.String.check(

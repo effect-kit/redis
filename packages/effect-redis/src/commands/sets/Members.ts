@@ -6,6 +6,7 @@ import { blob, integer, optional } from "#/command/reply/Scalars";
 import { keyed, keyIndexes, ordinary } from "#/commands/internal/Command";
 import { Arguments, integer as inputInteger, nonNegative, parse } from "#/commands/internal/Input";
 import type { Integer } from "#/commands/internal/Input";
+import { keyedVector } from "#/commands/internal/Vector";
 import { catalog } from "#/commands/sets/Catalog";
 import type { RedisArgument } from "#/RedisArgument";
 
@@ -26,7 +27,7 @@ export const sismember = (key: RedisArgument, value: RedisArgument) =>
   keyed(catalog.SISMEMBER, key, Effect.succeed([value]), boolean);
 
 export const smismember = (key: RedisArgument, values: SetMembers) =>
-  keyed(catalog.SMISMEMBER, key, parse(Arguments, values), array(boolean));
+  keyedVector(catalog.SMISMEMBER, key, parse(Arguments, values), array(boolean));
 
 export const spop = (key: RedisArgument) =>
   keyed(catalog.SPOP, key, Effect.succeed([]), optional(blob), "read-write");

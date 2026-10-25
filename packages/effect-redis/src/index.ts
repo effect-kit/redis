@@ -60,3 +60,50 @@ export { PayloadError } from "#/errors/PayloadError";
 export { UnsupportedCommandError } from "#/errors/UnsupportedCommandError";
 
 export type { Integer as RedisInteger, Decimal as RedisDecimal } from "#/commands/internal/Input";
+
+export type { Expiry } from "#/commands/internal/Expiry";
+export type { KeyValues, MultiSetOptions } from "#/commands/strings/Multiple";
+export type {
+  IncrementExpiryOptions,
+  FloatIncrementExpiryOptions,
+} from "#/commands/strings/IncrementExpiry";
+export type { LcsMatch, LcsMatches } from "#/commands/strings/Lcs";
+export type { DeleteCondition } from "#/commands/strings/Values";
+export type {
+  HashSetExpiryOptions,
+  ExpireCondition as HashExpireCondition,
+  Fields as HashFields,
+} from "#/commands/hashes/Expiry";
+export type { ListEnd, ListMoveOptions } from "#/commands/lists/Movement";
+export type { PositionOptions as ListPositionOptions } from "#/commands/lists/Values";
+export type { SetCardinalityOptions } from "#/commands/sets/Algebra";
+export type { BitfieldRead, BitfieldOperation } from "#/commands/bitmaps/Bitfield";
+export type { BitRange, BitPositionRange, BitOperation } from "#/commands/bitmaps/Values";
+export type { CopyOptions } from "#/commands/keys/Values";
+export type { RestoreOptions } from "#/commands/keys/Introspection";
+export type { SortOptions } from "#/commands/keys/Sort";
+export type { KeyExpireCondition } from "#/commands/keys/Expiry";
+export type {
+  SortedRange,
+  LexBound,
+  ScoreBound,
+  Score,
+  RangeLimit,
+} from "#/commands/sorted-sets/Ranges";
+export type { ScoredMembers, SortedAddOptions } from "#/commands/sorted-sets/Values";
+export type { SortedAlgebraOptions } from "#/commands/sorted-sets/Algebra";
+export type { GeoPosition, GeoAddOptions, GeoUnit } from "#/commands/geo/Values";
+export type {
+  GeoQuery,
+  GeoDetails,
+  GeoSelection,
+  GeoOrigin,
+  GeoResult,
+} from "#/commands/geo/Search";
+export type { ArrayIndex } from "#/commands/arrays/Values";
+export type {
+  ArrayPredicate,
+  ArraySearchOptions,
+  ArraySearchBound,
+} from "#/commands/arrays/Aggregation";
+export type { ArrayInfo, ArrayInfoDetails } from "#/commands/arrays/Info";

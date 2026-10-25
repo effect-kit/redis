@@ -70,6 +70,12 @@ it.live.each(primaryCases)(
       expect(yield* redis.objectHelp()).not.toHaveLength(0);
       expect(yield* Effect.flip(redis.objectFreq(source))).toMatchObject({ _tag: "ServerError" });
 
+      // OBJECT FREQ needs LFU metadata, so exercise it under the owning fixture's policy.
+      yield* exchange(oracle, ["CONFIG", "SET", "maxmemory-policy", "allkeys-lfu"]);
+      yield* redis.getBytes(source);
+      expect(yield* redis.objectFreq(source)).toMatchObject({ _tag: "Some" });
+      yield* exchange(oracle, ["CONFIG", "SET", "maxmemory-policy", "noeviction"]);
+
       const list = `${prefix}:list`;
       yield* redis.rpush(list, ["2", "1"]);
       // oxlint-disable-next-line unicorn/no-array-sort -- Redis SORT is a remote command, not Array.sort.
