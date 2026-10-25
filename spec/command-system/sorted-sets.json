@@ -1,0 +1,20 @@
+[
+  {
+    "name": "ZSCORE",
+    "family": "sorted-sets",
+    "execution": "ordinary",
+    "replay": "never",
+    "scenarios": ["COMMAND-05"],
+    "availability": [],
+    "provenance": [
+      {
+        "source": "https://github.com/redis/redis/tree/8.10.2/src/commands",
+        "revision": "8.10.2"
+      },
+      {
+        "source": "https://github.com/valkey-io/valkey/tree/9.1.2/src/commands",
+        "revision": "9.1.2"
+      }
+    ]
+  }
+]

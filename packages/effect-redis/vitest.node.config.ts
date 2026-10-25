@@ -7,9 +7,22 @@ const files =
     : engine === "core"
       ? ["Socket.test.ts", "Tls.test.ts", "Lifecycle.test.ts"]
       : engine === "redis"
-        ? ["Backends.test.ts", "Servers.test.ts", "Connection.test.ts", "ConnectionFaults.test.ts"]
+        ? [
+            "Backends.test.ts",
+            "Servers.test.ts",
+            "Connection.test.ts",
+            "ConnectionFaults.test.ts",
+            "Commands.test.ts",
+            "CommandOptions.test.ts",
+          ]
         : engine === "valkey"
-          ? ["Backends.test.ts", "Connection.test.ts", "ConnectionFaults.test.ts"]
+          ? [
+              "Backends.test.ts",
+              "Connection.test.ts",
+              "ConnectionFaults.test.ts",
+              "Commands.test.ts",
+              "CommandOptions.test.ts",
+            ]
           : ["Backends.test.ts", "Connection.test.ts"];
 
 export default defineConfig({

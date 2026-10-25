@@ -4,11 +4,11 @@ A Redis protocol client built with Effect v4 and runtime platform APIs. The goal
 complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities across
 Redis-compatible servers and transports.
 
-**Status:** Phase 04 adds a scoped ordinary request/reply engine with ordered
-handshake, bounded scheduling, delivery-aware failures and reconnection without
-command replay. Native Node TCP/TLS/Unix, RESP codecs and Testcontainers fixtures
-are implemented. Typed command families and broad server/provider certification
-remain planned.
+**Status:** Phase 05 adds a typed Redis service, reusable command descriptors,
+explicit text/Schema payload codecs, and a verified PING/GET/SET/INCR/ZSCORE slice.
+Scoped Node TCP/TLS/Unix, bounded scheduling and lossless RESP2/RESP3 are implemented.
+Broad typed command families, sessions, topologies and engine/provider certification
+remain in later phases.
 
 ## Development
 
@@ -27,7 +27,7 @@ Publint checking package exports.
 | Command                   | Purpose                                                  |
 | ------------------------- | -------------------------------------------------------- |
 | `pnpm build`              | Build workspace packages through Turborepo               |
-| `pnpm typecheck`          | Check root configs, source, tests and tooling            |
+| `pnpm typecheck`          | Check source, tests, tooling and public type contracts   |
 | `pnpm lint`               | Lint root configs, source, tests and tooling             |
 | `pnpm format`             | Format tracked project files with Oxfmt                  |
 | `pnpm format:check`       | Check formatting                                         |

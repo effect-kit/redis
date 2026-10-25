@@ -37,6 +37,10 @@ const load = <S extends Schema.Constraint>(file: string, schema: S) =>
 
 export const loadSpecification: Effect.Effect<Spec.Specification, SpecificationError> = Effect.gen(
   function* () {
+    const commandSystem = yield* load("command-system.json", Spec.CommandSystemProfile);
+    const descriptors = yield* Effect.forEach(commandSystem.catalogs, (file) =>
+      load(`command-system/${file}`, Schema.NonEmptyArray(Spec.Descriptor)),
+    );
     const index = yield* load("commands/index.json", Spec.CommandIndex);
     const groups = yield* Effect.forEach(
       index.categories,
@@ -60,6 +64,8 @@ export const loadSpecification: Effect.Effect<Spec.Specification, SpecificationE
       protocol: yield* load("protocol.json", Spec.ProtocolProfile),
       transport: yield* load("transport.json", Spec.TransportProfile),
       connection: yield* load("connection.json", Spec.ConnectionProfile),
+      commandSystem,
+      descriptors: descriptors.flat(),
       index,
       commands: groups.flat(),
       release: yield* load("release.json", Spec.Release),

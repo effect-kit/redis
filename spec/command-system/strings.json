@@ -1,0 +1,59 @@
+[
+  {
+    "name": "GET",
+    "family": "strings",
+    "execution": "ordinary",
+    "replay": "never",
+    "scenarios": ["COMMAND-02", "COMMAND-03"],
+    "availability": [],
+    "provenance": [
+      {
+        "source": "https://github.com/redis/redis/tree/8.10.2/src/commands",
+        "revision": "8.10.2"
+      },
+      {
+        "source": "https://github.com/valkey-io/valkey/tree/9.1.2/src/commands",
+        "revision": "9.1.2"
+      }
+    ]
+  },
+  {
+    "name": "INCR",
+    "family": "strings",
+    "execution": "ordinary",
+    "replay": "never",
+    "scenarios": ["COMMAND-04"],
+    "availability": [],
+    "provenance": [
+      {
+        "source": "https://github.com/redis/redis/tree/8.10.2/src/commands",
+        "revision": "8.10.2"
+      },
+      {
+        "source": "https://github.com/valkey-io/valkey/tree/9.1.2/src/commands",
+        "revision": "9.1.2"
+      }
+    ]
+  },
+  {
+    "name": "SET",
+    "family": "strings",
+    "execution": "ordinary",
+    "replay": "never",
+    "scenarios": ["COMMAND-06", "COMMAND-07", "COMMAND-08"],
+    "availability": [
+      "GET/EXAT/PXAT require Redis/Valkey 6.2+; NX+GET requires Redis/Valkey 7.0+",
+      "IFEQ requires Redis 8.4+ or Valkey 8.1+; IFNE/IFDEQ/IFDNE require Redis 8.4+ and are absent in Valkey 9.1.2"
+    ],
+    "provenance": [
+      {
+        "source": "https://github.com/redis/redis/tree/8.10.2/src/commands",
+        "revision": "8.10.2"
+      },
+      {
+        "source": "https://github.com/valkey-io/valkey/tree/9.1.2/src/commands",
+        "revision": "9.1.2"
+      }
+    ]
+  }
+]

@@ -11,7 +11,8 @@ protocol-only execution evidence, kept separate from those target records.
   Counts include containers, aliases, private operations and documentation stubs;
   they are not a count of implemented application commands.
 - `commands/*.json` assigns classification, proposed typed coverage, execution mode,
-  owning phase, source IDs and scenario families. All operations start planned/not-run.
+  owning phase, source IDs and scenario families. Operations start planned/not-run. Phase 05 marks five reviewed command slices partial;
+  these are not complete command/version/backend certification.
   Internal wire/migration operations have explicit boundary classifications. Stubs
   require review; they do not establish availability or a callable grammar.
 - `sources.json` records public URLs, revisions and SHA-256 snapshot digests. Core
@@ -45,6 +46,11 @@ protocol-only execution evidence, kept separate from those target records.
   push and cleanup scenarios, including controlled clock/byte boundaries and real
   server/compiled Unix execution. These remain ordinary-engine evidence; typed
   commands, sessions, topologies and providers have their own later gates.
+- `command-system.json` defines 27 Phase 05 command/type scenarios. Its reviewed
+  family catalogs in `command-system/` are compared with actual production metadata
+  by tests. They remain small handwritten overlays; generation is added only when
+  repeated grammar/metadata work justifies it. Command/type evidence is scoped to
+  this slice, including explicit rejected options on older/different engines.
 - `scenarios.json` assigns 31 scenario families. Owning phases add executable IDs,
   setup/assertion/cleanup definitions and actual execution evidence with their code.
 
@@ -66,8 +72,9 @@ Category SHA-256 is computed over UTF-8 `JSON.stringify(JSON.parse(fileContents)
 formatting whitespace does not change it. Update the corresponding checksum/count
 when deliberately reviewing category changes. Changing an index does not authorize
 changing the independent release scope. Command modes here are reviewed planning
-seeds, not production routing/replay metadata; phase 05 must review option-sensitive
-encoders/decoders and executable descriptor overlays against pinned source.
+seeds, not production routing/replay metadata; Phase 05 reviews the first five option-sensitive
+encoders/decoders and descriptor overlays against pinned source; later families must
+retain the same review and scenario discipline.
 
 Effect schemas under `packages/effect-redis/tools/spec/Schema.ts` define scenario definitions
 and compatibility records. Availability (supported/unsupported/unknown), semantic

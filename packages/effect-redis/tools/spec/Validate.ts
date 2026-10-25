@@ -141,7 +141,51 @@ export const validateSpecification = (spec: Specification): ReadonlyArray<string
     "connection scenario IDs",
     spec.connection.scenarios.map((scenario) => scenario.id),
   );
-  unique("executable scenario IDs", [...protocolIds, ...transportIds, ...connectionIds]);
+  const commandIds = unique(
+    "command-system scenario IDs",
+    spec.commandSystem.scenarios.map((scenario) => scenario.id),
+  );
+  unique("executable scenario IDs", [
+    ...protocolIds,
+    ...transportIds,
+    ...connectionIds,
+    ...commandIds,
+  ]);
+  const descriptorNames = unique(
+    "descriptor names",
+    spec.descriptors.map((descriptor) => descriptor.name),
+  );
+  if (spec.descriptors.length !== spec.commandSystem.descriptorCount)
+    issues.push("Descriptor inventory count mismatch");
+  for (const descriptor of spec.descriptors) {
+    requireAll("descriptor command", [descriptor.name], commandNames);
+    requireAll("descriptor scenario", descriptor.scenarios, commandIds);
+    if (
+      !spec.commands.some(
+        (command) =>
+          command.name === descriptor.name &&
+          command.implementation !== "planned" &&
+          command.typedCoverage === "partial",
+      )
+    )
+      issues.push(`Descriptor lacks reviewed slice coverage: ${descriptor.name}`);
+  }
+  for (const scenario of spec.commandSystem.scenarios) {
+    if (scenario.ownerPhase !== 5)
+      issues.push(`Wrong command-system scenario owner: ${scenario.id}`);
+    requireAll("command-system family", [scenario.family], scenarios);
+    requireAll(
+      "command-system fixture",
+      scenario.fixtures,
+      new Set([...native, spec.commandSystem.fixtureId]),
+    );
+  }
+  for (const family of spec.scenarios.filter((scenario) =>
+    ["COMMAND", "TYPES"].includes(scenario.id),
+  )) {
+    if (family.evidence !== undefined)
+      requireAll("command-system evidence scenario", family.evidence.scenarioIds, commandIds);
+  }
   for (const scenario of spec.connection.scenarios) {
     if (scenario.ownerPhase !== 4) issues.push(`Wrong connection scenario owner: ${scenario.id}`);
     requireAll("connection family", [scenario.family], scenarios);
@@ -198,10 +242,15 @@ export const validateSpecification = (spec: Specification): ReadonlyArray<string
     if (
       command.sources.some((source) => source === "redis-core" || source === "valkey-core") &&
       !["internal", "container"].includes(command.classification) &&
-      command.typedCoverage !== "planned"
+      !["planned", "partial"].includes(command.typedCoverage)
     ) {
       issues.push(`Public baseline command lacks typed coverage: ${command.name}`);
     }
+    if (
+      command.typedCoverage === "partial" &&
+      (command.implementation !== "partial" || !descriptorNames.has(command.name))
+    )
+      issues.push(`Partial command lacks a reviewed descriptor: ${command.name}`);
     checkRun(command.name, command);
     if (command.execution === "passed" && command.implementation !== "implemented")
       issues.push(`Unimplemented pass: ${command.name}`);

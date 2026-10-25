@@ -6,7 +6,9 @@ Build a native Redis-compatible client with Effect v4. This repository currently
 contains a bounded RESP codec, validated configuration, scoped Node byte transports,
 offline/live networking tests, and tracked specifications. The ordinary connection
 engine implements handshake, bounded admission/reply ownership, cancellation, shutdown
-and future-work reconnection. Typed command families remain planned.
+and future-work reconnection. Phase 05 adds the Redis service, typed descriptors,
+explicit payload/key codecs and a PING/GET/SET/INCR/ZSCORE slice. Broad typed command
+families remain planned.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -258,7 +260,8 @@ Implemented ordinary-engine policy:
   Credential Effects are reacquired per physical generation with that generation's
   Scope. Choose fixed configuration credentials or an Effect source, never both.
 - `executeOrdinary` declares one ordinary reply and returns lossless RESP, including
-  raw server errors. Typed command decoding is phase 05. Known session/blocking
+  raw server errors. The typed executor converts top-level server errors to redacted
+  ServerError; explicit raw execution preserves them. Known session/blocking
   controls are rejected; future/custom operations require reviewed caller semantics.
 - Admission reserves encoded count/byte capacity before waiting for recovery. Full
   queues fail explicitly; accepted work has a whole-command deadline. Encoding
@@ -271,6 +274,37 @@ Implemented ordinary-engine policy:
 - Raw push buffering is bounded by count and retained wire bytes, generation-tagged
   and single-consumer. Attributes stay attached. Overflow retires the connection;
   phase 09 owns full subscription/gap semantics. Diagnostics must stay payload-free.
+
+Implemented command-system policy:
+
+- `Redis.layer` captures `CommandExecutor`, whose ordinary Layer captures `Connection`.
+  Compose infrastructure outside command families. `makeRedis`/`makeExecutor` support
+  explicit composition without opening additional sockets or starting runtimes.
+- `Command<A, E, RD, RE>` prepares a `PreparedCommand` with declared key indexes,
+  access roles, routing, mode, provenance and scenario IDs. Preparation requires RE;
+  reply decoding requires RD. Execution combines both. Keep these requirements exact.
+- `Commands` builders and facade methods share encoders/decoders. The reviewed family
+  catalogs in `spec/command-system/` must match production metadata; only five command
+  identities have partial slice coverage. Do not mark the 741-name inventory complete.
+  Use handwritten reviewed overlays until generation has a demonstrated repeated need.
+- GET text is strict UTF-8 with BOM preservation; getBytes/raw preserve binary data.
+  Missing blobs use Option, integer replies use bigint, and zscoreToken preserves
+  decimal wire text. zscore explicitly converts to the server's IEEE double domain.
+- SET returns void unconditionally, boolean with a condition, or previous-byte Option
+  with GET. GET does not reveal whether the condition applied. Expiry is an exclusive,
+  unit-tagged choice. Respect pinned version differences; no silent emulation.
+- `RedisKey`/`PayloadCodec` select explicit Schema JSON or text encoding. Typed-key
+  writes reject GET. Never infer arbitrary application types or auto-JSON raw values.
+  Commands are lazy; prepared binary arguments are borrowed until connection admission
+  snapshots them under its budget. Do not mutate prepared intent while executing it.
+- Typed server errors, reply mismatches and payload errors remain distinct from wire
+  failures. Server/payload causes are redacted. Decoder defects and interruption
+  propagate; a completed reply followed by a codec failure does not justify replay.
+- Ordinary raw calls declare routing/mode and retain lossless errors/attributes.
+  Custom descriptors require actual decoders. Nonordinary modes and explicit-node
+  routing are rejected by the standalone executor; known session guards still apply.
+- `pnpm --filter @envoy1084/effect-redis typecheck:contracts` compiles positive/negative
+  API contracts separately from runtime tests. Keep it in aggregate typechecking/CI.
 
 ### Streams, subscriptions and recovery
 

@@ -1,5 +1,8 @@
 import { Schema } from "effect";
 
+export { CommandMetadata as Descriptor } from "../../src/command/Metadata.ts";
+import type { CommandMetadata } from "../../src/command/Metadata.ts";
+
 const Name = Schema.NonEmptyString;
 const Names = Schema.NonEmptyArray(Name);
 const Phase = Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 20 }));
@@ -70,6 +73,16 @@ export const ConnectionProfile = Schema.Struct({
   scenarios: Schema.NonEmptyArray(ScenarioDefinition),
 });
 
+export const CommandSystemProfile = Schema.Struct({
+  fixtureId: Name,
+  effectVersion: Name,
+  sources: Schema.NonEmptyArray(Url),
+  boundaries: Names,
+  catalogs: Schema.NonEmptyArray(Schema.String.check(Schema.isPattern(/^[a-z-]+\.json$/))),
+  descriptorCount: Count,
+  scenarios: Schema.NonEmptyArray(ScenarioDefinition),
+});
+
 /** Documentation availability and executed semantic evidence are independent. */
 export const CompatibilityRecord = Schema.Struct({
   feature: Name,
@@ -113,7 +126,13 @@ export const Command = Schema.Struct({
     "extension",
     "unverified-extension",
   ]),
-  typedCoverage: Schema.Literals(["planned", "container", "boundary", "review-required"]),
+  typedCoverage: Schema.Literals([
+    "planned",
+    "partial",
+    "container",
+    "boundary",
+    "review-required",
+  ]),
   mode: Schema.Literals([
     "ordinary",
     "blocking",
@@ -128,7 +147,7 @@ export const Command = Schema.Struct({
   ownerPhase: Phase,
   scenarioFamilies: Names,
   sources: Names,
-  implementation: Schema.Literals(["planned", "implemented"]),
+  implementation: Schema.Literals(["planned", "partial", "implemented"]),
   execution: Execution,
   aliasOf: Schema.optionalKey(Name),
   notes: Schema.optionalKey(Name),
@@ -241,6 +260,8 @@ export interface Specification {
   readonly protocol: typeof ProtocolProfile.Type;
   readonly transport: typeof TransportProfile.Type;
   readonly connection: typeof ConnectionProfile.Type;
+  readonly commandSystem: typeof CommandSystemProfile.Type;
+  readonly descriptors: ReadonlyArray<CommandMetadata>;
   readonly release: typeof Release.Type;
   readonly index: typeof CommandIndex.Type;
   readonly commands: ReadonlyArray<typeof Command.Type>;

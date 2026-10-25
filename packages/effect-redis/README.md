@@ -7,7 +7,9 @@ codec limits and typed errors. The Node-only `/node` entrypoint exports `connect
 `layer`, `Transport` and `TransportConnection` for scoped TCP/TLS/Unix byte I/O.
 The universal entrypoint also exports `makeConnection`, the `Connection` service and
 its scoped Layer, connection options/snapshots, and typed admission/handshake/connection
-failures. The engine executes caller-declared ordinary single-reply commands.
+failures. The engine executes caller-declared ordinary single-reply commands. `Redis`,
+`CommandExecutor`, `Commands`, `Reply`, `RedisKey` and `PayloadCodec` add a typed
+PING/GET/SET/INCR/ZSCORE slice, custom descriptors and explicit payload codecs.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -70,8 +72,8 @@ const ping = Effect.scoped(
 ).pipe(Effect.provide(NodeTransport));
 ```
 
-`executeOrdinary` returns lossless RESP values, including raw server errors. Typed
-command decoding arrives in phase 05. Known stateful/blocking operations require
+`executeOrdinary` returns lossless RESP values, including raw server errors. The typed executor maps server errors to
+redacted `ServerError`; reply/payload decoding failures have separate tagged errors. Known stateful/blocking operations require
 session APIs; custom commands must obey the caller-declared single-reply contract.
 
 Admission bounds queued/in-flight counts and encoded bytes. Full queues fail with
@@ -92,3 +94,66 @@ awaits scoped cleanup. Cleanup defects propagate and prevent replacement acquisi
 `takePush` permits one waiting consumer, preserves attributes and tags generations;
 overflow retires the connection. This is the bounded push boundary for later
 subscriptions. `snapshot` exposes safe counters without arguments or payloads.
+
+The typed service composes over the same connection:
+
+```ts
+import { Effect, Layer, Schema } from "effect";
+
+import {
+  CommandExecutor,
+  Connection,
+  Redis,
+  RedisKey,
+  decodeRedisConfig,
+} from "@envoy1084/effect-redis";
+import { layer as NodeTransport } from "@envoy1084/effect-redis/node";
+
+const program = Effect.gen(function* () {
+  const redis = yield* Redis;
+  const user = RedisKey.json("user:1", Schema.Struct({ name: Schema.String }));
+  yield* redis.setKey(user, { name: "Ada" });
+  const value = yield* redis.getKey(user);
+  const created = yield* redis.set("once", "value", { condition: "NX" });
+  const count = yield* redis.incr("count");
+  return { value, created, count };
+});
+
+const runnable = Effect.gen(function* () {
+  const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
+  const live = Redis.layer.pipe(
+    Layer.provide(CommandExecutor.layer),
+    Layer.provide(Connection.layer(config)),
+    Layer.provide(NodeTransport),
+  );
+  return yield* program.pipe(Effect.provide(live));
+});
+```
+
+`get` returns strict UTF-8 `Option<string>`; `getBytes` returns `Option<Uint8Array>`.
+Text preserves a leading BOM and rejects malformed UTF-8. `incr` returns bigint.
+`zscore` returns `Option<number>` in the server's IEEE double domain;
+`zscoreToken` preserves the decimal token. No raw operation auto-serializes JSON.
+
+SET returns void normally, boolean with a condition, or previous bytes as Option
+with `{ get: true }`. Previous values do not prove a conditional write applied.
+`expiry: { type: "EX" | "PX" | "EXAT" | "PXAT", value }` uses whole positive units;
+`{ type: "KEEPTTL" }` retains expiry. `expiryAfter(Duration)` validates exact whole
+milliseconds. Conditions/options still depend on actual server versions: for example,
+Valkey 9.1.2 supports IFEQ, while IFNE/digest conditions are absent there.
+
+`Commands` exposes the same operations as lazy command descriptions. Use
+`redis.execute(Commands.get("key"))`, or prepare explicitly then executePrepared.
+Preparation requires encoding services; decoding services are needed at execution.
+Typed-key writes intentionally exclude GET; use getKey for decoded payload reads.
+Prepared binary tokens are borrowed until admission; do not mutate them during use.
+
+`redis.raw(tokens, { execution: "ordinary", routing: { _tag: "Keyless" } })` preserves
+lossless RESP, including errors. Keyed custom calls declare key argument indexes and
+access roles. `defineCommand` additionally requires a reply decoder and provenance.
+The standalone executor rejects nonordinary modes and explicit-node routing. These
+contracts do not imply implemented sessions, topology routing or provider parity.
+
+The dedicated `typecheck:contracts` lane verifies public inference and codec service
+requirements. Live typed conformance covers pinned Redis/Valkey builds in RESP2/3;
+full command-family and backend certification remain pending.

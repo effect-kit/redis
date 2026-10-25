@@ -75,13 +75,14 @@
     "name": "GET",
     "category": "string",
     "classification": "application",
-    "typedCoverage": "planned",
+    "typedCoverage": "partial",
     "mode": "ordinary",
     "ownerPhase": 6,
     "scenarioFamilies": ["COMMAND"],
     "sources": ["redis-core", "valkey-core", "redis-docs"],
-    "implementation": "planned",
-    "execution": "not-run"
+    "implementation": "partial",
+    "execution": "not-run",
+    "notes": "Phase 05 typed vertical slice in spec/command-system.json; complete family/option/backend certification remains in its owning phases."
   },
   {
     "name": "GETDEL",
@@ -135,13 +136,14 @@
     "name": "INCR",
     "category": "string",
     "classification": "application",
-    "typedCoverage": "planned",
+    "typedCoverage": "partial",
     "mode": "ordinary",
     "ownerPhase": 6,
     "scenarioFamilies": ["COMMAND"],
     "sources": ["redis-core", "valkey-core", "redis-docs"],
-    "implementation": "planned",
-    "execution": "not-run"
+    "implementation": "partial",
+    "execution": "not-run",
+    "notes": "Phase 05 typed vertical slice in spec/command-system.json; complete family/option/backend certification remains in its owning phases."
   },
   {
     "name": "INCRBY",
@@ -257,14 +259,14 @@
     "name": "SET",
     "category": "string",
     "classification": "application",
-    "typedCoverage": "planned",
+    "typedCoverage": "partial",
     "mode": "ordinary",
     "ownerPhase": 6,
     "scenarioFamilies": ["COMMAND"],
     "sources": ["redis-core", "valkey-core", "redis-docs"],
-    "implementation": "planned",
+    "implementation": "partial",
     "execution": "not-run",
-    "notes": "dragonfly: Missing: IFDEQ, IFDNE, IFEQ, IFNE."
+    "notes": "Phase 05 typed vertical slice in spec/command-system.json; complete family/option/backend certification remains in its owning phases."
   },
   {
     "name": "SETEX",
