@@ -44,7 +44,7 @@ export const allocateServer = Effect.fnUntraced(function* (
     yield* Effect.tryPromise({
       try: () =>
         Promise.all(
-          ["ca.crt", "server.crt", "server.key"].map((name) =>
+          ["ca.crt", "server.crt", "server.key", "client.crt", "client.key"].map((name) =>
             copyFile(join(tls.directory, name), join(directory, name)),
           ),
         ),
@@ -158,6 +158,9 @@ export const allocateServer = Effect.fnUntraced(function* (
           }),
         )
         .digest("hex"),
+      ...(options?.network === undefined
+        ? {}
+        : { networkAddress: started.getIpAddress(options.network.getName()) }),
     };
   });
 

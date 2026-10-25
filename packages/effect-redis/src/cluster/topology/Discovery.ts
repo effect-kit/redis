@@ -3,7 +3,7 @@ import { Clock, Deferred, Effect, Exit } from "effect";
 import type { NodeRegistry } from "#/cluster/nodes/Registry";
 import type { ClusterPolicy } from "#/cluster/Options";
 import { decodeShards, decodeSlots, validateTopology } from "#/cluster/topology/Decode";
-import { addressIdentity } from "#/cluster/topology/Types";
+import { addressIdentity, ownTopology, topologyIdentity } from "#/cluster/topology/Types";
 import type { ClusterAddress, ClusterTopology } from "#/cluster/topology/Types";
 import { checkServerReply } from "#/command/Decode";
 import type { RedisError } from "#/command/Executor";
@@ -31,14 +31,28 @@ export const makeDiscovery = (
   let refreshedAt = 0;
   let pending: Deferred.Deferred<ClusterTopology, RedisError> | undefined;
   let failures = 0;
+  let refreshWaiters = 0;
+  let unhealthy: string | undefined;
+  const observers = new Set<Effect.Effect<void>>();
+  const invalidate = Effect.suspend(() =>
+    Effect.forEach(observers, (observer) => observer, { discard: true }),
+  );
 
   const discover = Effect.fnUntraced(function* () {
-    const candidates = new Map(seeds.map((seed) => [addressIdentity(seed), seed]));
+    const candidates = new Map<string, ClusterAddress>();
+    if (unhealthy === undefined)
+      for (const seed of seeds) candidates.set(addressIdentity(seed), seed);
     for (const shard of current?.shards ?? [])
       candidates.set(addressIdentity(shard.primary.address), shard.primary.address);
+    for (const seed of seeds) candidates.set(addressIdentity(seed), seed);
     let last: RedisError = new ClusterError({ reason: "node-unavailable", delivery: "unsent" });
 
-    for (const address of candidates.values()) {
+    const ordered = [...candidates.values()].filter(
+      (address) => addressIdentity(address) !== unhealthy,
+    );
+    const deferred = unhealthy === undefined ? undefined : candidates.get(unhealthy);
+    if (deferred !== undefined) ordered.push(deferred);
+    for (const address of ordered) {
       const result = yield* Effect.result(
         registry.use(address, "session", (wire) =>
           Effect.gen(function* () {
@@ -62,12 +76,25 @@ export const makeDiscovery = (
       if (result._tag === "Failure") {
         last = result.failure;
         // Trying another seed is useful only for unavailable transport, not an ACL/protocol rejection.
-        if (last._tag !== "ConnectionError") return yield* last;
+        if (
+          last._tag !== "ConnectionError" &&
+          !(last._tag === "ClusterError" && last.reason === "invalid-topology")
+        )
+          return yield* last;
         continue;
       }
 
-      const next = { revision: (current?.revision ?? 0) + 1, shards: result.success };
+      const changed =
+        current === undefined ||
+        topologyIdentity(current.shards) !== topologyIdentity(result.success);
+      const next = Object.freeze({
+        revision: (current?.revision ?? 0) + (changed ? 1 : 0),
+        shards: ownTopology(result.success),
+      });
+      // Clear topology-bound state before any caller can route through the replacement snapshot.
+      if (changed && current !== undefined) yield* invalidate;
       current = next;
+      unhealthy = undefined;
       refreshedAt = yield* Clock.currentTimeMillis;
       const retained = new Set(seeds.map(addressIdentity));
       for (const shard of next.shards)
@@ -79,7 +106,7 @@ export const makeDiscovery = (
     return yield* last;
   });
 
-  const refresh = Effect.uninterruptibleMask((restore) =>
+  const refreshOne = Effect.uninterruptibleMask((restore) =>
     Effect.gen(function* () {
       if (pending !== undefined) return yield* restore(Deferred.await(pending));
       const receipt = yield* Deferred.make<ClusterTopology, RedisError>();
@@ -97,6 +124,26 @@ export const makeDiscovery = (
     }),
   );
 
+  const refresh = Effect.acquireUseRelease(
+    Effect.suspend(() => {
+      if (refreshWaiters >= policy.maxOperations)
+        return Effect.fail(new ClusterError({ reason: "capacity", delivery: "unsent" }));
+      refreshWaiters++;
+      return Effect.void;
+    }),
+    () =>
+      refreshOne.pipe(
+        Effect.timeoutOrElse({
+          duration: policy.operationTimeoutMillis,
+          orElse: () => Effect.fail(new ClusterError({ reason: "timeout", delivery: "unsent" })),
+        }),
+      ),
+    () =>
+      Effect.sync(() => {
+        refreshWaiters--;
+      }),
+  );
+
   const ensure = Effect.gen(function* () {
     const now = yield* Clock.currentTimeMillis;
     return current === undefined || now - refreshedAt >= policy.refreshIntervalMillis
@@ -104,7 +151,33 @@ export const makeDiscovery = (
       : current;
   });
 
-  return { refresh, ensure, current: () => current, failures: () => failures };
+  const observe = (observer: Effect.Effect<void>) =>
+    Effect.acquireRelease(
+      Effect.suspend(() =>
+        observers.size >= policy.maxOperations
+          ? Effect.fail(new ClusterError({ reason: "capacity", delivery: "unsent" }))
+          : Effect.sync(() => {
+              observers.add(observer);
+            }),
+      ),
+      () =>
+        Effect.sync(() => {
+          observers.delete(observer);
+        }),
+    );
+
+  return {
+    refresh,
+    ensure,
+    invalidate,
+    observe,
+    stale: (address?: ClusterAddress) => {
+      refreshedAt = Number.NEGATIVE_INFINITY;
+      unhealthy = address === undefined ? undefined : addressIdentity(address);
+    },
+    current: () => current,
+    failures: () => failures,
+  };
 };
 
 export type Discovery = ReturnType<typeof makeDiscovery>;

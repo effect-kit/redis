@@ -26,6 +26,10 @@ export type CommandMetadata = typeof CommandMetadata.Type;
 export const Routing = Schema.Union([
   Schema.Struct({ _tag: Schema.Literal("Keyless") }),
   Schema.Struct({
+    _tag: Schema.Literal("Slot"),
+    slot: Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 16383 })),
+  }),
+  Schema.Struct({
     _tag: Schema.Literal("Keys"),
     keys: Schema.NonEmptyArray(
       Schema.Struct({

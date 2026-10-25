@@ -1,10 +1,12 @@
-import { Context, Effect, Layer, Stream } from "effect";
+import { Cause, Context, Effect, Exit, Layer, Stream } from "effect";
 
 import { makeRedisAdmin } from "#/admin/RedisAdmin";
+import { makeClusterEvents } from "#/cluster/events/Features";
 import { makeNodeRegistry } from "#/cluster/nodes/Registry";
 import { decodeClusterPolicy } from "#/cluster/Options";
 import type { ClusterOptions } from "#/cluster/Options";
 import { makeClusterRouter } from "#/cluster/routing/Router";
+import { makeClusterScripts } from "#/cluster/scripting/Scripts";
 import { makeClusterBatches } from "#/cluster/sessions/Batches";
 import { makeClusterSessions } from "#/cluster/sessions/Sessions";
 import type { ClusterTarget } from "#/cluster/sessions/Sessions";
@@ -15,15 +17,18 @@ import type { Command, PreparedCommand } from "#/command/Command";
 import { decodeReply } from "#/command/Decode";
 import { CommandExecutor } from "#/command/Executor";
 import { blockingFamily } from "#/commands/blocking/Family";
+import { clusterScan } from "#/commands/cluster/Scan";
+import type { ClusterScanOptions } from "#/commands/cluster/Scan";
 import type { KeyScanOptions } from "#/commands/scan/Build";
 import { blockingStreamFamily } from "#/commands/streams/ReadFamily";
 import { decodePolicy } from "#/connection/Options";
 import { ClusterError } from "#/errors/ClusterError";
 import { RedisConfigError } from "#/errors/RedisConfigError";
+import { scanEntries } from "#/iteration/Pages";
 import { makeRedis, Redis } from "#/Redis";
 import type { RedisConfig } from "#/RedisConfig";
-import { makeRedisScripts } from "#/scripting/RedisScripts";
 import type { ScriptOptions } from "#/scripting/RedisScripts";
+import type { AnyCommand } from "#/sessions/batch/Types";
 import { makeRedisStreams } from "#/streams/RedisStreams";
 
 /** Native client-side Cluster routing; proxy endpoints retain standalone execution. */
@@ -65,9 +70,9 @@ export const makeRedisCluster = Effect.fnUntraced(function* <R = never>(
   const router = makeClusterRouter(config, registry, discovery, policy);
   const leases = makeClusterSessions(registry, discovery, router, config.database);
   const batches = makeClusterBatches(leases, router, registry.sessionPolicy);
+  const events = yield* makeClusterEvents(registry, discovery, policy, options, config.database);
   const executor = router.executor();
   const redis = { ...makeRedis(executor), ...batches };
-  let closed = false;
 
   const executeBlocking = <A, E, RD, RE>(command: Command<A, E, RD, RE>) =>
     command.prepare.pipe(
@@ -99,26 +104,42 @@ export const makeRedisCluster = Effect.fnUntraced(function* <R = never>(
         const initial = yield* discovery.ensure;
         const revision = initial.revision;
         // A finite node traversal is not a snapshot; changes are surfaced rather than silently missing a new primary.
-        return Stream.fromIterable(initial.shards.map((shard) => shard.primary.id)).pipe(
+        const unchanged = Effect.suspend(() =>
+          discovery.current()?.revision === revision
+            ? Effect.void
+            : Effect.fail(new ClusterError({ reason: "topology-changed", delivery: "replied" })),
+        );
+        return Stream.fromIterable(new Set(initial.shards.map((shard) => shard.primary.id))).pipe(
           Stream.flatMap((node) =>
-            makeRedis(router.executor(node))
-              .scanKeys(scanOptions)
-              .pipe(
-                Stream.mapEffect((key) => {
-                  const current = discovery.current();
-                  return current?.revision === revision
-                    ? Effect.succeed(key)
-                    : Effect.fail(
-                        new ClusterError({ reason: "topology-changed", delivery: "replied" }),
-                      );
-                }),
+            scanEntries((cursor) =>
+              unchanged.pipe(
+                Effect.andThen(makeRedis(router.executor(node)).scan(cursor, scanOptions)),
+                Effect.tap(() => unchanged),
               ),
+            ),
           ),
         );
       }),
     );
 
-  yield* discovery.refresh;
+  yield* discovery.refresh.pipe(
+    Effect.onExit((exit) => (Exit.isFailure(exit) ? registry.close : Effect.void)),
+  );
+  yield* Effect.forkIn(
+    Effect.forever(
+      Effect.sleep(policy.refreshIntervalMillis).pipe(
+        Effect.andThen(Effect.result(discovery.refresh)),
+      ),
+    ).pipe(
+      Effect.onExit((exit) =>
+        Effect.sync(() => {
+          if (Exit.isFailure(exit) && Cause.hasDies(exit.cause))
+            registry.poison(Cause.fromReasons(exit.cause.reasons.filter(Cause.isDieReason)));
+        }),
+      ),
+    ),
+    registry.scope,
+  );
 
   return {
     redis,
@@ -130,10 +151,39 @@ export const makeRedisCluster = Effect.fnUntraced(function* <R = never>(
     withSession: leases.withSession,
     withBlockingSession: leases.withBlockingSession,
     scripts: (target: ClusterTarget, scriptOptions?: ScriptOptions) =>
-      makeRedisScripts(bound(target), scriptOptions),
+      makeClusterScripts(router, target, scriptOptions),
     streams: (target: ClusterTarget) => makeRedisStreams(redis, bound(target)),
     admin: (node: string) => makeRedisAdmin(bound({ node })),
-    node: (node: string) => makeRedis(router.executor(node)),
+    node: (node: string) => ({
+      ...makeRedis(router.executor(node)),
+      pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
+        leases.withSession({ node }, (session) => session.pipeline(commands)),
+      transaction: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
+        leases.withSession({ node }, (session) => session.transaction(commands)),
+    }),
+    /** Lazy, sequential node results; no broadcast atomicity or implicit retry. */
+    onPrimaries: <A, E, RD, RE>(command: Command<A, E, RD, RE>) =>
+      Stream.unwrap(
+        Effect.gen(function* () {
+          const prepared = yield* command.prepare;
+          const topology = yield* discovery.ensure;
+          return Stream.fromIterable(
+            new Set(topology.shards.map((shard) => shard.primary.id)),
+          ).pipe(
+            Stream.mapEffect((node) =>
+              Effect.result(router.executor(node).executePrepared(prepared)).pipe(
+                Effect.map((result) => ({ node, result })),
+              ),
+            ),
+          );
+        }),
+      ),
+    pubsub: events.pubsub,
+    tracking: events.tracking,
+    clusterScan: (cursor = "0", scanOptions?: ClusterScanOptions) =>
+      executor.execute(clusterScan(cursor, scanOptions)),
+    scanCluster: (scanOptions?: ClusterScanOptions) =>
+      scanEntries((cursor) => executor.execute(clusterScan(cursor, scanOptions))),
     scanKeys,
     refresh: discovery.refresh,
     topology: discovery.ensure,
@@ -141,15 +191,12 @@ export const makeRedisCluster = Effect.fnUntraced(function* <R = never>(
       return {
         ...(yield* registry.snapshot),
         ...router.admission.snapshot(),
+        ...events.snapshot(),
         revision: discovery.current()?.revision ?? 0,
         refreshFailures: discovery.failures(),
-        closed,
       };
     }),
-    close: Effect.suspend(() => {
-      closed = true;
-      return registry.close;
-    }),
+    close: registry.close,
   };
 });
 

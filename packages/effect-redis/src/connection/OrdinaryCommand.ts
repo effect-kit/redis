@@ -77,6 +77,7 @@ export const checkOrdinary = (command: RedisCommand) => {
   if (
     modes.has(name) ||
     (name === "SCRIPT" && subcommand === "DEBUG") ||
+    (name === "CLUSTER" && subcommand === "SYNCSLOTS") ||
     (name === "CLIENT" &&
       !["ID", "INFO", "LIST", "GETNAME", "GETREDIR", "HELP"].includes(subcommand)) ||
     ((name === "XREAD" || name === "XREADGROUP") && blockingRead(command, name === "XREADGROUP"))

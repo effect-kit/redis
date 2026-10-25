@@ -11,6 +11,7 @@ const Policy = Schema.Struct({
   maxNodes: defaulted(64),
   maxRedirects: defaulted(8),
   maxOperations: defaulted(1024),
+  maxEventCohorts: defaulted(64),
   maxRetainedBytes: defaulted(16 * 1024 * 1024),
   operationTimeoutMillis: defaulted(30_000),
   refreshIntervalMillis: defaulted(30_000),

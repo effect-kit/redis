@@ -1,7 +1,6 @@
-import { Context, Deferred, Effect, Layer, Redacted, Schema } from "effect";
+import { Context, Deferred, Effect, Layer, Redacted } from "effect";
 
 import type { RedisError } from "#/command/Executor";
-import { undecorate } from "#/command/reply/Scalars";
 import { parse } from "#/commands/internal/Input";
 import { invocation } from "#/commands/scripting/Invocation";
 import type { ScriptArguments } from "#/commands/scripting/Invocation";
@@ -10,35 +9,20 @@ import { ReplyError } from "#/errors/ReplyError";
 import type { ServerError } from "#/errors/ServerError";
 import { SessionError } from "#/errors/SessionError";
 import type { RespValue } from "#/protocol/RespValue";
+import { isMissingScriptReply } from "#/scripting/NoScript";
+import { decodeScriptOptions } from "#/scripting/Options";
+import type { ScriptOptions } from "#/scripting/Options";
 import type { RedisScript } from "#/scripting/RedisScript";
 import { snapshotArguments } from "#/scripting/Snapshot";
 import type { SessionAccess } from "#/sessions/Access";
 import { RedisSessions } from "#/sessions/RedisSessions";
 import type { RedisSession } from "#/sessions/Session";
 
-export interface ScriptOptions {
-  readonly maxConcurrentLoads?: number;
-  /** Additional binary-argument ownership per active lease; immutable strings are borrowed. */
-  readonly maxSnapshotBytes?: number;
-  /** Server scope requires every lease to target the same physical server. */
-  readonly loadScope?: "connection" | "server";
-}
+export type { ScriptOptions } from "#/scripting/Options";
 
 const missingScript = (error: ServerError) => {
-  if (error.code !== "NOSCRIPT") return false;
-  const reply = undecorate(Redacted.value(error.reply) as RespValue);
-  const messages = [
-    "NOSCRIPT No matching script. Please use EVAL.",
-    "NOSCRIPT No matching script.",
-  ];
-
   return (
-    (reply._tag === "SimpleError" || reply._tag === "BlobError") &&
-    messages.some(
-      (expected) =>
-        reply.value.length === expected.length &&
-        reply.value.every((byte, index) => byte === expected.charCodeAt(index)),
-    )
+    error.code === "NOSCRIPT" && isMissingScriptReply(Redacted.value(error.reply) as RespValue)
   );
 };
 
@@ -46,20 +30,7 @@ export const makeRedisScripts = Effect.fnUntraced(function* (
   sessions: Pick<SessionAccess, "withSession">,
   options: ScriptOptions = {},
 ) {
-  const { maxConcurrentLoads, maxSnapshotBytes, loadScope } = yield* parse(
-    Schema.Struct({
-      maxConcurrentLoads: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 65536 })).pipe(
-        Schema.withDecodingDefaultKey(Effect.succeed(64)),
-      ),
-      maxSnapshotBytes: Schema.Int.check(
-        Schema.isBetween({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }),
-      ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(16 * 1024 * 1024))),
-      loadScope: Schema.Literals(["connection", "server"]).pipe(
-        Schema.withDecodingDefaultKey(Effect.succeed("connection")),
-      ),
-    }),
-    options,
-  );
+  const { maxConcurrentLoads, maxSnapshotBytes, loadScope } = yield* decodeScriptOptions(options);
   // This coordinator belongs to one backend/DB identity, never a process-global cache.
   const loads = new Map<string, Deferred.Deferred<void, RedisError>>();
 

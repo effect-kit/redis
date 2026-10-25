@@ -13,7 +13,7 @@ import { decodeSessionPolicy } from "#/sessions/pool/Options";
 import type { SessionWire } from "#/sessions/pool/Wire";
 import type { Transport } from "#/transport/Transport";
 
-interface Entry {
+export interface Entry {
   readonly scope: Scope.Closeable;
   readonly pool: LeasePool;
   readonly config: RedisConfig;
@@ -49,8 +49,14 @@ export const makeNodeRegistry = Effect.fnUntraced(function* <R>(
     const mapped = options.addressMap === undefined ? address : options.addressMap({ ...address });
     const dial = yield* decodeAddress(mapped);
     const tls = base.endpoint._tag === "Tcp" ? base.endpoint.tls : undefined;
+    const seedIdentity =
+      base.endpoint._tag === "Tcp" &&
+      address.host === base.endpoint.host &&
+      address.port === base.endpoint.port
+        ? (tls?.serverName ?? address.host)
+        : address.host;
     const serverName =
-      "serverName" in mapped && mapped.serverName !== undefined ? mapped.serverName : address.host;
+      "serverName" in mapped && mapped.serverName !== undefined ? mapped.serverName : seedIdentity;
     if (typeof serverName !== "string")
       return yield* new ClusterError({ reason: "invalid-topology", delivery: "unsent" });
 
@@ -143,6 +149,17 @@ export const makeNodeRegistry = Effect.fnUntraced(function* <R>(
   yield* Effect.addFinalizer(() => close);
 
   return {
+    scope: owner,
+    poison: (cause: Cause.Cause<never>) => {
+      fatal = cause;
+    },
+    check: Effect.suspend(() =>
+      fatal !== undefined
+        ? Effect.failCause(fatal)
+        : closed
+          ? Effect.fail(new ClusterError({ reason: "closed", delivery: "unsent" }))
+          : Effect.void,
+    ),
     use,
     withNode,
     configuration,

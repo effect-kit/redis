@@ -2,6 +2,7 @@ import { Effect } from "effect";
 
 import { keySlot } from "#/cluster/Slot";
 import type { PreparedCommand } from "#/command/Command";
+import { commandToken } from "#/connection/OrdinaryCommand";
 import { ClusterError } from "#/errors/ClusterError";
 import type { RedisArgument } from "#/RedisArgument";
 
@@ -20,14 +21,14 @@ export const commandSlot = Effect.fnUntraced(function* (
   explicitNode = false,
 ) {
   const routing = command.routing;
+  const name = commandToken(command.tokens[0]);
   // These operations alter database scope; key hashing alone cannot establish their semantics.
-  if (["MOVE", "SWAPDB"].includes(command.metadata.name))
+  if (["MOVE", "SWAPDB"].includes(name))
     return yield* new ClusterError({ delivery: "unsent", reason: "database" });
-  if (
-    command.metadata.name === "COPY" &&
-    command.tokens.some((token, i) => i > 2 && token === "DB")
-  )
+  if (name === "COPY" && command.tokens.some((token, i) => i > 2 && commandToken(token) === "DB"))
     return yield* new ClusterError({ delivery: "unsent", reason: "database" });
+
+  if (routing._tag === "Slot") return routing.slot;
 
   if (routing._tag === "Dynamic" && !explicitNode)
     return yield* new ClusterError({ delivery: "unsent", reason: "unresolved-keys" });

@@ -54,6 +54,7 @@ export const checkAdvanced = (command: RedisCommand) => {
   const name = commandToken(command[0]);
   if (
     (name === "SCRIPT" && commandToken(command[1]) === "DEBUG") ||
+    (name === "CLUSTER" && commandToken(command[1]) === "SYNCSLOTS") ||
     modes.has(name) ||
     (name === "CLIENT" && ["REPLY", "IMPORT-SOURCE", "CACHING"].includes(commandToken(command[1])))
   )

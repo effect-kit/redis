@@ -11,12 +11,21 @@ import type { ClusterAddress } from "#/cluster/topology/Types";
 import type { PreparedCommand } from "#/command/Command";
 import { decodeReply, checkServerReply } from "#/command/Decode";
 import type { RedisExecutor } from "#/command/Executor";
-import { status } from "#/command/reply/Scalars";
+import type { RedisError } from "#/command/Executor";
+import { status, undecorate } from "#/command/reply/Scalars";
 import { checkOrdinary } from "#/connection/OrdinaryCommand";
 import { ClusterError } from "#/errors/ClusterError";
 import { UnsupportedCommandError } from "#/errors/UnsupportedCommandError";
+import type { RespValue } from "#/protocol/RespValue";
 import type { RedisConfig } from "#/RedisConfig";
 import { checkAdvanced, isBlocking } from "#/sessions/controls/Guard";
+import type { SessionWire } from "#/sessions/pool/Wire";
+
+export type ClusterExchange = (
+  wire: SessionWire,
+  command: PreparedCommand<unknown, unknown, unknown>,
+  target: { readonly address: ClusterAddress; readonly asking: boolean },
+) => Effect.Effect<RespValue, RedisError>;
 
 export const makeClusterRouter = (
   config: RedisConfig,
@@ -44,6 +53,8 @@ export const makeClusterRouter = (
       revision = topology.revision;
     }
     const targetId = nodeId ?? (command.routing._tag === "Node" ? command.routing.node : undefined);
+    if (nodeId !== undefined && command.routing._tag === "Node" && command.routing.node !== nodeId)
+      return yield* new ClusterError({ reason: "session-route", delivery: "unsent" });
     const slot = yield* commandSlot(command, targetId !== undefined);
 
     if (targetId !== undefined) {
@@ -73,7 +84,12 @@ export const makeClusterRouter = (
     };
   });
 
-  const reply = <A, E, R>(input: PreparedCommand<A, E, R>, nodeId?: string, blocking = false) =>
+  const reply = <A, E, R>(
+    input: PreparedCommand<A, E, R>,
+    nodeId?: string,
+    blocking = false,
+    exchange?: ClusterExchange,
+  ) =>
     admission.run(input, (command, writing) =>
       Effect.gen(function* () {
         const mode = command.metadata.execution;
@@ -98,10 +114,8 @@ export const makeClusterRouter = (
         let target = yield* route(command, nodeId, blocking);
         let asking = false;
         for (let attempt = 0; attempt <= policy.maxRedirects; attempt++) {
-          const received = yield* registry.use(
-            target.address,
-            blocking ? "blocking" : "session",
-            (wire) =>
+          const received = yield* registry
+            .use(target.address, blocking ? "blocking" : "session", (wire) =>
               Effect.gen(function* () {
                 // Exclusive leases fence both control adjacency and replica connection state.
                 yield* wire
@@ -112,18 +126,40 @@ export const makeClusterRouter = (
                     .execute(["ASKING"])
                     .pipe(Effect.flatMap(checkServerReply), Effect.flatMap(status("OK")));
                 writing();
-                return yield* wire
-                  .execute(command.tokens, command.replyTimeoutMillis)
-                  .pipe(
-                    Effect.ensuring(
-                      mode === "exclusive" || mode === "advanced"
-                        ? Effect.sync(wire.retire)
-                        : Effect.void,
-                    ),
-                  );
+                const response =
+                  exchange === undefined
+                    ? wire.execute(command.tokens, command.replyTimeoutMillis)
+                    : exchange(wire, command, { address: target.address, asking });
+                return yield* response.pipe(
+                  Effect.ensuring(
+                    mode === "exclusive" || mode === "advanced"
+                      ? Effect.sync(wire.retire)
+                      : Effect.void,
+                  ),
+                );
               }),
-          );
+            )
+            .pipe(
+              Effect.catchTag("ConnectionError", (error) => {
+                discovery.stale(target.address);
+                return discovery.invalidate.pipe(Effect.andThen(Effect.fail(error)));
+              }),
+            );
           const redirected = yield* redirect(received, target.address);
+          const value = undecorate(received);
+          if (
+            (value._tag === "SimpleError" || value._tag === "BlobError") &&
+            ["CLUSTERDOWN ", "READONLY "].some(
+              (code) =>
+                value.value.length >= code.length &&
+                value.value
+                  .subarray(0, code.length)
+                  .every((byte, index) => byte === code.charCodeAt(index)),
+            )
+          ) {
+            discovery.stale(target.address);
+            yield* discovery.invalidate;
+          }
           if (redirected === undefined || target.explicit) return received;
           if (target.slot === undefined || redirected.slot !== target.slot)
             return yield* new ClusterError({ reason: "invalid-redirect", delivery: "replied" });
@@ -135,6 +171,7 @@ export const makeClusterRouter = (
             });
 
           asking = redirected.kind === "ASK";
+          yield* discovery.invalidate;
           if (!asking) {
             moved.set(redirected.slot, redirected.address);
             // Refresh is a distinct read-only operation; failed refresh never replays the original command.

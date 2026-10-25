@@ -33,3 +33,4 @@ export { clientTracking, clientTrackingInfo } from "#/commands/tracking/Controls
 export * from "#/commands/scripting/index";
 
 export * from "#/commands/admin/index";
+export * from "#/commands/cluster/index";

@@ -17,6 +17,7 @@ export default defineConfig({
       "test/integration/scripting/**/*.test.ts",
       "test/integration/admin/**/*.test.ts",
       "test/integration/diagnostics/**/*.test.ts",
+      "test/integration/cluster/**/*.test.ts",
     ],
     passWithNoTests: false,
     testTimeout: 5000,

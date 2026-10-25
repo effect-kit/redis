@@ -29,8 +29,8 @@ export const makeClusterSessions = (
     body: (session: ReturnType<typeof makeSession>) => Effect.Effect<A, E, R>,
   ) =>
     Effect.gen(function* () {
-      const topology = yield* discovery.ensure;
       const anchor = "key" in target ? keySlot(yield* parse(Argument, target.key)) : undefined;
+      const topology = yield* discovery.ensure;
       const node =
         "node" in target
           ? topology.shards
@@ -39,18 +39,18 @@ export const makeClusterSessions = (
           : anchor === undefined
             ? undefined
             : primaryForSlot(topology, anchor)?.primary;
-      if (node === undefined || node.role !== "primary")
+      if (node === undefined)
         return yield* new ClusterError({ reason: "session-route", delivery: "unsent" });
 
       return yield* registry.use(node.address, mode, (wire) =>
         Effect.gen(function* () {
           yield* wire
-            .execute(["READWRITE"])
+            .execute([node.role === "replica" ? "READONLY" : "READWRITE"])
             .pipe(Effect.flatMap(checkServerReply), Effect.flatMap(status("OK")));
           const session = makeSession(
             wire,
             registry.sessionPolicy,
-            makeClusterSessionValidation(discovery, node.id, database, anchor),
+            makeClusterSessionValidation(discovery, node, database, anchor),
           );
           return yield* Effect.suspend(() => body(session)).pipe(
             Effect.onExit(() => session.finish),
