@@ -11,7 +11,7 @@ import {
 } from "testcontainers";
 
 import { FixtureError } from "#test/support/servers/FixtureError";
-import { imageReference, reaperImage } from "#tools/FixtureTargets";
+import { imageReference, reaperImage } from "#test/support/servers/Targets";
 
 process.env.RYUK_CONTAINER_IMAGE = imageReference(reaperImage);
 process.env.TESTCONTAINERS_REUSE_ENABLE = "false";

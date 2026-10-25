@@ -24,27 +24,27 @@ Commitlint, and Git hook conventions. TypeScript 7 checks types;
 tsdown uses Klarity’s library preset to build unbundled ESM and declarations, with
 Publint checking package exports.
 
-| Command                   | Purpose                                                |
-| ------------------------- | ------------------------------------------------------ |
-| `pnpm build`              | Build workspace packages through Turborepo             |
-| `pnpm typecheck`          | Check source, tests, tooling and public type contracts |
-| `pnpm lint`               | Lint root configs, source, tests and tooling           |
-| `pnpm format`             | Format tracked project files with Oxfmt                |
-| `pnpm format:check`       | Check formatting                                       |
-| `pnpm test`               | Run offline Effect Vitest/unit/specification tests     |
-| `pnpm test:protocol:fuzz` | Build and run the watchdog protocol corpus             |
-| `pnpm check:spec`         | Validate executable contracts and fixture pins         |
-| `pnpm fixtures:pull`      | Explicitly download pinned integration-test images     |
-| `pnpm test:node`          | Alias for the full live suite                          |
-| `pnpm test:live`          | Run live socket/fault and twelve server-version cases  |
-| `pnpm check`              | Formatting, lint, typecheck, test, and build           |
+| Command                   | Purpose                                               |
+| ------------------------- | ----------------------------------------------------- |
+| `pnpm build`              | Build workspace packages through Turborepo            |
+| `pnpm typecheck`          | Check source, tests and public type contracts         |
+| `pnpm lint`               | Lint root configs, source and tests                   |
+| `pnpm format`             | Format tracked project files with Oxfmt               |
+| `pnpm format:check`       | Check formatting                                      |
+| `pnpm test`               | Run offline unit and controlled integration tests     |
+| `pnpm test:protocol:fuzz` | Build and run the watchdog protocol corpus            |
+| `pnpm fixtures:check`     | Validate pinned backend test fixtures                 |
+| `pnpm fixtures:pull`      | Explicitly download pinned integration-test images    |
+| `pnpm test:node`          | Alias for the full live suite                         |
+| `pnpm test:live`          | Run live socket/fault and twelve server-version cases |
+| `pnpm check`              | Formatting, lint, typecheck, test, and build          |
 
 ## Workspace
 
 - `packages/effect-redis`: the private `@envoy1084/effect-redis` library foundation.
 - `pnpm-workspace.yaml`: shared compatible dependency ranges in the default pnpm catalog.
 - `AGENTS.md`: engineering policy and architecture guidance for contributors and agents.
-- [Development contracts](spec/README.md): executable scenarios, descriptor expectations and fixture pins.
+- [Tests](packages/effect-redis/test/README.md): unit/integration/e2e suites, fixtures and runners.
 - `research/`: ignored local docs, plans, phase reports and investigations.
   These files are private and never required by the build, tests or CI.
 

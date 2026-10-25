@@ -17,5 +17,5 @@
       "outputs": []
     }
   },
-  "globalDependencies": ["spec/**", ".github/scripts/**"]
+  "globalDependencies": [".github/scripts/**"]
 }

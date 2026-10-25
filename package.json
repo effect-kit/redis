@@ -28,11 +28,11 @@
     "typecheck:root": "tsc --noEmit -p tsconfig.json",
     "test": "turbo run test",
     "prepare": "lefthook install",
-    "check:spec": "pnpm --filter @envoy1084/effect-redis check:spec",
     "test:protocol:fuzz": "pnpm build && pnpm --filter @envoy1084/effect-redis test:protocol:fuzz",
     "test:node": "pnpm --filter @envoy1084/effect-redis test:node",
     "fixtures:pull": "pnpm --filter @envoy1084/effect-redis fixtures:pull",
-    "test:live": "pnpm --filter @envoy1084/effect-redis test:live"
+    "test:live": "pnpm --filter @envoy1084/effect-redis test:live",
+    "fixtures:check": "pnpm --filter @envoy1084/effect-redis fixtures:check"
   },
   "dependencies": {
     "effect": "catalog:"

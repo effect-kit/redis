@@ -7,7 +7,7 @@ import { FixtureError } from "#test/support/servers/FixtureError";
 export const recordFixture = (fixture: string, evidence: Readonly<Record<string, unknown>>) =>
   Effect.tryPromise({
     try: async () => {
-      const directory = new URL("../../../test-results/", import.meta.url);
+      const directory = new URL("../../results/", import.meta.url);
       await mkdir(directory, { recursive: true });
 
       await writeFile(

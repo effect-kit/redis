@@ -67,3 +67,6 @@ temp/
 
 # Local live test artifacts
 **/test-results/
+
+# Test-owned runner evidence.
+**/test/results/

@@ -14,21 +14,22 @@ PING/GET/SET/INCR/ZSCORE slice, custom descriptors and explicit payload codecs.
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
 to detect truncated input. Detailed architecture notes and progress reports stay in
-ignored local research. [Development contracts](../../spec/README.md) contain executable
-scenarios and fixture pins; their presence is not conformance evidence.
+ignored local research. [Tests](test/README.md) own executable assertions, pinned
+fixtures and runners; fixture definitions alone are not conformance evidence.
 
 Effect `^4.0.6` is the only runtime peer dependency. Universal exports have no Node/Bun imports.
-Builds use tsdown/Klarity, TypeScript 7 declarations and Publint. Tests, tools and
-specifications stay outside the package artifact.
+Builds use tsdown/Klarity, TypeScript 7 declarations and Publint. Tests, fixtures and
+runners stay outside the package artifact.
 
 Run from the workspace root:
 
-- `pnpm --filter @envoy1084/effect-redis test` (or `test:unit`): offline Vitest/Effect tests.
-- `pnpm --filter @envoy1084/effect-redis typecheck`: source, test and tool configurations.
-- `pnpm --filter @envoy1084/effect-redis lint`: source, tests, support and tooling.
+- `pnpm --filter @envoy1084/effect-redis test`: offline unit and controlled integration tests.
+- `pnpm --filter @envoy1084/effect-redis test:unit`: focused unit tests only.
+- `pnpm --filter @envoy1084/effect-redis typecheck`: source and test/type-contract configurations.
+- `pnpm --filter @envoy1084/effect-redis lint`: source and all test-owned modules.
 - `pnpm --filter @envoy1084/effect-redis build`: unbundled ESM/declarations plus Publint.
 - `pnpm test:protocol:fuzz`: built-artifact fuzz/large-input corpus under an external watchdog.
-- `pnpm check:spec`: tracked inventory/fixture/scenario validation.
+- `pnpm fixtures:check`: validate pinned backend fixtures before live acquisition.
 - `pnpm check`: the complete workspace checks.
 
 Default tests require no Redis process, credentials or network access. `pnpm test:live`
@@ -158,8 +159,8 @@ The development typecheck includes compile-only public inference and codec servi
 contracts. Live typed conformance covers pinned Redis/Valkey builds in RESP2/3;
 full command-family and backend certification remain pending.
 
-Development uses `#/` source imports, `#test/` fixtures and `#tools/` tooling imports.
+Development uses `#/` source imports and `#test/` imports for all test-owned modules.
 Node resolves them through package imports; tsdown rewrites built module references.
 The three TypeScript configs separate universal code without Node globals, native
-source declaration builds, and development files/type contracts. One Vitest config
-runs offline tests by default; the live CLI selects explicit external-fixture modes.
+source declaration builds, and development files/type contracts. Two Vitest configs
+under test/ separate offline tests from explicitly selected live integration/e2e tests.

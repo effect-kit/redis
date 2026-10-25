@@ -112,7 +112,7 @@ jobs:
         if: always()
         with:
           name: live-${{ matrix.suite }}-${{ needs.request.outputs.sha }}
-          path: packages/effect-redis/test-results/
+          path: packages/effect-redis/test/results/
           if-no-files-found: warn
           retention-days: 14
 

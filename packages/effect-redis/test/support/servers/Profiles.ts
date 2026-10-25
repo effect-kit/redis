@@ -1,4 +1,4 @@
-import type { ServerTarget } from "#tools/FixtureTargets";
+import type { ServerTarget } from "#test/support/servers/Targets";
 
 /** Transport fixtures deliberately avoid optional module auto-loading entrypoints. */
 export const serverProfile = (target: ServerTarget) => {

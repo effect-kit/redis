@@ -40,8 +40,7 @@
   "types": "./dist/index.d.ts",
   "imports": {
     "#/*": "./src/*.ts",
-    "#test/*": "./test/*.ts",
-    "#tools/*": "./tools/*.ts"
+    "#test/*": "./test/*.ts"
   },
   "exports": {
     ".": {
@@ -58,16 +57,16 @@
   },
   "scripts": {
     "build": "tsdown",
-    "lint": "oxlint --deny-warnings src test tools *.config.ts",
+    "lint": "oxlint --deny-warnings src test *.config.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.dev.json",
-    "test": "vitest run",
-    "test:unit": "vitest run",
-    "check:spec": "node tools/check-spec.ts",
-    "test:protocol:fuzz": "node tools/fuzz-protocol.ts",
+    "test": "vitest run --config test/vitest.config.ts",
+    "test:unit": "vitest run --config test/vitest.config.ts test/unit",
+    "test:protocol:fuzz": "node test/runners/fuzz/run.ts",
     "prepack": "pnpm run build",
     "test:node": "pnpm run test:live",
-    "fixtures:pull": "node tools/prepare-node-fixtures.ts",
-    "test:live": "node tools/run-live-tests.ts"
+    "fixtures:pull": "node test/runners/fixtures/pull.ts",
+    "test:live": "node test/runners/live/run.ts",
+    "fixtures:check": "node test/runners/fixtures/check.ts"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",

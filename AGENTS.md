@@ -4,7 +4,7 @@
 
 Build a native Redis-compatible client with Effect v4. This repository currently
 contains a bounded RESP codec, validated configuration, scoped Node byte transports,
-offline/live networking tests, and tracked executable test specifications. The ordinary connection
+offline/live networking tests, and test-owned fixtures. The ordinary connection
 engine implements handshake, bounded admission/reply ownership, cancellation, shutdown
 and future-work reconnection. Phase 05 adds the Redis service, typed descriptors,
 explicit payload/key codecs and a PING/GET/SET/INCR/ZSCORE slice. Broad typed command
@@ -22,7 +22,7 @@ Never describe planned command or server compatibility as implemented or verifie
    beta examples or assume that `effect/unstable/*` imports still exist.
 3. Read this guide's architecture decisions before adding protocol or transport code.
    Keep detailed docs, research and phase reports under ignored `/research/`.
-   Test-required specifications stay tracked in `/spec/`. Builds, tests, CI and
+   Test-required data and runners stay tracked under `packages/effect-redis/test/`. Builds, tests, CI and
    published artifacts must never require research. Use Oxfmt/Oxlint configuration;
    do not add `.editorconfig`.
 
@@ -80,16 +80,16 @@ Never describe planned command or server compatibility as implemented or verifie
 - Add short comments where readers need a protocol invariant, ownership/lifetime
   reason, compatibility constraint or non-obvious type/precision trade-off. Preserve
   useful existing comments; do not narrate obvious statements.
-- Use package imports: `#/` for src, `#test/` for test support and `#tools/` for tools.
+- Use package imports: `#/` for src and `#test/` for all test-owned modules.
   Do not add relative imports between package modules. Relative file URLs for assets/
   built-artifact probes and the root-owned CI policy test are boundary exceptions.
   Verify aliases with native Node tools, Vitest, TS7 and the packed build; generated
   JS/declarations must resolve independently of unshipped source files.
 - Keep configuration boundaries explicit: tsconfig.json checks universal code without
   Node globals, tsconfig.node.json emits native declarations, and tsconfig.dev.json
-  checks source/tests/tools/configs including compile-only contracts. Use one Vitest
-  config with offline defaults and explicit CLI-selected live modes. Add another
-  config only for a real compiler/runtime boundary, not for each folder.
+  checks source/tests/configs including compile-only contracts. Keep two Vitest configs
+  under test/: the default offline lane and an explicitly selected live lane. Do not
+  create a config per folder, engine or version.
 - Keep handwritten source and test files below 500 physical lines; review splitting
   near 400. Split by domain, operation group or responsibility, not arbitrary size.
   Use folders/subfolders for related ownership. Generated metadata and indivisible
@@ -109,7 +109,20 @@ Never describe planned command or server compatibility as implemented or verifie
   real sockets/processes/providers, and shared Layers only with explicit isolation.
   Keep typed fixtures/support modules reusable and focused; do not build a fake Redis
   implementation or use broad mocks that bypass the production scheduler. Typecheck
-  tests/tools separately. Do not test placeholder exports or merely Effect itself.
+  tests separately from production. Do not test placeholder exports or merely Effect itself.
+- Keep all package test concerns under test/: unit for focused components, integration
+  for composition/platform boundaries, e2e for public client behavior against real
+  backends, fixtures for inputs, support for reusable infrastructure, runners for CLI/
+  child programs, and types for compile-only contracts. Docker use does not determine
+  a test's category. Split mixed unit/integration files by the boundary they prove.
+- Keep only data consumed by real tests or runners. Do not retain descriptive JSON
+  catalogs through bookkeeping tests. Fixture validation must run before image pulls/
+  acquisition; written scenarios and progress belong in ignored research.
+- `pnpm test` runs offline unit and controlled integration suites; `test:unit` selects
+  only unit tests. `pnpm test:live` explicitly selects native/backend integration and
+  e2e suites. Both configs disable env-file loading and fail on empty selections.
+  Keep generated evidence in ignored test/results/ and update CI artifact paths when
+  moving it. Test data must remain independent of research and package artifacts.
 - Run `pnpm test:node` when native transport, fixtures or socket ownership changes.
   It needs Docker, OpenSSL and explicitly prepared images (`pnpm fixtures:pull`).
   The default lane uses scoped Testcontainers fixtures, digest-pinned engine/Node/Ryuk
@@ -135,8 +148,8 @@ Never describe planned command or server compatibility as implemented or verifie
 - Run `pnpm test:protocol:fuzz` when protocol/byte ownership changes; CI also runs
   its built-artifact corpus under an external deadline. Keep its seed/replay evidence.
 - Run `pnpm check` after meaningful changes. It covers format, lint, root/package
-  typechecks, offline Effect Vitest/specification tests, and builds. Run `pnpm check:spec`
-  for executable contracts and fixture pins; never depend on ignored research. Report skipped
+  typechecks, offline unit/controlled integration tests, and builds. Run `pnpm fixtures:check`
+  to validate backend pins before live acquisition; never depend on ignored research. Report skipped
   checks and their reason.
 - Check emitted artifacts and package contents before a release. Never include
   ignored research, secrets, fixtures, or local runtime state in a published package.
@@ -151,14 +164,15 @@ Never describe planned command or server compatibility as implemented or verifie
 
 - User preference: keep detailed docs and all phase records in ignored `/research/`.
   Never commit or force-add them, or recreate a tracked root docs directory.
-  Keep executable test contracts, reviewed descriptor expectations and fixture pins in
-  tracked `/spec/`. Store future command/backend/release inventories, phase ownership,
+  Keep actual test inputs, reviewed command expectations and fixture pins under
+  tracked `packages/effect-redis/test/fixtures/`. Store descriptive scenario catalogs,
+  future command/backend/release inventories, phase ownership,
   pass/fail history and progress in ignored research, even if a validator could read
   them. Do not create tests merely to justify committing planning documents. Root/package READMEs and
   this agent guide remain concise tracked references.
 - When present, read `research/docs/progress/README.md`, its backlog and prerequisite
   reports before a phase. `research/implementation/README.md` indexes the local plan;
-  tracked `/spec/` holds active command/fixture/scenario contracts. Research references are
+  tracked test code and fixtures own executable assertions and environments. Research references are
   optional on a fresh clone: inspect actual code/tests/history and do not make
   builds, typechecks, default tests, CI or package contents depend on private files.
 - Implement the authorized phase with behavior and tests. Preserve the broad v1
@@ -171,7 +185,7 @@ Never describe planned command or server compatibility as implemented or verifie
   controlled fixtures, versions, cache freshness, failures/skips, decisions,
   deferred work and next actions. No credentials or real payloads. Missing live
   evidence is not a pass; every deferred promise needs an owner and closure criterion.
-- Keep specification validation tooling, runtime source, tests and executable fixtures
+- Keep fixture validation, runtime source, tests and executable fixtures
   tracked and self-contained. Put future generated production metadata in its owning
   source module; generating it locally must not make normal builds require research.
 - Keep AGENTS.md instructional. Store detailed architecture/protocol notes under
@@ -304,7 +318,7 @@ Implemented command-system policy:
   access roles, routing, mode, provenance and scenario IDs. Preparation requires RE;
   reply decoding requires RD. Execution combines both. Keep these requirements exact.
 - `Commands` builders and facade methods share encoders/decoders. The reviewed family
-  catalogs in `spec/command-system/` must match production metadata. Keep broad command
+  expectations in `test/fixtures/commands/` must match production metadata. Keep broad command
   coverage/progress inventories in research; active catalogs do not imply completeness.
   Use handwritten reviewed overlays until generation has a demonstrated repeated need.
 - GET text is strict UTF-8 with BOM preservation; getBytes/raw preserve binary data.

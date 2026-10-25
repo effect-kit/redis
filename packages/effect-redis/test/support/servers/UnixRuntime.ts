@@ -15,8 +15,8 @@ import {
 import { allocateServer } from "#test/support/servers/DockerServer";
 import type { ServerTarget } from "#test/support/servers/DockerServer";
 import { FixtureError } from "#test/support/servers/FixtureError";
+import { imageReference, runtimeImage } from "#test/support/servers/Targets";
 import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
-import { imageReference, runtimeImage } from "#tools/FixtureTargets";
 
 /** Shares a Linux Unix socket with an actual Node process, including on macOS Docker hosts. */
 export const unixRuntimeSmoke = Effect.fnUntraced(function* (
@@ -24,11 +24,11 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
   program: "bytes" | "connection" = "bytes",
 ) {
   const directory = yield* temporaryDirectory;
-  const script = program === "bytes" ? "unix-smoke.ts" : "connection-unix-smoke.ts";
+  const script = program === "bytes" ? "unix-bytes.ts" : "unix-connection.ts";
 
   yield* Effect.tryPromise({
     try: async () => {
-      await mkdir(join(directory, "tools"));
+      await mkdir(join(directory, "test/runners/probes"), { recursive: true });
       await mkdir(join(directory, "node_modules/effect"), { recursive: true });
       await cp(fileURLToPath(new URL("../../../dist", import.meta.url)), join(directory, "dist"), {
         recursive: true,
@@ -45,8 +45,8 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
         join(directory, "node_modules/effect/package.json"),
       );
       await cp(
-        fileURLToPath(new URL(`../../../tools/${script}`, import.meta.url)),
-        join(directory, `tools/${script}`),
+        fileURLToPath(new URL(`../../runners/probes/${script}`, import.meta.url)),
+        join(directory, `test/runners/probes/${script}`),
       );
       await writeFile(join(directory, "package.json"), '{"type":"module"}');
     },
@@ -60,7 +60,7 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
     .withNetworkMode("none")
     .withBindMounts([{ source: directory, target: "/client", mode: "ro" }])
     .sharedVolume(volume, "/socket")
-    .withCommand(["node", `/client/tools/${script}`, "/socket/redis.sock"])
+    .withCommand(["node", `/client/test/runners/probes/${script}`, "/socket/redis.sock"])
     .withWaitStrategy(Wait.forOneShotStartup())
     .withStartupTimeout(15_000);
 
