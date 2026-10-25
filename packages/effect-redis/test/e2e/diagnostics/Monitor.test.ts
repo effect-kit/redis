@@ -22,15 +22,16 @@ it.live.each(primaryCases)(
               (record) =>
                 record._tag === "Command" && Redacted.value(record.commandLine).includes(key),
             ),
-            Stream.take(2),
+            Stream.take(3),
           ),
         ),
       );
 
       yield* redis.set(key, new Uint8Array([0, 255]));
       yield* redis.getBytes(key);
+      yield* redis.set(key, "x".repeat(4096));
       const events = yield* Fiber.join(capture);
-      expect(events).toHaveLength(2);
+      expect(events).toHaveLength(3);
       expect(events[0]).toMatchObject({ _tag: "Command", database: 0n });
       expect(events[0]?._tag === "Command" && Redacted.value(events[0].commandLine)).toContain(
         "\\xff",

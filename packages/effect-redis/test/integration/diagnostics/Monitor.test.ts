@@ -108,3 +108,24 @@ it.effect("MONITOR: clean EOF terminates the stream without silent reconnection"
     });
   }),
 );
+
+it.effect("MONITOR: the configured diagnostic line bound retires oversized event framing", () =>
+  Effect.gen(function* () {
+    const physical = yield* makeControlledTransport();
+    const opening = yield* Effect.forkChild(
+      makeRedisMonitor(yield* config(), { maxLineBytes: 128 }).pipe(Effect.provide(physical.layer)),
+    );
+    yield* sent(physical, ["MONITOR"], "+OK\r\n");
+    const monitor = yield* Fiber.join(opening);
+    yield* physical.receive(
+      bytes(`+1723000000.123456 [0 local] "SET" "key" "${"x".repeat(256)}"\r\n`),
+    );
+
+    expect(yield* Effect.flip(Stream.runDrain(monitor.events))).toMatchObject({
+      _tag: "ConnectionError",
+      reason: "protocol",
+    });
+    yield* monitor.close;
+    expect(yield* physical.observations).toMatchObject({ closed: 1 });
+  }),
+);

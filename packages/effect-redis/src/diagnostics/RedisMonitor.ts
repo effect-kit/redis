@@ -1,5 +1,4 @@
-import { Cause, Context, Effect, Layer, Stream } from "effect";
-import { Schema } from "effect";
+import { Cause, Context, Effect, Layer, Schema, Stream } from "effect";
 
 import { checkServerReply } from "#/command/Decode";
 import { status } from "#/command/reply/Scalars";
@@ -18,6 +17,7 @@ import type { RedisConfig } from "#/RedisConfig";
 export interface MonitorOptions<R = never> {
   readonly maxMessages?: number;
   readonly maxBytes?: number;
+  readonly maxLineBytes?: number;
   readonly credentials?: ConnectionOptions<R>["credentials"];
 }
 
@@ -27,6 +27,7 @@ const diagnosticFailure = (error: EventError) =>
         reason:
           error.reason === "overflow" ||
           error.reason === "concurrent-consumer" ||
+          error.reason === "invalid-frame" ||
           error.reason === "capacity"
             ? error.reason
             : "closed",
@@ -43,7 +44,18 @@ export const makeRedisMonitor = Effect.fnUntraced(function* <R = never>(
     Schema.Struct({
       maxMessages: PositiveInteger.pipe(Schema.withDecodingDefaultKey(Effect.succeed(64))),
       maxBytes: PositiveInteger.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1024 * 1024))),
-    }),
+      maxLineBytes: PositiveInteger.pipe(
+        Schema.withDecodingDefaultKey(
+          Effect.succeed(Math.min(64 * 1024, config.limits.maxBufferedBytes)),
+        ),
+      ),
+    }).check(
+      Schema.makeFilter((selected) =>
+        selected.maxLineBytes <= config.limits.maxBufferedBytes
+          ? undefined
+          : "Monitor lines must fit within the decoder buffer limit",
+      ),
+    ),
     "monitor",
     input,
   );
@@ -56,7 +68,8 @@ export const makeRedisMonitor = Effect.fnUntraced(function* <R = never>(
     () => owner.generation(),
   );
   const owner = yield* makeEventOwner(
-    config,
+    // MONITOR carries payload text in simple-string lines, unlike ordinary short RESP headers.
+    { ...config, limits: { ...config.limits, maxHeaderBytes: policy.maxLineBytes } },
     credentials === undefined ? {} : { credentials },
     (reply, cost) =>
       Effect.sync(() => {
