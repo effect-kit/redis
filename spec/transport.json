@@ -15,7 +15,6 @@
     {
       "id": "SOCKET-01",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -33,7 +32,6 @@
     {
       "id": "SOCKET-02",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native", "node-unix"],
       "isolation": "connection",
@@ -49,7 +47,6 @@
     {
       "id": "SOCKET-03",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -67,7 +64,6 @@
     {
       "id": "SOCKET-04",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -85,7 +81,6 @@
     {
       "id": "SOCKET-05",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -103,7 +98,6 @@
     {
       "id": "SOCKET-06",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -119,7 +113,6 @@
     {
       "id": "SOCKET-07",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -137,7 +130,6 @@
     {
       "id": "SOCKET-08",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -155,7 +147,6 @@
     {
       "id": "SOCKET-09",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -173,7 +164,6 @@
     {
       "id": "SOCKET-10",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -191,7 +181,6 @@
     {
       "id": "SOCKET-11",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -209,7 +198,6 @@
     {
       "id": "SOCKET-12",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -225,7 +213,6 @@
     {
       "id": "SOCKET-13",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-tls"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "connection",
@@ -243,7 +230,6 @@
     {
       "id": "SOCKET-14",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-tls"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "connection",
@@ -261,7 +247,6 @@
     {
       "id": "SOCKET-15",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-tls"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "connection",
@@ -279,7 +264,6 @@
     {
       "id": "SOCKET-16",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-tls"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "connection",
@@ -295,7 +279,6 @@
     {
       "id": "SOCKET-17",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-tls"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "connection",
@@ -313,7 +296,6 @@
     {
       "id": "SOCKET-18",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-tls"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "connection",
@@ -331,7 +313,6 @@
     {
       "id": "SOCKET-19",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -349,7 +330,6 @@
     {
       "id": "SOCKET-20",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -367,7 +347,6 @@
     {
       "id": "SOCKET-21",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": [
         "redis",
         "redis-6.2",
@@ -399,7 +378,6 @@
     {
       "id": "SOCKET-22",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["redis", "valkey"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "process",
@@ -417,7 +395,6 @@
     {
       "id": "SOCKET-23",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["redis"],
       "requiredCapabilities": ["node-native"],
       "isolation": "process",
@@ -435,7 +412,6 @@
     {
       "id": "SOCKET-24",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["redis"],
       "requiredCapabilities": ["node-native"],
       "isolation": "process",
@@ -453,7 +429,6 @@
     {
       "id": "SOCKET-25",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["redis"],
       "requiredCapabilities": ["node-native"],
       "isolation": "process",
@@ -471,7 +446,6 @@
     {
       "id": "SOCKET-26",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["redis"],
       "requiredCapabilities": ["node-native"],
       "isolation": "process",
@@ -489,7 +463,6 @@
     {
       "id": "SOCKET-27",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-tls"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "connection",
@@ -505,7 +478,6 @@
     {
       "id": "SOCKET-28",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-tls"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "connection",
@@ -523,7 +495,6 @@
     {
       "id": "SOCKET-29",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -541,7 +512,6 @@
     {
       "id": "SOCKET-30",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -557,7 +527,6 @@
     {
       "id": "SOCKET-31",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -575,7 +544,6 @@
     {
       "id": "SOCKET-32",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-loopback"],
       "requiredCapabilities": ["node-native"],
       "isolation": "connection",
@@ -593,7 +561,6 @@
     {
       "id": "SOCKET-33",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["node-tls"],
       "requiredCapabilities": ["node-native", "node-tls"],
       "isolation": "connection",
@@ -611,7 +578,6 @@
     {
       "id": "SOCKET-34",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["redis"],
       "requiredCapabilities": ["node-native"],
       "isolation": "process",
@@ -629,7 +595,6 @@
     {
       "id": "SOCKET-35",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["redis", "valkey", "node"],
       "requiredCapabilities": ["node-native", "node-unix"],
       "isolation": "process",
@@ -647,7 +612,6 @@
     {
       "id": "SOCKET-36",
       "family": "SOCKET",
-      "ownerPhase": 3,
       "fixtures": ["redis"],
       "requiredCapabilities": ["node-native"],
       "isolation": "process",

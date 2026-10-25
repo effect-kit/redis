@@ -16,7 +16,6 @@
     {
       "id": "WIRE-01",
       "family": "WIRE",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -32,7 +31,6 @@
     {
       "id": "WIRE-02",
       "family": "WIRE",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -48,7 +46,6 @@
     {
       "id": "WIRE-03",
       "family": "WIRE",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -64,7 +61,6 @@
     {
       "id": "WIRE-04",
       "family": "WIRE",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -80,7 +76,6 @@
     {
       "id": "WIRE-05",
       "family": "WIRE",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -96,7 +91,6 @@
     {
       "id": "WIRE-06",
       "family": "WIRE",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -112,7 +106,6 @@
     {
       "id": "WIRE-07",
       "family": "WIRE",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -128,7 +121,6 @@
     {
       "id": "WIRE-08",
       "family": "WIRE",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -144,7 +136,6 @@
     {
       "id": "WIRE-09",
       "family": "WIRE",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -160,7 +151,6 @@
     {
       "id": "SPLIT-01",
       "family": "SPLIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -176,7 +166,6 @@
     {
       "id": "SPLIT-02",
       "family": "SPLIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -192,7 +181,6 @@
     {
       "id": "SPLIT-03",
       "family": "SPLIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -208,7 +196,6 @@
     {
       "id": "LIMIT-01",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -224,7 +211,6 @@
     {
       "id": "LIMIT-02",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -240,7 +226,6 @@
     {
       "id": "LIMIT-03",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -256,7 +241,6 @@
     {
       "id": "LIMIT-04",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -272,7 +256,6 @@
     {
       "id": "LIMIT-05",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -288,7 +271,6 @@
     {
       "id": "LIMIT-06",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -304,7 +286,6 @@
     {
       "id": "LIMIT-07",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -320,7 +301,6 @@
     {
       "id": "LIMIT-08",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -336,7 +316,6 @@
     {
       "id": "LIMIT-09",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -352,7 +331,6 @@
     {
       "id": "LIMIT-10",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -368,7 +346,6 @@
     {
       "id": "LIMIT-11",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -384,7 +361,6 @@
     {
       "id": "LIMIT-12",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -400,7 +376,6 @@
     {
       "id": "LIMIT-13",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -418,7 +393,6 @@
     {
       "id": "LIMIT-14",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",
@@ -434,7 +408,6 @@
     {
       "id": "LIMIT-15",
       "family": "LIMIT",
-      "ownerPhase": 2,
       "fixtures": ["protocol-bytes"],
       "requiredCapabilities": ["resp-codec"],
       "isolation": "process",

@@ -8,11 +8,11 @@
     "https://redis.io/docs/latest/commands/zscore/"
   ],
   "boundaries": [
-    "Five-command Phase 05 slice; broad families remain phase 06 and full engine/provider certification remains phases 17/18.",
-    "Custom descriptors require reviewed decoder, keys/routing, execution mode and provenance; standalone executor rejects unsupported modes/explicit-node routing.",
-    "SET GET returns previous bytes, not an invented applied-status flag; typed-key writes deliberately exclude GET.",
-    "No automatic JSON outside explicit Schema codecs; integer replies remain bigint and score tokens have an exact lexical API.",
-    "Reviewed family catalogs are handwritten and compared with production metadata; automated upstream generation is deferred until phase 06 has a concrete repeated need."
+    "Reviewed PING/GET/SET/INCR/ZSCORE slice; scenario success is not full backend or provider certification.",
+    "Custom descriptors require a decoder, keys/routing and execution mode; the standalone executor rejects unsupported modes and explicit-node routing.",
+    "SET GET returns previous bytes, not an applied-status flag; typed-key writes deliberately exclude GET.",
+    "Schema JSON encoding is explicit; integer replies remain bigint and score tokens have an exact lexical API.",
+    "Handwritten family catalogs are compared with production metadata; changing a command requires reviewing both its contract and its tests."
   ],
   "catalogs": ["connection.json", "sorted-sets.json", "strings.json"],
   "descriptorCount": 5,
@@ -20,7 +20,6 @@
     {
       "id": "COMMAND-01",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -38,7 +37,6 @@
     {
       "id": "COMMAND-02",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -56,7 +54,6 @@
     {
       "id": "COMMAND-03",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -74,7 +71,6 @@
     {
       "id": "COMMAND-04",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -92,7 +88,6 @@
     {
       "id": "COMMAND-05",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -110,7 +105,6 @@
     {
       "id": "COMMAND-06",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -128,7 +122,6 @@
     {
       "id": "COMMAND-07",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -146,7 +139,6 @@
     {
       "id": "COMMAND-08",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -164,7 +156,6 @@
     {
       "id": "COMMAND-09",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -182,7 +173,6 @@
     {
       "id": "COMMAND-10",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -200,7 +190,6 @@
     {
       "id": "COMMAND-11",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -218,7 +207,6 @@
     {
       "id": "COMMAND-12",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -236,7 +224,6 @@
     {
       "id": "COMMAND-13",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -254,7 +241,6 @@
     {
       "id": "COMMAND-14",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -272,7 +258,6 @@
     {
       "id": "COMMAND-15",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -290,7 +275,6 @@
     {
       "id": "COMMAND-16",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -308,7 +292,6 @@
     {
       "id": "COMMAND-17",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -326,7 +309,6 @@
     {
       "id": "COMMAND-18",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -344,7 +326,6 @@
     {
       "id": "COMMAND-19",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -362,7 +343,6 @@
     {
       "id": "COMMAND-20",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -380,7 +360,6 @@
     {
       "id": "COMMAND-21",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -396,7 +375,6 @@
     {
       "id": "COMMAND-22",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -414,7 +392,6 @@
     {
       "id": "COMMAND-23",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "connection",
@@ -432,7 +409,6 @@
     {
       "id": "COMMAND-24",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": [
         "redis",
         "redis-6.2",
@@ -458,7 +434,6 @@
     {
       "id": "COMMAND-25",
       "family": "COMMAND",
-      "ownerPhase": 5,
       "fixtures": [
         "redis",
         "redis-6.2",
@@ -484,7 +459,6 @@
     {
       "id": "TYPES-01",
       "family": "TYPES",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "process",
@@ -502,7 +476,6 @@
     {
       "id": "TYPES-02",
       "family": "TYPES",
-      "ownerPhase": 5,
       "fixtures": ["controlled-command-system"],
       "requiredCapabilities": ["typed-command-slice"],
       "isolation": "process",

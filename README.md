@@ -44,7 +44,7 @@ Publint checking package exports.
 - `packages/effect-redis`: the private `@envoy1084/effect-redis` library foundation.
 - `pnpm-workspace.yaml`: shared compatible dependency ranges in the default pnpm catalog.
 - `AGENTS.md`: engineering policy and architecture guidance for contributors and agents.
-- [Release specifications](spec/README.md): tracked command/fixture/scenario inventory.
+- [Development contracts](spec/README.md): executable scenarios, descriptor expectations and fixture pins.
 - `research/`: ignored local docs, plans, phase reports and investigations.
   These files are private and never required by the build, tests or CI.
 

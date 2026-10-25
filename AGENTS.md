@@ -4,7 +4,7 @@
 
 Build a native Redis-compatible client with Effect v4. This repository currently
 contains a bounded RESP codec, validated configuration, scoped Node byte transports,
-offline/live networking tests, and tracked specifications. The ordinary connection
+offline/live networking tests, and tracked executable test specifications. The ordinary connection
 engine implements handshake, bounded admission/reply ownership, cancellation, shutdown
 and future-work reconnection. Phase 05 adds the Redis service, typed descriptors,
 explicit payload/key codecs and a PING/GET/SET/INCR/ZSCORE slice. Broad typed command
@@ -119,7 +119,7 @@ Never describe planned command or server compatibility as implemented or verifie
   its built-artifact corpus under an external deadline. Keep its seed/replay evidence.
 - Run `pnpm check` after meaningful changes. It covers format, lint, root/package
   typechecks, offline Effect Vitest/specification tests, and builds. Run `pnpm check:spec`
-  for the tracked release inventory; never depend on ignored research. Report skipped
+  for executable contracts and fixture pins; never depend on ignored research. Report skipped
   checks and their reason.
 - Check emitted artifacts and package contents before a release. Never include
   ignored research, secrets, fixtures, or local runtime state in a published package.
@@ -134,11 +134,14 @@ Never describe planned command or server compatibility as implemented or verifie
 
 - User preference: keep detailed docs and all phase records in ignored `/research/`.
   Never commit or force-add them, or recreate a tracked root docs directory.
-  Keep test-required specifications in tracked `/spec/`. Root/package READMEs and
+  Keep executable test contracts, reviewed descriptor expectations and fixture pins in
+  tracked `/spec/`. Store future command/backend/release inventories, phase ownership,
+  pass/fail history and progress in ignored research, even if a validator could read
+  them. Do not create tests merely to justify committing planning documents. Root/package READMEs and
   this agent guide remain concise tracked references.
 - When present, read `research/docs/progress/README.md`, its backlog and prerequisite
   reports before a phase. `research/implementation/README.md` indexes the local plan;
-  tracked `/spec/` holds command/fixture/scenario inventories. Research references are
+  tracked `/spec/` holds active command/fixture/scenario contracts. Research references are
   optional on a fresh clone: inspect actual code/tests/history and do not make
   builds, typechecks, default tests, CI or package contents depend on private files.
 - Implement the authorized phase with behavior and tests. Preserve the broad v1
@@ -284,8 +287,8 @@ Implemented command-system policy:
   access roles, routing, mode, provenance and scenario IDs. Preparation requires RE;
   reply decoding requires RD. Execution combines both. Keep these requirements exact.
 - `Commands` builders and facade methods share encoders/decoders. The reviewed family
-  catalogs in `spec/command-system/` must match production metadata; only five command
-  identities have partial slice coverage. Do not mark the 741-name inventory complete.
+  catalogs in `spec/command-system/` must match production metadata. Keep broad command
+  coverage/progress inventories in research; active catalogs do not imply completeness.
   Use handwritten reviewed overlays until generation has a demonstrated repeated need.
 - GET text is strict UTF-8 with BOM preservation; getBytes/raw preserve binary data.
   Missing blobs use Option, integer replies use bigint, and zscoreToken preserves

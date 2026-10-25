@@ -14,8 +14,8 @@ PING/GET/SET/INCR/ZSCORE slice, custom descriptors and explicit payload codecs.
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
 to detect truncated input. Detailed architecture notes and progress reports stay in
-ignored local research. [Release specifications](../../spec/README.md) track planned
-coverage; their presence is not conformance evidence.
+ignored local research. [Development contracts](../../spec/README.md) contain executable
+scenarios and fixture pins; their presence is not conformance evidence.
 
 Effect `^4.0.6` is the only runtime peer dependency. Universal exports have no Node/Bun imports.
 Builds use tsdown/Klarity, TypeScript 7 declarations and Publint. Tests, tools and
