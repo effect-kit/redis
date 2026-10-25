@@ -3,6 +3,7 @@ import type { RedisCommand } from "#/protocol/encode";
 
 const modes = new Set([
   "DEBUG",
+  "HIMPORT",
   "AUTH",
   "HELLO",
   "SELECT",

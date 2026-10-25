@@ -37,3 +37,10 @@ export {
 export type * from "#/commands/hashes/Fields";
 
 export * from "#/commands/hashes/Scan";
+
+export {
+  himportPrepare,
+  himportSet,
+  himportDiscard,
+  himportDiscardAll,
+} from "#/commands/hashes/Import";

@@ -9,3 +9,5 @@ export * from "#/commands/admin/Diagnostics";
 export * from "#/commands/admin/Clients";
 export * from "#/commands/admin/Migration";
 export * from "#/commands/admin/Slots";
+
+export * from "#/commands/admin/Backup";

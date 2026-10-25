@@ -11,6 +11,15 @@ export const makeRedisAdmin = (sessions: RedisSessionsClient) => {
 
   return {
     execute,
+    withSession: sessions.withSession,
+    backupStart: () => execute(Commands.backupStart()),
+    backupSeal: () => execute(Commands.backupSeal()),
+    backupAbort: () => execute(Commands.backupAbort()),
+    backupCleanup: () => execute(Commands.backupCleanup()),
+    backupHelp: () => execute(Commands.backupHelp()),
+    backupList: () => execute(Commands.backupList()),
+    backupStatus: () => execute(Commands.backupStatus()),
+
     aclCat: (...args: Parameters<typeof Commands.aclCat>) => execute(Commands.aclCat(...args)),
     aclDelUser: (...args: Parameters<typeof Commands.aclDelUser>) =>
       execute(Commands.aclDelUser(...args)),

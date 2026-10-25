@@ -5,6 +5,7 @@ import { decodeReply } from "#/command/Decode";
 import type { RedisExecutor } from "#/command/Executor";
 import { status } from "#/command/reply/Scalars";
 import { blockingFamily } from "#/commands/blocking/Family";
+import { hashImportFamily } from "#/commands/hashes/Import";
 import { Arguments, parse } from "#/commands/internal/Input";
 import { blockingStreamFamily } from "#/commands/streams/ReadFamily";
 import { clientTracking, clientTrackingInfo } from "#/commands/tracking/Controls";
@@ -68,6 +69,7 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
   const client = {
     ...makeRedis(executor),
     ...blockingFamily(executor),
+    ...hashImportFamily(executor),
     ...blockingStreamFamily(executor),
     ...durabilityControls(wire, state),
     ...connectionControls(wire, state, () => {
