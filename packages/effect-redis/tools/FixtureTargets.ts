@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { Schema } from "effect";
 
-import { NativeFixture, NodeImage } from "./spec/Schema.ts";
+import { NativeFixture, NodeImage } from "#tools/spec/Schema";
 
 export const images = Schema.decodeUnknownSync(Schema.NonEmptyArray(NodeImage))(
   JSON.parse(

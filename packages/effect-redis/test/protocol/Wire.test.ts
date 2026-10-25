@@ -2,9 +2,9 @@ import { Result } from "effect";
 
 import { describe, expect, it } from "vitest";
 
-import { makeRespDecoder } from "../../src/protocol/decode/Decoder.js";
-import { values } from "../fixtures/protocol/values.js";
-import { bytes, decodeChunks, failure, joinBytes } from "../support/protocol/Decode.js";
+import { makeRespDecoder } from "#/protocol/decode/Decoder";
+import { values } from "#test/fixtures/protocol/values";
+import { bytes, decodeChunks, failure, joinBytes } from "#test/support/protocol/Decode";
 
 describe("WIRE-01: independent RESP2/3 fixtures", () => {
   it.each(values)("$name", ({ wire, value }) => {

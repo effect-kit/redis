@@ -1,4 +1,4 @@
-import type { CommandMetadata } from "../command/Metadata.js";
+import type { CommandMetadata } from "#/command/Metadata";
 
 export const metadata = (
   name: string,

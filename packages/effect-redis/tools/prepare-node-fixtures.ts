@@ -4,7 +4,7 @@ import { Effect } from "effect";
 
 import { getContainerRuntimeClient, ImageName } from "testcontainers";
 
-import { currentImages, imageReference, selectEngine } from "./FixtureTargets.ts";
+import { currentImages, imageReference, selectEngine } from "#tools/FixtureTargets";
 
 const { values } = parseArgs({
   args: process.argv.slice(2).filter((arg) => arg !== "--"),

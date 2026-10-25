@@ -2,7 +2,7 @@ import type { Socket } from "node:net";
 
 import { Effect, Exit, Redacted } from "effect";
 
-import { TransportError } from "../../errors/TransportError.js";
+import { TransportError } from "#/errors/TransportError";
 
 const chunkBytes = 64 * 1024;
 

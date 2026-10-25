@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { Effect, Redacted } from "effect";
 
-import { FixtureError } from "./FixtureError.js";
+import { FixtureError } from "#test/support/servers/FixtureError";
 
 export const temporaryDirectory = Effect.acquireRelease(
   Effect.tryPromise({

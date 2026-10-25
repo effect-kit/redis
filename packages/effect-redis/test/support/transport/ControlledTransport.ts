@@ -1,7 +1,7 @@
 import { Deferred, Effect, Layer, Queue, Ref } from "effect";
 
-import { TransportError } from "../../../src/errors/TransportError.js";
-import { Transport } from "../../../src/transport/Transport.js";
+import { TransportError } from "#/errors/TransportError";
+import { Transport } from "#/transport/Transport";
 
 export interface WriteAttempt {
   readonly bytes: Uint8Array;

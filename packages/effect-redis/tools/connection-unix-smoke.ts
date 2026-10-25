@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import type * as Core from "../src/index.js";
-import type * as Native from "../src/node.js";
+import type * as Core from "#/index";
+import type * as Native from "#/node";
 
 const core = (await import(new URL("../dist/index.js", import.meta.url).href)) as typeof Core;
 const native = (await import(new URL("../dist/node.js", import.meta.url).href)) as typeof Native;

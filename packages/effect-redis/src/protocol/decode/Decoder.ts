@@ -1,13 +1,13 @@
 import { Predicate, Result } from "effect";
 
-import { failProtocol, ProtocolError } from "../../errors/ProtocolError.js";
-import { decodeLimits } from "../limits.js";
-import type { RespDecodeLimits } from "../limits.js";
-import type { RespValue } from "../RespValue.js";
-import { completeAggregate } from "./aggregates.js";
-import type { AggregateFrame } from "./aggregates.js";
-import { ByteBuilder, ByteQueue } from "./buffers.js";
-import { headerText, readLength, scalar } from "./scalars.js";
+import { failProtocol, ProtocolError } from "#/errors/ProtocolError";
+import { completeAggregate } from "#/protocol/decode/aggregates";
+import type { AggregateFrame } from "#/protocol/decode/aggregates";
+import { ByteBuilder, ByteQueue } from "#/protocol/decode/buffers";
+import { headerText, readLength, scalar } from "#/protocol/decode/scalars";
+import { decodeLimits } from "#/protocol/limits";
+import type { RespDecodeLimits } from "#/protocol/limits";
+import type { RespValue } from "#/protocol/RespValue";
 
 interface BlobFrame {
   readonly tag: "BlobString" | "BlobError" | "VerbatimString";

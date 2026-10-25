@@ -1,10 +1,10 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Exit, Fiber, Result } from "effect";
 
-import type { CommandDefinition } from "../../src/command/Command.js";
-import { pingMetadata } from "../../src/commands/connection/Ping.js";
-import { defineCommand, Reply } from "../../src/index.js";
-import { commandFixture, respond } from "../support/commands/Fixture.js";
+import type { CommandDefinition } from "#/command/Command";
+import { pingMetadata } from "#/commands/connection/Ping";
+import { defineCommand, Reply } from "#/index";
+import { commandFixture, respond } from "#test/support/commands/Fixture";
 
 const valid = {
   metadata: pingMetadata,

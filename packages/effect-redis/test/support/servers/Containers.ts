@@ -10,8 +10,8 @@ import {
   PullPolicy,
 } from "testcontainers";
 
-import { imageReference, reaperImage } from "../../../tools/FixtureTargets.ts";
-import { FixtureError } from "./FixtureError.js";
+import { FixtureError } from "#test/support/servers/FixtureError";
+import { imageReference, reaperImage } from "#tools/FixtureTargets";
 
 process.env.RYUK_CONTAINER_IMAGE = imageReference(reaperImage);
 process.env.TESTCONTAINERS_REUSE_ENABLE = "false";

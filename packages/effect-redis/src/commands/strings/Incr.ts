@@ -1,7 +1,7 @@
-import { defineCommand } from "../../command/Command.js";
-import { integer } from "../../command/reply/Scalars.js";
-import type { RedisArgument } from "../../RedisArgument.js";
-import { metadata } from "../Metadata.js";
+import { defineCommand } from "#/command/Command";
+import { integer } from "#/command/reply/Scalars";
+import { metadata } from "#/commands/Metadata";
+import type { RedisArgument } from "#/RedisArgument";
 
 export const incrMetadata = metadata("INCR", "strings", ["COMMAND-04"]);
 export const incr = (key: RedisArgument) =>

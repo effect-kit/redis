@@ -1,14 +1,14 @@
 import { Context, Effect, Layer, Redacted } from "effect";
 
-import type { ExecutionError } from "../connection/Admission.js";
-import { Connection } from "../connection/Connection.js";
-import type { RedisConnection } from "../connection/Connection.js";
-import type { CommandInputError } from "../errors/CommandInputError.js";
-import type { ReplyError } from "../errors/ReplyError.js";
-import { ServerError } from "../errors/ServerError.js";
-import { UnsupportedCommandError } from "../errors/UnsupportedCommandError.js";
-import type { Command, PreparedCommand } from "./Command.js";
-import { undecorate } from "./reply/Scalars.js";
+import type { Command, PreparedCommand } from "#/command/Command";
+import { undecorate } from "#/command/reply/Scalars";
+import type { ExecutionError } from "#/connection/Admission";
+import { Connection } from "#/connection/Connection";
+import type { RedisConnection } from "#/connection/Connection";
+import type { CommandInputError } from "#/errors/CommandInputError";
+import type { ReplyError } from "#/errors/ReplyError";
+import { ServerError } from "#/errors/ServerError";
+import { UnsupportedCommandError } from "#/errors/UnsupportedCommandError";
 
 export type RedisError =
   | ExecutionError

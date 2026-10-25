@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import { bytes, malformed } from "../support/protocol/Decode.js";
+import { bytes, malformed } from "#test/support/protocol/Decode";
 
 it.each([
   ["?\r\n", "InvalidType"],

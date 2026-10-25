@@ -3,11 +3,11 @@ import { existsSync } from "node:fs";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { connect } from "../../../src/node.js";
-import { decodeRedisConfig } from "../../../src/RedisConfig.js";
-import { ownedServerSmoke, readOnlySmoke } from "../../support/networking/Smoke.js";
-import { FixtureError } from "../../support/servers/FixtureError.js";
-import { localServer } from "../../support/servers/LocalServer.js";
+import { connect } from "#/node";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { ownedServerSmoke, readOnlySmoke } from "#test/support/networking/Smoke";
+import { FixtureError } from "#test/support/servers/FixtureError";
+import { localServer } from "#test/support/servers/LocalServer";
 
 it.live(
   "explicit local binary: isolated process, Unix transport, binary state and awaited cleanup",

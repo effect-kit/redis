@@ -1,7 +1,7 @@
 import { isAbsolute } from "node:path";
 import { parseArgs } from "node:util";
 
-import { selectEngine } from "./FixtureTargets.ts";
+import { selectEngine } from "#tools/FixtureTargets";
 
 export const liveOptions = (args: ReadonlyArray<string>, env: NodeJS.ProcessEnv) => {
   const { values } = parseArgs({

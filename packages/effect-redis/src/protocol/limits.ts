@@ -1,7 +1,7 @@
 import { Result, Schema } from "effect";
 
-import { Limits } from "../config/Limits.js";
-import { ProtocolError } from "../errors/ProtocolError.js";
+import { Limits } from "#/config/Limits";
+import { ProtocolError } from "#/errors/ProtocolError";
 
 const DecodeLimits = Schema.Struct({
   maxHeaderBytes: Limits.fields.maxHeaderBytes,

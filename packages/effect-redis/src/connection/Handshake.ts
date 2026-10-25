@@ -1,14 +1,14 @@
 import { Effect, Redacted, Schema } from "effect";
 
-import { Credentials } from "../config/Endpoint.js";
-import { ConnectionError } from "../errors/ConnectionError.js";
-import { HandshakeError } from "../errors/HandshakeError.js";
-import { encodeCommand } from "../protocol/encode.js";
-import type { RedisCommand } from "../protocol/encode.js";
-import type { RespValue } from "../protocol/RespValue.js";
-import type { RedisConfig } from "../RedisConfig.js";
-import type { TransportConnection } from "../transport/Transport.js";
-import type { ReplyReader } from "./ReplyReader.js";
+import { Credentials } from "#/config/Endpoint";
+import type { ReplyReader } from "#/connection/ReplyReader";
+import { ConnectionError } from "#/errors/ConnectionError";
+import { HandshakeError } from "#/errors/HandshakeError";
+import { encodeCommand } from "#/protocol/encode";
+import type { RedisCommand } from "#/protocol/encode";
+import type { RespValue } from "#/protocol/RespValue";
+import type { RedisConfig } from "#/RedisConfig";
+import type { TransportConnection } from "#/transport/Transport";
 
 export const undecorated = (reply: RespValue): RespValue =>
   reply._tag === "Attribute" ? undecorated(reply.value) : reply;

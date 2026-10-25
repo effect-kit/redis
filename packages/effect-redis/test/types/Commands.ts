@@ -2,14 +2,14 @@
 import { Effect, Schema } from "effect";
 import type { Option } from "effect";
 
-import { pingMetadata } from "../../src/commands/connection/Ping.js";
-import { Commands, Redis, RedisKey, Reply, defineCommand } from "../../src/index.js";
-import type { Command, RedisClient, SetOptions } from "../../src/index.js";
+import { pingMetadata } from "#/commands/connection/Ping";
+import { Commands, Redis, RedisKey, Reply, defineCommand } from "#/index";
+import type { Command, RedisClient, SetOptions } from "#/index";
 import {
   type DecodeLabel,
   type EncodeLabel,
   labelSchema,
-} from "../support/commands/SchemaServices.js";
+} from "#test/support/commands/SchemaServices";
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;

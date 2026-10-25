@@ -4,10 +4,10 @@ import { join } from "node:path";
 
 import { Effect, Redacted, Schedule } from "effect";
 
-import { command } from "./Command.js";
-import { FixtureError } from "./FixtureError.js";
-import { probe } from "./Readiness.js";
-import { temporaryDirectory } from "./TemporaryDirectory.js";
+import { command } from "#test/support/servers/Command";
+import { FixtureError } from "#test/support/servers/FixtureError";
+import { probe } from "#test/support/servers/Readiness";
+import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
 
 /** Explicitly supplied Redis/Valkey executable; never discovers or installs a global binary. */
 export const localServer = Effect.fnUntraced(function* (

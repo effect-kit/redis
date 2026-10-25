@@ -1,5 +1,5 @@
-import type { RespValue } from "../../../src/protocol/RespValue.js";
-import { bytes, joinBytes } from "../../support/protocol/Decode.js";
+import type { RespValue } from "#/protocol/RespValue";
+import { bytes, joinBytes } from "#test/support/protocol/Decode";
 
 export interface WireFixture {
   readonly name: string;

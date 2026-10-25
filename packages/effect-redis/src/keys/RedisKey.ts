@@ -1,7 +1,7 @@
 import type { Schema } from "effect";
 
-import * as PayloadCodec from "../codecs/PayloadCodec.js";
-import type { RedisArgument } from "../RedisArgument.js";
+import * as PayloadCodec from "#/codecs/PayloadCodec";
+import type { RedisArgument } from "#/RedisArgument";
 
 export interface RedisKey<A, RD = never, RE = never> {
   readonly name: RedisArgument;

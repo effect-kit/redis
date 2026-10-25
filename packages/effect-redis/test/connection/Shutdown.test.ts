@@ -2,7 +2,7 @@ import { expect, it } from "@effect/vitest";
 import { Effect, Fiber, Result } from "effect";
 import { TestClock } from "effect/testing";
 
-import { controlled, sent, waitForSnapshot } from "../support/connection/Controlled.js";
+import { controlled, sent, waitForSnapshot } from "#test/support/connection/Controlled";
 
 it.effect("OWNERSHIP-07: graceful close drains admitted work and rejects fresh admission", () =>
   Effect.gen(function* () {

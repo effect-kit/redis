@@ -3,15 +3,15 @@ import { randomUUID } from "node:crypto";
 import { expect, it } from "@effect/vitest";
 import { Effect, Fiber, Result } from "effect";
 
-import { makeConnection } from "../../../src/connection/Connection.js";
-import { connect, layer } from "../../../src/node.js";
-import { decodeRedisConfig } from "../../../src/RedisConfig.js";
-import { selectedEngine, serverTargets } from "../../../tools/FixtureTargets.ts";
-import { waitForSnapshot } from "../../support/connection/Controlled.js";
-import { exchange } from "../../support/networking/Exchange.js";
-import { faultProxy } from "../../support/networking/FaultProxy.js";
-import { allocateServer, dockerServer } from "../../support/servers/DockerServer.js";
-import { recordFixture } from "../../support/servers/Evidence.js";
+import { makeConnection } from "#/connection/Connection";
+import { connect, layer } from "#/node";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { waitForSnapshot } from "#test/support/connection/Controlled";
+import { exchange } from "#test/support/networking/Exchange";
+import { faultProxy } from "#test/support/networking/FaultProxy";
+import { allocateServer, dockerServer } from "#test/support/servers/DockerServer";
+import { recordFixture } from "#test/support/servers/Evidence";
+import { selectedEngine, serverTargets } from "#tools/FixtureTargets";
 
 const targets = serverTargets.filter(
   (target) =>

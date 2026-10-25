@@ -1,8 +1,8 @@
 import { Effect } from "effect";
 
-import { ReplyError } from "../../errors/ReplyError.js";
-import type { ReplyDecoder } from "../Command.js";
-import { mismatch, undecorate } from "./Scalars.js";
+import type { ReplyDecoder } from "#/command/Command";
+import { mismatch, undecorate } from "#/command/reply/Scalars";
+import { ReplyError } from "#/errors/ReplyError";
 
 export const array =
   <A, E, R>(decode: ReplyDecoder<A, E, R>): ReplyDecoder<ReadonlyArray<A>, E, R> =>

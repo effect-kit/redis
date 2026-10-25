@@ -3,11 +3,11 @@ import { Result, Schema } from "effect";
 
 import { expect } from "vitest";
 
-import { ProtocolError } from "../../src/errors/ProtocolError.js";
-import { makeRespDecoder } from "../../src/protocol/decode/Decoder.js";
-import { encodeCommand } from "../../src/protocol/encode.js";
-import { bytes, decodeChunks } from "../support/protocol/Decode.js";
-import { generatedValue, wireValue } from "../support/protocol/GeneratedValue.js";
+import { ProtocolError } from "#/errors/ProtocolError";
+import { makeRespDecoder } from "#/protocol/decode/Decoder";
+import { encodeCommand } from "#/protocol/encode";
+import { bytes, decodeChunks } from "#test/support/protocol/Decode";
+import { generatedValue, wireValue } from "#test/support/protocol/GeneratedValue";
 
 const Binary = Schema.Array(Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 255 }))).check(
   Schema.isMaxLength(40),

@@ -7,6 +7,6 @@ export {
   optional,
   mismatch,
   undecorate,
-} from "./reply/Scalars.js";
-export { array } from "./reply/Collections.js";
-export { score, scoreToken } from "./reply/Score.js";
+} from "#/command/reply/Scalars";
+export { array } from "#/command/reply/Collections";
+export { score, scoreToken } from "#/command/reply/Score";

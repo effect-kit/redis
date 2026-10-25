@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+// This trusted controller is root-owned; package import targets cannot escape the package.
 import {
   canRunLive,
   liveMatrix,

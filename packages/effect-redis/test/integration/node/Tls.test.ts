@@ -1,12 +1,12 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Fiber, Redacted, Result } from "effect";
 
-import { connect } from "../../../src/node.js";
-import { decodeRedisConfig } from "../../../src/RedisConfig.js";
-import { faultProxy } from "../../support/networking/FaultProxy.js";
-import { loopback } from "../../support/networking/SocketServer.js";
-import { certificates } from "../../support/tls/Certificates.js";
-import { tlsServer } from "../../support/tls/TlsServer.js";
+import { connect } from "#/node";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { faultProxy } from "#test/support/networking/FaultProxy";
+import { loopback } from "#test/support/networking/SocketServer";
+import { certificates } from "#test/support/tls/Certificates";
+import { tlsServer } from "#test/support/tls/TlsServer";
 
 it.live("SOCKET-13: custom CA, verified server name and SNI complete before byte I/O", () =>
   Effect.gen(function* () {

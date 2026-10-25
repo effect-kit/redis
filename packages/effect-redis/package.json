@@ -38,6 +38,11 @@
   "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "imports": {
+    "#/*": "./src/*.ts",
+    "#test/*": "./test/*.ts",
+    "#tools/*": "./tools/*.ts"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -54,7 +59,7 @@
   "scripts": {
     "build": "tsdown",
     "lint": "oxlint --deny-warnings src test tools *.config.ts",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p tsconfig.tools.json && pnpm typecheck:contracts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.dev.json",
     "test": "vitest run",
     "test:unit": "vitest run",
     "check:spec": "node tools/check-spec.ts",
@@ -62,8 +67,7 @@
     "prepack": "pnpm run build",
     "test:node": "pnpm run test:live",
     "fixtures:pull": "node tools/prepare-node-fixtures.ts",
-    "test:live": "node tools/run-live-tests.ts",
-    "typecheck:contracts": "tsc --noEmit -p tsconfig.contracts.json"
+    "test:live": "node tools/run-live-tests.ts"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",

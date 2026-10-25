@@ -6,12 +6,17 @@ import { Effect, Redacted, Schema } from "effect";
 
 import { Wait } from "testcontainers";
 
-import { imageReference, runtimeImage } from "../../../tools/FixtureTargets.ts";
-import { containerRequest, FixtureContainer, scopedContainer, sharedVolume } from "./Containers.js";
-import { allocateServer } from "./DockerServer.js";
-import type { ServerTarget } from "./DockerServer.js";
-import { FixtureError } from "./FixtureError.js";
-import { temporaryDirectory } from "./TemporaryDirectory.js";
+import {
+  containerRequest,
+  FixtureContainer,
+  scopedContainer,
+  sharedVolume,
+} from "#test/support/servers/Containers";
+import { allocateServer } from "#test/support/servers/DockerServer";
+import type { ServerTarget } from "#test/support/servers/DockerServer";
+import { FixtureError } from "#test/support/servers/FixtureError";
+import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
+import { imageReference, runtimeImage } from "#tools/FixtureTargets";
 
 /** Shares a Linux Unix socket with an actual Node process, including on macOS Docker hosts. */
 export const unixRuntimeSmoke = Effect.fnUntraced(function* (

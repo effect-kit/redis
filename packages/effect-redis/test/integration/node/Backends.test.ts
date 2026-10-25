@@ -1,15 +1,15 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Redacted } from "effect";
 
-import { connect } from "../../../src/node.js";
-import { decodeRedisConfig } from "../../../src/RedisConfig.js";
-import { selectedEngine } from "../../../tools/FixtureTargets.ts";
-import { exchange } from "../../support/networking/Exchange.js";
-import { ownedServerSmoke } from "../../support/networking/Smoke.js";
-import { dockerServer, serverTargets } from "../../support/servers/DockerServer.js";
-import { recordFixture } from "../../support/servers/Evidence.js";
-import { unixRuntimeSmoke } from "../../support/servers/UnixRuntime.js";
-import { certificates } from "../../support/tls/Certificates.js";
+import { connect } from "#/node";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { exchange } from "#test/support/networking/Exchange";
+import { ownedServerSmoke } from "#test/support/networking/Smoke";
+import { dockerServer, serverTargets } from "#test/support/servers/DockerServer";
+import { recordFixture } from "#test/support/servers/Evidence";
+import { unixRuntimeSmoke } from "#test/support/servers/UnixRuntime";
+import { certificates } from "#test/support/tls/Certificates";
+import { selectedEngine } from "#tools/FixtureTargets";
 
 const targets = serverTargets.filter(
   (target) => selectedEngine === "all" || target.product === selectedEngine,

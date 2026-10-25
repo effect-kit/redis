@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import { Effect, Schema } from "effect";
 
-import * as Spec from "./Schema.ts";
+import * as Spec from "#tools/spec/Schema";
 
 export class SpecificationError extends Schema.TaggedError<SpecificationError>()(
   "SpecificationError",

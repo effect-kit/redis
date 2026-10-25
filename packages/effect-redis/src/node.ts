@@ -1,3 +1,3 @@
-export { connect, layer } from "./transport/node/NodeTransport.js";
-export { Transport } from "./transport/Transport.js";
-export type { TransportConnection } from "./transport/Transport.js";
+export { connect, layer } from "#/transport/node/NodeTransport";
+export { Transport } from "#/transport/Transport";
+export type { TransportConnection } from "#/transport/Transport";

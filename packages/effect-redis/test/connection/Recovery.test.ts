@@ -2,13 +2,13 @@ import { expect, it } from "@effect/vitest";
 import { Cause, Deferred, Effect, Exit, Fiber, Redacted, Ref, Result } from "effect";
 import { TestClock } from "effect/testing";
 
-import { makeConnection } from "../../src/connection/Connection.js";
-import { HandshakeError } from "../../src/errors/HandshakeError.js";
-import { TransportError } from "../../src/errors/TransportError.js";
-import { decodeRedisConfig } from "../../src/RedisConfig.js";
-import { Transport } from "../../src/transport/Transport.js";
-import { reconnecting, sent, waitForSnapshot } from "../support/connection/Controlled.js";
-import { makeControlledTransport } from "../support/transport/ControlledTransport.js";
+import { makeConnection } from "#/connection/Connection";
+import { HandshakeError } from "#/errors/HandshakeError";
+import { TransportError } from "#/errors/TransportError";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { Transport } from "#/transport/Transport";
+import { reconnecting, sent, waitForSnapshot } from "#test/support/connection/Controlled";
+import { makeControlledTransport } from "#test/support/transport/ControlledTransport";
 
 it.effect("UNKNOWN-02: future work reconnects; queued and written old work is never replayed", () =>
   Effect.gen(function* () {

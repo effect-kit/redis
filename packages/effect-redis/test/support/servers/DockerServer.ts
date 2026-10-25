@@ -6,14 +6,18 @@ import { Effect, Redacted, Schedule } from "effect";
 
 import { Wait } from "testcontainers";
 
-import { serverTargets } from "../../../tools/FixtureTargets.ts";
-import type { ServerTarget } from "../../../tools/FixtureTargets.ts";
-import type { Certificates } from "../tls/Certificates.js";
-import { containerRequest, FixtureContainer, scopedContainer } from "./Containers.js";
-import { FixtureError } from "./FixtureError.js";
-import { serverProfile } from "./Profiles.js";
-import { probe } from "./Readiness.js";
-import { temporaryDirectory } from "./TemporaryDirectory.js";
+import {
+  containerRequest,
+  FixtureContainer,
+  scopedContainer,
+} from "#test/support/servers/Containers";
+import { FixtureError } from "#test/support/servers/FixtureError";
+import { serverProfile } from "#test/support/servers/Profiles";
+import { probe } from "#test/support/servers/Readiness";
+import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
+import type { Certificates } from "#test/support/tls/Certificates";
+import { serverTargets } from "#tools/FixtureTargets";
+import type { ServerTarget } from "#tools/FixtureTargets";
 
 export { serverTargets };
 export type { ServerTarget };

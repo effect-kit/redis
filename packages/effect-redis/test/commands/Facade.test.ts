@@ -1,13 +1,13 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Fiber, Layer, Option, Redacted } from "effect";
 
-import { CommandExecutor } from "../../src/command/Executor.js";
-import { pingMetadata } from "../../src/commands/connection/Ping.js";
-import { Connection } from "../../src/connection/Connection.js";
-import { TransportError } from "../../src/errors/TransportError.js";
-import { Commands, defineCommand, Reply, Redis } from "../../src/index.js";
-import { commandFixture, respond } from "../support/commands/Fixture.js";
-import { bytes, controlled, sent } from "../support/connection/Controlled.js";
+import { CommandExecutor } from "#/command/Executor";
+import { pingMetadata } from "#/commands/connection/Ping";
+import { Connection } from "#/connection/Connection";
+import { TransportError } from "#/errors/TransportError";
+import { Commands, defineCommand, Reply, Redis } from "#/index";
+import { commandFixture, respond } from "#test/support/commands/Fixture";
+import { bytes, controlled, sent } from "#test/support/connection/Controlled";
 
 it.effect("COMMAND-01: Redis Layer composes families over one captured executor", () =>
   Effect.gen(function* () {

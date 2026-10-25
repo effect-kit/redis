@@ -2,10 +2,10 @@ import { Result } from "effect";
 
 import { expect } from "vitest";
 
-import { ProtocolError } from "../../../src/errors/ProtocolError.js";
-import { makeRespDecoder } from "../../../src/protocol/decode/Decoder.js";
-import type { RespDecodeLimits } from "../../../src/protocol/limits.js";
-import type { RespValue } from "../../../src/protocol/RespValue.js";
+import { ProtocolError } from "#/errors/ProtocolError";
+import { makeRespDecoder } from "#/protocol/decode/Decoder";
+import type { RespDecodeLimits } from "#/protocol/limits";
+import type { RespValue } from "#/protocol/RespValue";
 
 export const bytes = (text: string): Uint8Array => new TextEncoder().encode(text);
 export const joinBytes = (...chunks: ReadonlyArray<Uint8Array>): Uint8Array => {

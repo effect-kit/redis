@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import type { ReplyDecoder } from "../Command.js";
-import { mismatch, undecorate } from "./Scalars.js";
+import type { ReplyDecoder } from "#/command/Command";
+import { mismatch, undecorate } from "#/command/reply/Scalars";
 
 /** Preserves the server's decimal token; numeric conversion is an explicit separate decoder. */
 export const scoreToken: ReplyDecoder<string> = (reply) => {

@@ -1,9 +1,9 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Option, Schema } from "effect";
 
-import { Commands, PayloadCodec, RedisKey } from "../../src/index.js";
-import { commandFixture, respond } from "../support/commands/Fixture.js";
-import { DecodeLabel, EncodeLabel, labelSchema } from "../support/commands/SchemaServices.js";
+import { Commands, PayloadCodec, RedisKey } from "#/index";
+import { commandFixture, respond } from "#test/support/commands/Fixture";
+import { DecodeLabel, EncodeLabel, labelSchema } from "#test/support/commands/SchemaServices";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const User = Schema.Struct({

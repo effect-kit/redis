@@ -1,9 +1,9 @@
 import { expect, it } from "@effect/vitest";
 import { Context, Effect, Exit, Fiber, Redacted, Ref, Result } from "effect";
 
-import { makeConnection } from "../../src/connection/Connection.js";
-import { decodeRedisConfig } from "../../src/RedisConfig.js";
-import { reconnecting, sent, waitForSnapshot } from "../support/connection/Controlled.js";
+import { makeConnection } from "#/connection/Connection";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { reconnecting, sent, waitForSnapshot } from "#test/support/connection/Controlled";
 
 class Tokens extends Context.Service<Tokens, { readonly next: Effect.Effect<number> }>()(
   "test/connection/Tokens",

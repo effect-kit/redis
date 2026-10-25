@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { liveOptions } from "../../tools/LiveOptions.ts";
+import { liveOptions } from "#tools/LiveOptions";
 
 describe("explicit live execution modes", () => {
   it("defaults to disposable containers and accepts a reviewed engine", () => {

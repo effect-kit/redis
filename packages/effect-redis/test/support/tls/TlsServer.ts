@@ -2,8 +2,8 @@ import { createServer } from "node:tls";
 
 import { Effect, Redacted } from "effect";
 
-import { listen } from "../networking/SocketServer.js";
-import type { Certificates } from "./Certificates.js";
+import { listen } from "#test/support/networking/SocketServer";
+import type { Certificates } from "#test/support/tls/Certificates";
 
 export const tlsServer = Effect.fnUntraced(function* (
   identity: Certificates,

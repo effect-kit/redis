@@ -1,14 +1,14 @@
 import { Effect } from "effect";
 import type { Option } from "effect";
 
-import { defineCommand, fromPreparation } from "../../command/Command.js";
-import type { Command, ReplyDecoder } from "../../command/Command.js";
-import { blob, mismatch, optional, status, undecorate } from "../../command/reply/Scalars.js";
-import { CommandInputError } from "../../errors/CommandInputError.js";
-import type { RedisArgument } from "../../RedisArgument.js";
-import { metadata } from "../Metadata.js";
-import { decodeSetOptions } from "./SetOptions.js";
-import type { SetOptions, SetResult } from "./SetOptions.js";
+import { defineCommand, fromPreparation } from "#/command/Command";
+import type { Command, ReplyDecoder } from "#/command/Command";
+import { blob, mismatch, optional, status, undecorate } from "#/command/reply/Scalars";
+import { metadata } from "#/commands/Metadata";
+import { decodeSetOptions } from "#/commands/strings/SetOptions";
+import type { SetOptions, SetResult } from "#/commands/strings/SetOptions";
+import { CommandInputError } from "#/errors/CommandInputError";
+import type { RedisArgument } from "#/RedisArgument";
 
 export const setMetadata = metadata(
   "SET",

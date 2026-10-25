@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { PositiveInteger } from "./Validation.js";
+import { PositiveInteger } from "#/config/Validation";
 
 const budget = (value: number) =>
   PositiveInteger.pipe(Schema.withDecodingDefaultKey(Effect.succeed(value)));

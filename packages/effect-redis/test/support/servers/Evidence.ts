@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 
 import { Effect, Redacted } from "effect";
 
-import { FixtureError } from "./FixtureError.js";
+import { FixtureError } from "#test/support/servers/FixtureError";
 
 export const recordFixture = (fixture: string, evidence: Readonly<Record<string, unknown>>) =>
   Effect.tryPromise({

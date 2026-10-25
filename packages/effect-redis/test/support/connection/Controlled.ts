@@ -1,15 +1,15 @@
 import { expect } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 
-import type { RedisConnection, ConnectionSnapshot } from "../../../src/connection/Connection.js";
-import { makeConnection } from "../../../src/connection/Connection.js";
-import type { ConnectionOptions } from "../../../src/connection/Options.js";
-import { TransportError } from "../../../src/errors/TransportError.js";
-import { encodeCommand } from "../../../src/protocol/encode.js";
-import type { RedisCommand } from "../../../src/protocol/encode.js";
-import { decodeRedisConfig } from "../../../src/RedisConfig.js";
-import { Transport } from "../../../src/transport/Transport.js";
-import { makeControlledTransport } from "../transport/ControlledTransport.js";
+import type { RedisConnection, ConnectionSnapshot } from "#/connection/Connection";
+import { makeConnection } from "#/connection/Connection";
+import type { ConnectionOptions } from "#/connection/Options";
+import { TransportError } from "#/errors/TransportError";
+import { encodeCommand } from "#/protocol/encode";
+import type { RedisCommand } from "#/protocol/encode";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { Transport } from "#/transport/Transport";
+import { makeControlledTransport } from "#test/support/transport/ControlledTransport";
 
 export const bytes = (text: string) => new TextEncoder().encode(text);
 export const controlled = Effect.fnUntraced(function* (

@@ -1,6 +1,6 @@
 import { Result } from "effect";
 
-import type * as Codec from "../src/index.js";
+import type * as Codec from "#/index";
 
 const moduleUrl = new URL("../dist/index.js", import.meta.url).href;
 const { makeRespDecoder, ProtocolError }: typeof Codec = await import(moduleUrl);

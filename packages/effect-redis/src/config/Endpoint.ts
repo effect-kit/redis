@@ -1,7 +1,7 @@
 import { Effect, Redacted, Schema } from "effect";
 
-import { RedisConfigError } from "../errors/RedisConfigError.js";
-import { decode, NonNegativeInteger } from "./Validation.js";
+import { decode, NonNegativeInteger } from "#/config/Validation";
+import { RedisConfigError } from "#/errors/RedisConfigError";
 
 const Host = Schema.NonEmptyString.check(
   Schema.isPattern(/^[^\s/@?#]+$/),

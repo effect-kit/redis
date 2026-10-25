@@ -1,8 +1,8 @@
 import { Duration, Effect, Schema } from "effect";
 import type { Option } from "effect";
 
-import { PositiveInteger } from "../../config/Validation.js";
-import { CommandInputError } from "../../errors/CommandInputError.js";
+import { PositiveInteger } from "#/config/Validation";
+import { CommandInputError } from "#/errors/CommandInputError";
 
 const Argument = Schema.Union([Schema.String, Schema.Uint8Array]);
 const PositiveInt64 = Schema.Union([

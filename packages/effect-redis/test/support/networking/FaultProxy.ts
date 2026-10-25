@@ -4,7 +4,7 @@ import { Transform } from "node:stream";
 
 import { Deferred, Effect } from "effect";
 
-import { loopback } from "./SocketServer.js";
+import { loopback } from "#test/support/networking/SocketServer";
 
 /** Forwards bytes only; holding replies uses native readable backpressure. TLS can pass through unchanged. */
 export const faultProxy = Effect.fnUntraced(function* (

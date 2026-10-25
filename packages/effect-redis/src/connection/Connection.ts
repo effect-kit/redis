@@ -12,25 +12,25 @@ import {
   Scope,
 } from "effect";
 
-import { AdmissionError } from "../errors/AdmissionError.js";
-import { ConnectionError } from "../errors/ConnectionError.js";
-import { HandshakeError } from "../errors/HandshakeError.js";
-import { ProtocolError } from "../errors/ProtocolError.js";
-import { RedisConfigError } from "../errors/RedisConfigError.js";
-import { TransportError } from "../errors/TransportError.js";
-import type { RedisCommand } from "../protocol/encode.js";
-import type { RespValue } from "../protocol/RespValue.js";
-import type { RedisConfig } from "../RedisConfig.js";
-import { Transport } from "../transport/Transport.js";
-import { Admission } from "./Admission.js";
-import type { ExecutionError, Ticket } from "./Admission.js";
-import { makeGeneration } from "./Generation.js";
-import type { Generation, PushReply } from "./Generation.js";
-import { handshake } from "./Handshake.js";
-import { decodePolicy } from "./Options.js";
-import type { ConnectionOptions } from "./Options.js";
-import { checkOrdinary } from "./OrdinaryCommand.js";
-import { makeReplyReader } from "./ReplyReader.js";
+import { Admission } from "#/connection/Admission";
+import type { ExecutionError, Ticket } from "#/connection/Admission";
+import { makeGeneration } from "#/connection/Generation";
+import type { Generation, PushReply } from "#/connection/Generation";
+import { handshake } from "#/connection/Handshake";
+import { decodePolicy } from "#/connection/Options";
+import type { ConnectionOptions } from "#/connection/Options";
+import { checkOrdinary } from "#/connection/OrdinaryCommand";
+import { makeReplyReader } from "#/connection/ReplyReader";
+import { AdmissionError } from "#/errors/AdmissionError";
+import { ConnectionError } from "#/errors/ConnectionError";
+import { HandshakeError } from "#/errors/HandshakeError";
+import { ProtocolError } from "#/errors/ProtocolError";
+import { RedisConfigError } from "#/errors/RedisConfigError";
+import { TransportError } from "#/errors/TransportError";
+import type { RedisCommand } from "#/protocol/encode";
+import type { RespValue } from "#/protocol/RespValue";
+import type { RedisConfig } from "#/RedisConfig";
+import { Transport } from "#/transport/Transport";
 
 type AcquisitionError = ConnectionError | HandshakeError | ProtocolError | TransportError;
 export interface ConnectionSnapshot {

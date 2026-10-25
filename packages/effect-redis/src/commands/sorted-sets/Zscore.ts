@@ -1,9 +1,9 @@
-import { defineCommand } from "../../command/Command.js";
-import type { RedisExecutor } from "../../command/Executor.js";
-import { optional } from "../../command/reply/Scalars.js";
-import { score, scoreToken } from "../../command/reply/Score.js";
-import type { RedisArgument } from "../../RedisArgument.js";
-import { metadata } from "../Metadata.js";
+import { defineCommand } from "#/command/Command";
+import type { RedisExecutor } from "#/command/Executor";
+import { optional } from "#/command/reply/Scalars";
+import { score, scoreToken } from "#/command/reply/Score";
+import { metadata } from "#/commands/Metadata";
+import type { RedisArgument } from "#/RedisArgument";
 
 export const zscoreMetadata = metadata("ZSCORE", "sorted-sets", ["COMMAND-05"]);
 export const zscore = (key: RedisArgument, member: RedisArgument) =>

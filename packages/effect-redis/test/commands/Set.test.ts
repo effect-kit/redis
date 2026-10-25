@@ -1,11 +1,11 @@
 import { expect, it } from "@effect/vitest";
 import { Duration, Effect, Option } from "effect";
 
-import { set } from "../../src/commands/strings/Set.js";
-import { expiryAfter } from "../../src/commands/strings/SetOptions.js";
-import type { SetOptions } from "../../src/commands/strings/SetOptions.js";
-import type { RedisCommand } from "../../src/protocol/encode.js";
-import { commandFixture, respond } from "../support/commands/Fixture.js";
+import { set } from "#/commands/strings/Set";
+import { expiryAfter } from "#/commands/strings/SetOptions";
+import type { SetOptions } from "#/commands/strings/SetOptions";
+import type { RedisCommand } from "#/protocol/encode";
+import { commandFixture, respond } from "#test/support/commands/Fixture";
 
 it.effect.each([
   [{}, ["SET", "key", "value"]],

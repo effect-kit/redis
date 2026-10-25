@@ -3,17 +3,17 @@ import { existsSync } from "node:fs";
 import { expect, it } from "@effect/vitest";
 import { Deferred, Effect, Fiber, Result } from "effect";
 
-import { connect } from "../../../src/node.js";
-import { encodeCommand } from "../../../src/protocol/encode.js";
-import { decodeRedisConfig } from "../../../src/RedisConfig.js";
-import { exchange } from "../../support/networking/Exchange.js";
-import { faultProxy } from "../../support/networking/FaultProxy.js";
+import { connect } from "#/node";
+import { encodeCommand } from "#/protocol/encode";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { exchange } from "#test/support/networking/Exchange";
+import { faultProxy } from "#test/support/networking/FaultProxy";
 import {
   containerExists,
   FixtureContainer,
   scopedContainer,
-} from "../../support/servers/Containers.js";
-import { allocateServer, dockerServer, serverTargets } from "../../support/servers/DockerServer.js";
+} from "#test/support/servers/Containers";
+import { allocateServer, dockerServer, serverTargets } from "#test/support/servers/DockerServer";
 
 const redis = serverTargets.find((target) => target.fixture === "redis");
 if (redis === undefined) throw new Error("Missing primary Redis fixture");

@@ -1,10 +1,10 @@
 import { Effect } from "effect";
 
-import { ProtocolError } from "../errors/ProtocolError.js";
-import type { RespDecoder } from "../protocol/decode/Decoder.js";
-import { makeRespDecoder } from "../protocol/decode/Decoder.js";
-import type { RespDecodeLimits } from "../protocol/limits.js";
-import type { TransportConnection } from "../transport/Transport.js";
+import { ProtocolError } from "#/errors/ProtocolError";
+import type { RespDecoder } from "#/protocol/decode/Decoder";
+import { makeRespDecoder } from "#/protocol/decode/Decoder";
+import type { RespDecodeLimits } from "#/protocol/limits";
+import type { TransportConnection } from "#/transport/Transport";
 
 export const makeReplyReader = Effect.fnUntraced(function* (
   transport: TransportConnection,

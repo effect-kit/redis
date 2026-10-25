@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 
-import { makeRespDecoder } from "../../../src/protocol/decode/Decoder.js";
-import type { RedisCommand } from "../../../src/protocol/encode.js";
-import { encodeCommand } from "../../../src/protocol/encode.js";
-import type { TransportConnection } from "../../../src/transport/Transport.js";
+import { makeRespDecoder } from "#/protocol/decode/Decoder";
+import type { RedisCommand } from "#/protocol/encode";
+import { encodeCommand } from "#/protocol/encode";
+import type { TransportConnection } from "#/transport/Transport";
 
 /** Single-owner smoke exchange, not a client scheduler. */
 export const exchange = Effect.fnUntraced(function* (

@@ -1,5 +1,5 @@
-import { failProtocol } from "../../errors/ProtocolError.js";
-import type { RespValue } from "../RespValue.js";
+import { failProtocol } from "#/errors/ProtocolError";
+import type { RespValue } from "#/protocol/RespValue";
 
 // Keep a leading BOM so it cannot turn a non-ASCII numeric header into valid syntax.
 const textDecoder = new TextDecoder("utf-8", { ignoreBOM: true });

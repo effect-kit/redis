@@ -2,9 +2,9 @@ import type { Socket } from "node:net";
 
 import { Deferred, Effect, Redacted } from "effect";
 
-import { TransportError } from "../../errors/TransportError.js";
-import type { TransportConnection } from "../Transport.js";
-import { makeWriter } from "./Write.js";
+import { TransportError } from "#/errors/TransportError";
+import { makeWriter } from "#/transport/node/Write";
+import type { TransportConnection } from "#/transport/Transport";
 
 type ResumeRead = (result: Effect.Effect<Uint8Array | undefined, TransportError>) => void;
 

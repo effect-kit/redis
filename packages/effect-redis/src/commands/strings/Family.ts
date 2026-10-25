@@ -1,9 +1,9 @@
-import type { RedisExecutor } from "../../command/Executor.js";
-import type { RedisArgument } from "../../RedisArgument.js";
-import { get, getBytes } from "./Get.js";
-import { incr } from "./Incr.js";
-import { set } from "./Set.js";
-import type { SetOptions } from "./SetOptions.js";
+import type { RedisExecutor } from "#/command/Executor";
+import { get, getBytes } from "#/commands/strings/Get";
+import { incr } from "#/commands/strings/Incr";
+import { set } from "#/commands/strings/Set";
+import type { SetOptions } from "#/commands/strings/SetOptions";
+import type { RedisArgument } from "#/RedisArgument";
 
 export const stringFamily = (executor: RedisExecutor) => ({
   get: (key: RedisArgument) => executor.execute(get(key)),

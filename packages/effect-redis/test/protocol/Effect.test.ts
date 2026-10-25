@@ -1,8 +1,8 @@
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { decodeRedisConfig, encodeCommand, makeRespDecoder } from "../../src/index.js";
-import { bytes } from "../support/protocol/Decode.js";
+import { decodeRedisConfig, encodeCommand, makeRespDecoder } from "#/index";
+import { bytes } from "#test/support/protocol/Decode";
 
 it.effect("WIRE-09: validated configuration and codec Results compose into Effect", () =>
   Effect.gen(function* () {

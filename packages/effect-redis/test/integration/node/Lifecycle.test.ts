@@ -3,8 +3,8 @@ import { createConnection } from "node:net";
 import { expect, it } from "@effect/vitest";
 import { Effect, Result } from "effect";
 
-import { makeConnection } from "../../../src/transport/node/Connection.js";
-import { loopback } from "../../support/networking/SocketServer.js";
+import { makeConnection } from "#/transport/node/Connection";
+import { loopback } from "#test/support/networking/SocketServer";
 
 it.live("SOCKET-31: finalization removes owned native listeners and ignores stale readiness", () =>
   Effect.gen(function* () {

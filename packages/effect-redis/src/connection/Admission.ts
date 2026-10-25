@@ -1,14 +1,14 @@
 import { Deferred, Effect, Result } from "effect";
 import type { Cause } from "effect";
 
-import type { Limits } from "../config/Limits.js";
-import { AdmissionError } from "../errors/AdmissionError.js";
-import type { ConnectionError } from "../errors/ConnectionError.js";
-import type { HandshakeError } from "../errors/HandshakeError.js";
-import type { ProtocolError } from "../errors/ProtocolError.js";
-import { encodeCommand } from "../protocol/encode.js";
-import type { RedisCommand } from "../protocol/encode.js";
-import type { RespValue } from "../protocol/RespValue.js";
+import type { Limits } from "#/config/Limits";
+import { AdmissionError } from "#/errors/AdmissionError";
+import type { ConnectionError } from "#/errors/ConnectionError";
+import type { HandshakeError } from "#/errors/HandshakeError";
+import type { ProtocolError } from "#/errors/ProtocolError";
+import { encodeCommand } from "#/protocol/encode";
+import type { RedisCommand } from "#/protocol/encode";
+import type { RespValue } from "#/protocol/RespValue";
 
 export type ExecutionError = AdmissionError | ConnectionError | HandshakeError | ProtocolError;
 export interface Ticket {

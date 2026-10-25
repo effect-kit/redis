@@ -2,8 +2,8 @@ import { Result } from "effect";
 
 import { expect, it } from "vitest";
 
-import { makeRespDecoder } from "../../src/protocol/decode/Decoder.js";
-import { bytes, decodeChunks, failure, malformed } from "../support/protocol/Decode.js";
+import { makeRespDecoder } from "#/protocol/decode/Decoder";
+import { bytes, decodeChunks, failure, malformed } from "#test/support/protocol/Decode";
 
 it("LIMIT-01: header size includes marker and excludes CRLF", () => {
   const options = { maxHeaderBytes: 3, maxBlobBytes: 3, maxBufferedBytes: 32 };

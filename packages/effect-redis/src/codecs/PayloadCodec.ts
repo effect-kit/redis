@@ -1,6 +1,6 @@
 import { Effect, Redacted, Schema } from "effect";
 
-import { PayloadError } from "../errors/PayloadError.js";
+import { PayloadError } from "#/errors/PayloadError";
 
 export interface PayloadCodec<A, RD = never, RE = never> {
   readonly encode: (value: A) => Effect.Effect<Uint8Array, PayloadError, RE>;

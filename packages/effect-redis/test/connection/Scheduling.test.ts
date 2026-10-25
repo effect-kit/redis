@@ -2,7 +2,7 @@ import { expect, it } from "@effect/vitest";
 import { Effect, Fiber, Result } from "effect";
 import { TestClock } from "effect/testing";
 
-import { controlled, bytes, sent, waitForSnapshot } from "../support/connection/Controlled.js";
+import { controlled, bytes, sent, waitForSnapshot } from "#test/support/connection/Controlled";
 
 it.effect(
   "OWNERSHIP-01: concurrent requests receive their own ordered replies and server errors",

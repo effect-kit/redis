@@ -1,8 +1,8 @@
 import { Effect, Schema } from "effect";
 
-import type { Credentials } from "../config/Endpoint.js";
-import { decode, NonNegativeInteger, PositiveInteger } from "../config/Validation.js";
-import type { HandshakeError } from "../errors/HandshakeError.js";
+import type { Credentials } from "#/config/Endpoint";
+import { decode, NonNegativeInteger, PositiveInteger } from "#/config/Validation";
+import type { HandshakeError } from "#/errors/HandshakeError";
 
 const defaulted = (schema: typeof PositiveInteger, value: number) =>
   schema.pipe(Schema.withDecodingDefaultKey(Effect.succeed(value)));

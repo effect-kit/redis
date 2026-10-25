@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
 
-import { liveOptions } from "./LiveOptions.ts";
+import { liveOptions } from "#tools/LiveOptions";
 
 const options = liveOptions(
   process.argv.slice(2).filter((arg) => arg !== "--"),
@@ -16,7 +16,7 @@ const env = {
 rmSync(new URL("../test-results/", import.meta.url), { recursive: true, force: true });
 for (const args of [
   ["run", "build"],
-  ["exec", "vitest", "run", "--config", "vitest.node.config.ts"],
+  ["exec", "vitest", "run"],
 ]) {
   const result = spawnSync("pnpm", args, { stdio: "inherit", env });
   if (result.error || result.status !== 0) {

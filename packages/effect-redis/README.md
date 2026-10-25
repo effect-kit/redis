@@ -154,6 +154,12 @@ access roles. `defineCommand` additionally requires a reply decoder and provenan
 The standalone executor rejects nonordinary modes and explicit-node routing. These
 contracts do not imply implemented sessions, topology routing or provider parity.
 
-The dedicated `typecheck:contracts` lane verifies public inference and codec service
-requirements. Live typed conformance covers pinned Redis/Valkey builds in RESP2/3;
+The development typecheck includes compile-only public inference and codec service
+contracts. Live typed conformance covers pinned Redis/Valkey builds in RESP2/3;
 full command-family and backend certification remain pending.
+
+Development uses `#/` source imports, `#test/` fixtures and `#tools/` tooling imports.
+Node resolves them through package imports; tsdown rewrites built module references.
+The three TypeScript configs separate universal code without Node globals, native
+source declaration builds, and development files/type contracts. One Vitest config
+runs offline tests by default; the live CLI selects explicit external-fixture modes.

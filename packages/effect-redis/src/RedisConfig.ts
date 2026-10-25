@@ -1,10 +1,10 @@
 import { Effect, Schema } from "effect";
 
-import { Credentials, EndpointInput, normalizeEndpoint } from "./config/Endpoint.js";
-import type { Endpoint } from "./config/Endpoint.js";
-import { Limits } from "./config/Limits.js";
-import { decode, NonNegativeInteger, PositiveInteger } from "./config/Validation.js";
-import { RedisConfigError } from "./errors/RedisConfigError.js";
+import { Credentials, EndpointInput, normalizeEndpoint } from "#/config/Endpoint";
+import type { Endpoint } from "#/config/Endpoint";
+import { Limits } from "#/config/Limits";
+import { decode, NonNegativeInteger, PositiveInteger } from "#/config/Validation";
+import { RedisConfigError } from "#/errors/RedisConfigError";
 
 const ConfigInput = Schema.Struct({
   endpoint: EndpointInput,

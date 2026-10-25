@@ -1,14 +1,14 @@
 import type { Scope } from "effect";
 import { Cause, Clock, Deferred, Effect, Exit, Queue, Redacted, Result } from "effect";
 
-import { ConnectionError } from "../errors/ConnectionError.js";
-import type { RespValue } from "../protocol/RespValue.js";
-import type { TransportConnection } from "../transport/Transport.js";
-import type { Admission } from "./Admission.js";
-import type { Ticket } from "./Admission.js";
-import { undecorated } from "./Handshake.js";
-import type { ConnectionPolicy } from "./Options.js";
-import type { ReplyReader } from "./ReplyReader.js";
+import type { Admission } from "#/connection/Admission";
+import type { Ticket } from "#/connection/Admission";
+import { undecorated } from "#/connection/Handshake";
+import type { ConnectionPolicy } from "#/connection/Options";
+import type { ReplyReader } from "#/connection/ReplyReader";
+import { ConnectionError } from "#/errors/ConnectionError";
+import type { RespValue } from "#/protocol/RespValue";
+import type { TransportConnection } from "#/transport/Transport";
 
 export interface PushReply {
   readonly generation: number;

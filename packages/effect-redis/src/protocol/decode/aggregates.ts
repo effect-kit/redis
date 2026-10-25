@@ -1,5 +1,5 @@
-import { failProtocol } from "../../errors/ProtocolError.js";
-import type { RespPairs, RespValue } from "../RespValue.js";
+import { failProtocol } from "#/errors/ProtocolError";
+import type { RespPairs, RespValue } from "#/protocol/RespValue";
 
 export interface AggregateFrame {
   readonly tag: "Array" | "Map" | "Set" | "Push" | "Attribute";

@@ -1,8 +1,8 @@
 import { Effect, Option } from "effect";
 
-import { ReplyError } from "../../errors/ReplyError.js";
-import type { RespValue } from "../../protocol/RespValue.js";
-import type { ReplyDecoder } from "../Command.js";
+import type { ReplyDecoder } from "#/command/Command";
+import { ReplyError } from "#/errors/ReplyError";
+import type { RespValue } from "#/protocol/RespValue";
 
 export const undecorate = (reply: RespValue): RespValue => {
   let value = reply;

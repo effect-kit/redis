@@ -1,9 +1,9 @@
 import { Predicate, Result } from "effect";
 
-import { ProtocolError } from "../errors/ProtocolError.js";
-import type { RedisArgument } from "../RedisArgument.js";
-import { encodeLimits } from "./limits.js";
-import type { RespEncodeLimits } from "./limits.js";
+import { ProtocolError } from "#/errors/ProtocolError";
+import { encodeLimits } from "#/protocol/limits";
+import type { RespEncodeLimits } from "#/protocol/limits";
+import type { RedisArgument } from "#/RedisArgument";
 
 export type RedisCommand = readonly [RedisArgument, ...RedisArgument[]];
 const textEncoder = new TextEncoder();

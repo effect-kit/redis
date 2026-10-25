@@ -1,10 +1,10 @@
 import { Effect, Predicate, Schema } from "effect";
 
-import { CommandInputError } from "../errors/CommandInputError.js";
-import type { ReplyError } from "../errors/ReplyError.js";
-import type { RedisCommand } from "../protocol/encode.js";
-import type { RespValue } from "../protocol/RespValue.js";
-import { CommandMetadata, Routing } from "./Metadata.js";
+import { CommandMetadata, Routing } from "#/command/Metadata";
+import { CommandInputError } from "#/errors/CommandInputError";
+import type { ReplyError } from "#/errors/ReplyError";
+import type { RedisCommand } from "#/protocol/encode";
+import type { RespValue } from "#/protocol/RespValue";
 
 export type ReplyDecoder<A, E = never, R = never> = (
   reply: RespValue,

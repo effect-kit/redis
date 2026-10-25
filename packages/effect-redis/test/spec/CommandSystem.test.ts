@@ -1,14 +1,14 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
-import { pingMetadata } from "../../src/commands/connection/Ping.js";
-import { zscoreMetadata } from "../../src/commands/sorted-sets/Zscore.js";
-import { getMetadata } from "../../src/commands/strings/Get.js";
-import { incrMetadata } from "../../src/commands/strings/Incr.js";
-import { setMetadata } from "../../src/commands/strings/Set.js";
-import { loadSpecification } from "../../tools/spec/Load.ts";
-import { Descriptor } from "../../tools/spec/Schema.ts";
-import { validateSpecification } from "../../tools/spec/Validate.ts";
+import { pingMetadata } from "#/commands/connection/Ping";
+import { zscoreMetadata } from "#/commands/sorted-sets/Zscore";
+import { getMetadata } from "#/commands/strings/Get";
+import { incrMetadata } from "#/commands/strings/Incr";
+import { setMetadata } from "#/commands/strings/Set";
+import { loadSpecification } from "#tools/spec/Load";
+import { Descriptor } from "#tools/spec/Schema";
+import { validateSpecification } from "#tools/spec/Validate";
 
 const byName = (a: typeof Descriptor.Type, b: typeof Descriptor.Type) =>
   a.name.localeCompare(b.name);

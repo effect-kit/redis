@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto";
 import { expect } from "@effect/vitest";
 import { Effect } from "effect";
 
-import type { TransportConnection } from "../../../src/transport/Transport.js";
-import { exchange } from "./Exchange.js";
+import type { TransportConnection } from "#/transport/Transport";
+import { exchange } from "#test/support/networking/Exchange";
 
 export const readOnlySmoke = Effect.fnUntraced(function* (connection: TransportConnection) {
   expect(yield* exchange(connection, ["PING"])).toEqual({

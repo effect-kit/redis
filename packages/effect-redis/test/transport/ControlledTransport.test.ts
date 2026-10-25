@@ -2,10 +2,10 @@ import { expect, it } from "@effect/vitest";
 import { Effect, Fiber, Result } from "effect";
 import { TestClock } from "effect/testing";
 
-import { TransportError } from "../../src/errors/TransportError.js";
-import { decodeRedisConfig } from "../../src/RedisConfig.js";
-import { Transport } from "../../src/transport/Transport.js";
-import { makeControlledTransport } from "../support/transport/ControlledTransport.js";
+import { TransportError } from "#/errors/TransportError";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { Transport } from "#/transport/Transport";
+import { makeControlledTransport } from "#test/support/transport/ControlledTransport";
 
 const config = decodeRedisConfig({ endpoint: { host: "localhost" } });
 

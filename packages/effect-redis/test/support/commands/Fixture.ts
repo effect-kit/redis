@@ -1,9 +1,9 @@
 import { Effect, Fiber } from "effect";
 
-import { makeExecutor } from "../../../src/command/Executor.js";
-import type { RedisCommand } from "../../../src/protocol/encode.js";
-import { makeRedis } from "../../../src/Redis.js";
-import { controlled, sent } from "../connection/Controlled.js";
+import { makeExecutor } from "#/command/Executor";
+import type { RedisCommand } from "#/protocol/encode";
+import { makeRedis } from "#/Redis";
+import { controlled, sent } from "#test/support/connection/Controlled";
 
 export const commandFixture = Effect.fnUntraced(function* () {
   const fixture = yield* controlled();

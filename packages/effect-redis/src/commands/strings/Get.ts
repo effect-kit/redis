@@ -1,7 +1,7 @@
-import { defineCommand } from "../../command/Command.js";
-import { blob, optional, text } from "../../command/reply/Scalars.js";
-import type { RedisArgument } from "../../RedisArgument.js";
-import { metadata } from "../Metadata.js";
+import { defineCommand } from "#/command/Command";
+import { blob, optional, text } from "#/command/reply/Scalars";
+import { metadata } from "#/commands/Metadata";
+import type { RedisArgument } from "#/RedisArgument";
 
 export const getMetadata = metadata("GET", "strings", ["COMMAND-02", "COMMAND-03"]);
 export const getBytes = (key: RedisArgument) =>

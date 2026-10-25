@@ -3,8 +3,8 @@ import { connect } from "node:tls";
 
 import { Effect, Redacted } from "effect";
 
-import type { Certificates } from "../tls/Certificates.js";
-import { FixtureError } from "./FixtureError.js";
+import { FixtureError } from "#test/support/servers/FixtureError";
+import type { Certificates } from "#test/support/tls/Certificates";
 
 /** Independent wire probe: readiness cannot pass because our codec and adapter share a bug. */
 export const probe = (

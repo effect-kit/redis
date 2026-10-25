@@ -1,5 +1,5 @@
-import { AdmissionError } from "../errors/AdmissionError.js";
-import type { RedisCommand } from "../protocol/encode.js";
+import { AdmissionError } from "#/errors/AdmissionError";
+import type { RedisCommand } from "#/protocol/encode";
 
 const modes = new Set([
   "DEBUG",

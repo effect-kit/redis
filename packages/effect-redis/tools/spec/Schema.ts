@@ -1,8 +1,8 @@
 import { Schema } from "effect";
 
-import type { CommandMetadata } from "../../src/command/Metadata.ts";
+import type { CommandMetadata } from "#/command/Metadata";
 
-export { CommandMetadata as Descriptor } from "../../src/command/Metadata.ts";
+export { CommandMetadata as Descriptor } from "#/command/Metadata";
 
 const Name = Schema.NonEmptyString;
 const Names = Schema.NonEmptyArray(Name);

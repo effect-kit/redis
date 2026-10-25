@@ -1,14 +1,14 @@
 import { Context, Effect, Layer } from "effect";
 
-import { CommandExecutor } from "./command/Executor.js";
-import type { RedisExecutor } from "./command/Executor.js";
-import { raw } from "./command/Raw.js";
-import type { RawContract } from "./command/Raw.js";
-import { connectionFamily } from "./commands/connection/Ping.js";
-import { sortedSetFamily } from "./commands/sorted-sets/Zscore.js";
-import { stringFamily } from "./commands/strings/Family.js";
-import { keyFamily } from "./keys/Commands.js";
-import type { RedisCommand } from "./protocol/encode.js";
+import { CommandExecutor } from "#/command/Executor";
+import type { RedisExecutor } from "#/command/Executor";
+import { raw } from "#/command/Raw";
+import type { RawContract } from "#/command/Raw";
+import { connectionFamily } from "#/commands/connection/Ping";
+import { sortedSetFamily } from "#/commands/sorted-sets/Zscore";
+import { stringFamily } from "#/commands/strings/Family";
+import { keyFamily } from "#/keys/Commands";
+import type { RedisCommand } from "#/protocol/encode";
 
 export const makeRedis = (executor: RedisExecutor) => ({
   ...connectionFamily(executor),

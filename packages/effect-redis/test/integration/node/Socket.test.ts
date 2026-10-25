@@ -3,10 +3,10 @@ import { join } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { Effect, Fiber, Result } from "effect";
 
-import { connect, layer, Transport } from "../../../src/node.js";
-import { decodeRedisConfig } from "../../../src/RedisConfig.js";
-import { loopback } from "../../support/networking/SocketServer.js";
-import { temporaryDirectory } from "../../support/servers/TemporaryDirectory.js";
+import { connect, layer, Transport } from "#/node";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { loopback } from "#test/support/networking/SocketServer";
+import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
 
 it.live("SOCKET-01: TCP Layer exchanges owned binary chunks and closes idempotently", () =>
   Effect.gen(function* () {

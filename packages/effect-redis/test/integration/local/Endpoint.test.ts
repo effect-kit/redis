@@ -3,11 +3,11 @@ import { readFile } from "node:fs/promises";
 import { expect, it } from "@effect/vitest";
 import { Effect, Redacted } from "effect";
 
-import { connect } from "../../../src/node.js";
-import { decodeRedisConfig } from "../../../src/RedisConfig.js";
-import { exchange } from "../../support/networking/Exchange.js";
-import { readOnlySmoke } from "../../support/networking/Smoke.js";
-import { FixtureError } from "../../support/servers/FixtureError.js";
+import { connect } from "#/node";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { exchange } from "#test/support/networking/Exchange";
+import { readOnlySmoke } from "#test/support/networking/Smoke";
+import { FixtureError } from "#test/support/servers/FixtureError";
 
 it.live("explicit existing endpoint: connection-only AUTH and read-only PING/binary ECHO", () =>
   Effect.gen(function* () {

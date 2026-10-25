@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Redacted, Result } from "effect";
 
-import { RedisConfigError } from "../../src/errors/RedisConfigError.js";
-import { decodeRedisConfig } from "../../src/RedisConfig.js";
+import { RedisConfigError } from "#/errors/RedisConfigError";
+import { decodeRedisConfig } from "#/RedisConfig";
 
 describe("CONFIG: connection configuration", () => {
   it.effect("normalizes a TLS URL and decodes credentials without retaining the URL", () =>

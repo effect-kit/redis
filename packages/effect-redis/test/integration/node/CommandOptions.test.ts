@@ -3,13 +3,13 @@ import { randomUUID } from "node:crypto";
 import { expect, it } from "@effect/vitest";
 import { Effect, Option } from "effect";
 
-import { decodeRedisConfig, makeConnection, makeExecutor, makeRedis } from "../../../src/index.js";
-import type { SetExpiry } from "../../../src/index.js";
-import { connect, layer } from "../../../src/node.js";
-import { selectedEngine, serverTargets } from "../../../tools/FixtureTargets.ts";
-import { exchange } from "../../support/networking/Exchange.js";
-import { dockerServer } from "../../support/servers/DockerServer.js";
-import { recordFixture } from "../../support/servers/Evidence.js";
+import { decodeRedisConfig, makeConnection, makeExecutor, makeRedis } from "#/index";
+import type { SetExpiry } from "#/index";
+import { connect, layer } from "#/node";
+import { exchange } from "#test/support/networking/Exchange";
+import { dockerServer } from "#test/support/servers/DockerServer";
+import { recordFixture } from "#test/support/servers/Evidence";
+import { selectedEngine, serverTargets } from "#tools/FixtureTargets";
 
 const targets = serverTargets.filter(
   (target) =>

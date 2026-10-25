@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 
 import { Effect, Redacted } from "effect";
 
-import { FixtureError } from "./FixtureError.js";
+import { FixtureError } from "#test/support/servers/FixtureError";
 
 export const command = (file: string, args: ReadonlyArray<string>) =>
   Effect.callback<string, FixtureError>((resume) => {

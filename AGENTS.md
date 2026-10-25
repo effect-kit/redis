@@ -73,6 +73,23 @@ Never describe planned command or server compatibility as implemented or verifie
 
 - Make the smallest coherent change. Preserve public behavior and existing naming,
   module, error, and formatting patterns. Do not refactor unrelated code.
+- Review readability file by file. Put blank lines between declarations and distinct
+  validation, acquisition, scheduling, cleanup and result steps. Separate test setup,
+  action and assertions where they form distinct steps. Do not pad every statement,
+  add banner comments or apply blanket regex formatting across files.
+- Add short comments where readers need a protocol invariant, ownership/lifetime
+  reason, compatibility constraint or non-obvious type/precision trade-off. Preserve
+  useful existing comments; do not narrate obvious statements.
+- Use package imports: `#/` for src, `#test/` for test support and `#tools/` for tools.
+  Do not add relative imports between package modules. Relative file URLs for assets/
+  built-artifact probes and the root-owned CI policy test are boundary exceptions.
+  Verify aliases with native Node tools, Vitest, TS7 and the packed build; generated
+  JS/declarations must resolve independently of unshipped source files.
+- Keep configuration boundaries explicit: tsconfig.json checks universal code without
+  Node globals, tsconfig.node.json emits native declarations, and tsconfig.dev.json
+  checks source/tests/tools/configs including compile-only contracts. Use one Vitest
+  config with offline defaults and explicit CLI-selected live modes. Add another
+  config only for a real compiler/runtime boundary, not for each folder.
 - Keep handwritten source and test files below 500 physical lines; review splitting
   near 400. Split by domain, operation group or responsibility, not arbitrary size.
   Use folders/subfolders for related ownership. Generated metadata and indivisible
@@ -306,8 +323,8 @@ Implemented command-system policy:
 - Ordinary raw calls declare routing/mode and retain lossless errors/attributes.
   Custom descriptors require actual decoders. Nonordinary modes and explicit-node
   routing are rejected by the standalone executor; known session guards still apply.
-- `pnpm --filter @envoy1084/effect-redis typecheck:contracts` compiles positive/negative
-  API contracts separately from runtime tests. Keep it in aggregate typechecking/CI.
+- Compile-only positive/negative API contracts live in test/types and are checked by
+  the development typecheck. Vitest never executes them; keep this in aggregate CI.
 
 ### Streams, subscriptions and recovery
 

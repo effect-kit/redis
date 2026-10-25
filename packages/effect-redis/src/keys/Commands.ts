@@ -1,15 +1,15 @@
 import { Effect, Option } from "effect";
 
-import { fromPreparation } from "../command/Command.js";
-import type { Command, PreparedCommand } from "../command/Command.js";
-import type { RedisExecutor } from "../command/Executor.js";
-import { getBytes } from "../commands/strings/Get.js";
-import { set } from "../commands/strings/Set.js";
-import { decodeWriteSetOptions } from "../commands/strings/SetOptions.js";
-import type { WriteSetOptions, WriteSetResult } from "../commands/strings/SetOptions.js";
-import { CommandInputError } from "../errors/CommandInputError.js";
-import type { PayloadError } from "../errors/PayloadError.js";
-import type { RedisKey } from "./RedisKey.js";
+import { fromPreparation } from "#/command/Command";
+import type { Command, PreparedCommand } from "#/command/Command";
+import type { RedisExecutor } from "#/command/Executor";
+import { getBytes } from "#/commands/strings/Get";
+import { set } from "#/commands/strings/Set";
+import { decodeWriteSetOptions } from "#/commands/strings/SetOptions";
+import type { WriteSetOptions, WriteSetResult } from "#/commands/strings/SetOptions";
+import { CommandInputError } from "#/errors/CommandInputError";
+import type { PayloadError } from "#/errors/PayloadError";
+import type { RedisKey } from "#/keys/RedisKey";
 
 export const getKey = <A, RD, RE>(
   key: RedisKey<A, RD, RE>,

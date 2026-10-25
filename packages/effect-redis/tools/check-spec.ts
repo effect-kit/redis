@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import { loadSpecification, SpecificationError } from "./spec/Load.ts";
-import { validateSpecification } from "./spec/Validate.ts";
+import { loadSpecification, SpecificationError } from "#tools/spec/Load";
+import { validateSpecification } from "#tools/spec/Validate";
 
 const check = Effect.gen(function* () {
   const spec = yield* loadSpecification;

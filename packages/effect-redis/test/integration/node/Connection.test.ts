@@ -3,15 +3,15 @@ import { randomUUID } from "node:crypto";
 import { expect, it } from "@effect/vitest";
 import { Effect, Layer, Redacted } from "effect";
 
-import { Connection, makeConnection } from "../../../src/connection/Connection.js";
-import { connect, layer } from "../../../src/node.js";
-import { decodeRedisConfig } from "../../../src/RedisConfig.js";
-import { selectedEngine, serverTargets } from "../../../tools/FixtureTargets.ts";
-import { exchange } from "../../support/networking/Exchange.js";
-import { allocateServer, dockerServer } from "../../support/servers/DockerServer.js";
-import { recordFixture } from "../../support/servers/Evidence.js";
-import { unixRuntimeSmoke } from "../../support/servers/UnixRuntime.js";
-import { certificates } from "../../support/tls/Certificates.js";
+import { Connection, makeConnection } from "#/connection/Connection";
+import { connect, layer } from "#/node";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { exchange } from "#test/support/networking/Exchange";
+import { allocateServer, dockerServer } from "#test/support/servers/DockerServer";
+import { recordFixture } from "#test/support/servers/Evidence";
+import { unixRuntimeSmoke } from "#test/support/servers/UnixRuntime";
+import { certificates } from "#test/support/tls/Certificates";
+import { selectedEngine, serverTargets } from "#tools/FixtureTargets";
 
 const targets = serverTargets.filter(
   (target) => selectedEngine === "all" || target.product === selectedEngine,

@@ -1,6 +1,6 @@
 import { Effect, Schema, SchemaIssue } from "effect";
 
-import { RedisConfigError } from "../errors/RedisConfigError.js";
+import { RedisConfigError } from "#/errors/RedisConfigError";
 
 export const PositiveInteger = Schema.Int.check(
   Schema.isGreaterThan(0),

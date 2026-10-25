@@ -2,10 +2,10 @@ import { expect, it } from "@effect/vitest";
 import { Effect, Fiber, Redacted, Result } from "effect";
 import { TestClock } from "effect/testing";
 
-import { makeConnection } from "../../src/connection/Connection.js";
-import { decodeRedisConfig } from "../../src/RedisConfig.js";
-import { bytes, sent } from "../support/connection/Controlled.js";
-import { makeControlledTransport } from "../support/transport/ControlledTransport.js";
+import { makeConnection } from "#/connection/Connection";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { bytes, sent } from "#test/support/connection/Controlled";
+import { makeControlledTransport } from "#test/support/transport/ControlledTransport";
 
 const hello = "%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n";
 

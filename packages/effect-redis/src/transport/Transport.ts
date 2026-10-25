@@ -1,8 +1,8 @@
 import type { Effect, Scope } from "effect";
 import { Context } from "effect";
 
-import type { TransportError } from "../errors/TransportError.js";
-import type { RedisConfig } from "../RedisConfig.js";
+import type { TransportError } from "#/errors/TransportError";
+import type { RedisConfig } from "#/RedisConfig";
 
 /** One scoped physical byte connection. Exactly one reader/writer owns each direction. */
 export interface TransportConnection {

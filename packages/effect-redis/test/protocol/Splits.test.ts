@@ -2,9 +2,9 @@ import { Result } from "effect";
 
 import { describe, expect, it } from "vitest";
 
-import { makeRespDecoder } from "../../src/protocol/decode/Decoder.js";
-import { values } from "../fixtures/protocol/values.js";
-import { decodeChunks, failure } from "../support/protocol/Decode.js";
+import { makeRespDecoder } from "#/protocol/decode/Decoder";
+import { values } from "#test/fixtures/protocol/values";
+import { decodeChunks, failure } from "#test/support/protocol/Decode";
 
 describe("SPLIT-01: every byte boundary", () => {
   it.each(values)("$name", ({ wire, value }) => {

@@ -1,14 +1,14 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Result, Schema } from "effect";
 
-import { loadSpecification } from "../../tools/spec/Load.ts";
+import { loadSpecification } from "#tools/spec/Load";
 import {
   ConnectionProfile,
   ProtocolProfile,
   ScenarioDefinition,
   TransportProfile,
-} from "../../tools/spec/Schema.ts";
-import { validateSpecification } from "../../tools/spec/Validate.ts";
+} from "#tools/spec/Schema";
+import { validateSpecification } from "#tools/spec/Validate";
 
 it.live("SPEC-01: executable contracts and pinned fixtures are self-contained", () =>
   Effect.gen(function* () {

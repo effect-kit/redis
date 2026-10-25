@@ -1,8 +1,8 @@
 import { Effect } from "effect";
 
-import type { RedisCommand } from "../protocol/encode.js";
-import { defineCommand } from "./Command.js";
-import type { CommandMetadata, Routing } from "./Metadata.js";
+import { defineCommand } from "#/command/Command";
+import type { CommandMetadata, Routing } from "#/command/Metadata";
+import type { RedisCommand } from "#/protocol/encode";
 
 export interface RawContract {
   readonly execution: CommandMetadata["execution"];

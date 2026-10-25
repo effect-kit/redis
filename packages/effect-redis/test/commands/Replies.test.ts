@@ -1,9 +1,9 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Option, Result } from "effect";
 
-import * as Reply from "../../src/command/Reply.js";
-import { ReplyError } from "../../src/errors/ReplyError.js";
-import type { RespValue } from "../../src/protocol/RespValue.js";
+import * as Reply from "#/command/Reply";
+import { ReplyError } from "#/errors/ReplyError";
+import type { RespValue } from "#/protocol/RespValue";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 it.effect("COMMAND-02: optional blobs distinguish missing, empty and binary values", () =>

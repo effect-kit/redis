@@ -2,12 +2,12 @@ import { expect, it } from "@effect/vitest";
 import { Deferred, Effect, Fiber, Result } from "effect";
 import { TestClock } from "effect/testing";
 
-import { makeConnection } from "../../src/connection/Connection.js";
-import { TransportError } from "../../src/errors/TransportError.js";
-import { decodeRedisConfig } from "../../src/RedisConfig.js";
-import { Transport } from "../../src/transport/Transport.js";
-import { controlled, bytes, sent, waitForSnapshot } from "../support/connection/Controlled.js";
-import { makeControlledTransport } from "../support/transport/ControlledTransport.js";
+import { makeConnection } from "#/connection/Connection";
+import { TransportError } from "#/errors/TransportError";
+import { decodeRedisConfig } from "#/RedisConfig";
+import { Transport } from "#/transport/Transport";
+import { controlled, bytes, sent, waitForSnapshot } from "#test/support/connection/Controlled";
+import { makeControlledTransport } from "#test/support/transport/ControlledTransport";
 
 it.effect(
   "OWNERSHIP-02: a fast reply before write completion keeps accounting owned until write returns",

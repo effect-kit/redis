@@ -3,9 +3,9 @@ import { join } from "node:path";
 
 import { Effect, Redacted } from "effect";
 
-import { command } from "../servers/Command.js";
-import { FixtureError } from "../servers/FixtureError.js";
-import { temporaryDirectory } from "../servers/TemporaryDirectory.js";
+import { command } from "#test/support/servers/Command";
+import { FixtureError } from "#test/support/servers/FixtureError";
+import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
 
 /** Ephemeral test identities, never repository fixtures or package assets. */
 export const certificates = Effect.fnUntraced(function* () {

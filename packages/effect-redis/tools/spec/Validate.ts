@@ -1,4 +1,4 @@
-import type { Specification } from "./Schema.ts";
+import type { Specification } from "#tools/spec/Schema";
 
 /** Validate executable contracts and fixture pins without reading private plans or run history. */
 export const validateSpecification = (spec: Specification): ReadonlyArray<string> => {

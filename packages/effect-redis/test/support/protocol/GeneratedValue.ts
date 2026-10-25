@@ -1,5 +1,5 @@
-import type { RespValue } from "../../../src/protocol/RespValue.js";
-import { bytes, joinBytes } from "./Decode.js";
+import type { RespValue } from "#/protocol/RespValue";
+import { bytes, joinBytes } from "#test/support/protocol/Decode";
 
 export const generatedValue = (selector: number, depth: number, binary: Uint8Array): RespValue => {
   const kind = depth === 0 ? selector % 9 : selector % 14;

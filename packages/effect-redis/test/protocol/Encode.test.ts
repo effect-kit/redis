@@ -2,9 +2,9 @@ import { Result } from "effect";
 
 import { expect, it } from "vitest";
 
-import { encodeCommand } from "../../src/protocol/encode.js";
-import type { RedisCommand } from "../../src/protocol/encode.js";
-import { bytes, decodeChunks, failure, joinBytes } from "../support/protocol/Decode.js";
+import { encodeCommand } from "#/protocol/encode";
+import type { RedisCommand } from "#/protocol/encode";
+import { bytes, decodeChunks, failure, joinBytes } from "#test/support/protocol/Decode";
 
 it.each([
   { command: ["PING"] as const, frame: "*1\r\n$4\r\nPING\r\n" },

@@ -1,7 +1,7 @@
-import { defineCommand } from "../../command/Command.js";
-import type { RedisExecutor } from "../../command/Executor.js";
-import { status } from "../../command/reply/Scalars.js";
-import { metadata } from "../Metadata.js";
+import { defineCommand } from "#/command/Command";
+import type { RedisExecutor } from "#/command/Executor";
+import { status } from "#/command/reply/Scalars";
+import { metadata } from "#/commands/Metadata";
 
 export const pingMetadata = metadata("PING", "connection", ["COMMAND-01"]);
 export const ping = () =>

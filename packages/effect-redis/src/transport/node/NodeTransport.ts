@@ -3,10 +3,10 @@ import { connect as connectTls, createSecureContext } from "node:tls";
 
 import { Effect, Exit, Layer, Redacted } from "effect";
 
-import { TransportError } from "../../errors/TransportError.js";
-import type { RedisConfig } from "../../RedisConfig.js";
-import { Transport } from "../Transport.js";
-import { makeConnection } from "./Connection.js";
+import { TransportError } from "#/errors/TransportError";
+import type { RedisConfig } from "#/RedisConfig";
+import { makeConnection } from "#/transport/node/Connection";
+import { Transport } from "#/transport/Transport";
 
 /** Acquires one TCP/TLS/Unix connection. Config must first pass decodeRedisConfig. */
 export const connect = Effect.fnUntraced(function* (config: RedisConfig) {
