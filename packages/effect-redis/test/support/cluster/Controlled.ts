@@ -12,7 +12,10 @@ export const slotReply = (host = "a", node = "node-a") =>
   `*1\r\n*3\r\n:0\r\n:16383\r\n*3\r\n$${host.length}\r\n${host}\r\n:6379\r\n$${node.length}\r\n${node}\r\n`;
 
 /** Mechanical sockets only: each test supplies every expected frame and every server reply. */
-export const clusterControlled = Effect.fnUntraced(function* (options: ClusterOptions = {}) {
+export const clusterControlled = Effect.fnUntraced(function* (
+  options: ClusterOptions = {},
+  cleanupDefectHost?: string,
+) {
   const seed = yield* makeControlledTransport();
   const a = yield* makeControlledTransport();
   const b = yield* makeControlledTransport();
@@ -30,9 +33,14 @@ export const clusterControlled = Effect.fnUntraced(function* (options: ClusterOp
       Effect.suspend(() => {
         const service =
           config.endpoint._tag === "Tcp" ? services.get(config.endpoint.host) : undefined;
-        return service === undefined
-          ? Effect.fail(new TransportError({ stage: "open", reason: "unavailable" }))
-          : service.open(config);
+        if (service === undefined)
+          return Effect.fail(new TransportError({ stage: "open", reason: "unavailable" }));
+        return Effect.gen(function* () {
+          const physical = yield* service.open(config);
+          if (config.endpoint._tag === "Tcp" && config.endpoint.host === cleanupDefectHost)
+            yield* Effect.addFinalizer(() => Effect.die("cluster-controlled-cleanup"));
+          return physical;
+        });
       }),
   });
   const config = yield* decodeRedisConfig({

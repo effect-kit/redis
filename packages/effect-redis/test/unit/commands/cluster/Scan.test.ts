@@ -21,7 +21,7 @@ it.effect("preserves Valkey's opaque tagged cursor and routes initial explicit S
       "SLOT",
       "12182",
     ]);
-    expect(initial.routing).toEqual({ _tag: "Slot", slot: 12182 });
+    expect(initial.routing).toEqual({ _tag: "Slot", slot: keySlot("0") });
 
     const token = "fingerprint-{foo}-9007199254740993";
     const continuation = yield* clusterScan(token).prepare;

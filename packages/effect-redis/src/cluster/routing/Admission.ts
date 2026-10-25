@@ -36,22 +36,32 @@ export const makeClusterAdmission = (
         });
         if (Result.isFailure(encoded)) return Effect.fail(encoded.failure);
         const frame = encoded.success;
+        const tokens = input.tokens.map((token) =>
+          typeof token === "string" ? token : new Uint8Array(token),
+        ) as unknown as RedisCommand;
+        // Buffer.slice() borrows memory; use the Uint8Array constructor for real ownership.
         count++;
         bytes += frame.length;
-        const tokens = input.tokens.map((token) =>
-          typeof token === "string" ? token : token.slice(),
-        ) as unknown as RedisCommand;
         return Effect.succeed({ size: frame.length, command: { ...input, tokens } });
       }),
       ({ command }) => {
         let written = false;
-        return Effect.suspend(() =>
+        const operation = Effect.suspend(() =>
           body(command, () => {
             written = true;
           }),
-        ).pipe(
+        );
+        // Blocking reply deadlines are explicit; discovery, pool admission and writes remain bounded.
+        if (command.metadata.execution === "blocking" && command.replyTimeoutMillis === "forever")
+          return operation;
+        const deadline =
+          command.metadata.execution === "blocking" &&
+          typeof command.replyTimeoutMillis === "number"
+            ? Math.max(timeout, command.replyTimeoutMillis)
+            : timeout;
+        return operation.pipe(
           Effect.timeoutOrElse({
-            duration: timeout,
+            duration: deadline,
             orElse: () =>
               Effect.fail(
                 new ConnectionError({

@@ -1,7 +1,8 @@
 import { expect, it } from "@effect/vitest";
-import { Deferred, Duration, Effect, Fiber, Option, Stream } from "effect";
+import { Deferred, Duration, Effect, Fiber, Option, Redacted, Stream } from "effect";
 
 import { simpleText } from "#/command/reply/Data";
+import { Commands, ServerError } from "#/index";
 import { awaitCluster, clusterFixture } from "#test/support/cluster/Fixture";
 import { currentClusterCases } from "#test/support/cluster/Targets";
 import { atLeast } from "#test/support/commands/Backend";
@@ -19,6 +20,19 @@ it.live.each(currentClusterCases)(
       const tracking = yield* client.tracking({ key }, { tracking: { mode: "optin" } });
       const cache = yield* tracking.cache();
       expect(yield* cache.getBytes(key)).toEqual(Option.some(new TextEncoder().encode("initial")));
+      const applicationError = new ServerError({
+        delivery: "replied",
+        code: "MOVED",
+        reply: Redacted.make("application decoder"),
+      });
+      expect(
+        yield* Effect.flip(
+          tracking.execute(
+            Commands.evalScript("return 1", { keys: [key] }, () => Effect.fail(applicationError)),
+          ),
+        ),
+      ).toBe(applicationError);
+      expect(yield* cache.snapshot).toMatchObject({ active: true });
       yield* client.withSession({ key }, (session) =>
         session
           .set(key, "changed")

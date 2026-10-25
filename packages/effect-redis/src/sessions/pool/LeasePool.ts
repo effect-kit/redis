@@ -226,6 +226,7 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
   return {
     use,
     close,
+    fatal: () => fatal,
     snapshot: Effect.sync(() => ({
       closed,
       waiting,

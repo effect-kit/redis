@@ -19,7 +19,7 @@ export const make = Effect.fnUntraced(function* <A, E, R>(input: {
 }) {
   const body = yield* parse(Argument, input.source);
   const readOnly = yield* parse(Schema.Boolean, input.readOnly ?? false);
-  const source = typeof body === "string" ? new TextEncoder().encode(body) : body.slice();
+  const source = typeof body === "string" ? new TextEncoder().encode(body) : new Uint8Array(body);
   const crypto = yield* Crypto.Crypto;
   const digest = yield* crypto.digest("SHA-1", source);
 

@@ -49,7 +49,8 @@ export const clusterScan = (cursor = "0", options: ClusterScanOptions = {}) =>
         ] as const,
         routing: {
           _tag: "Slot" as const,
-          slot: token === "0" ? (selected.slot ?? 0) : keySlot(token),
+          // Initial "0" is a NOT_KEY routing token too; SLOT selects the next cursor.
+          slot: keySlot(token),
         },
       };
     }),

@@ -27,6 +27,16 @@ it.live.each(currentClusterCases)(
       yield* destination.request(["CLUSTER", "SETSLOT", String(slot), "IMPORTING", source.id]);
       yield* source.request(["CLUSTER", "SETSLOT", String(slot), "MIGRATING", destination.id]);
       yield* source.request(["MIGRATE", destination.address, "6379", key, "0", "5000"]);
+      yield* awaitCluster(
+        Effect.gen(function* () {
+          if ((yield* cache.snapshot).entries !== 0)
+            return yield* new FixtureError({ stage: "cluster-migration-invalidation" });
+        }),
+      );
+      expect(yield* Effect.flip(cache.getBytes(key))).toMatchObject({
+        _tag: "ServerError",
+        code: "ASK",
+      });
       expect(yield* client.redis.get(key)).toEqual(Option.some("0"));
       expect(yield* Effect.flip(cache.getBytes(key))).toMatchObject({
         _tag: "ClusterError",

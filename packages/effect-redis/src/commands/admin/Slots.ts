@@ -9,7 +9,7 @@ import { ScriptFlushMode } from "#/commands/scripting/Script";
 const Slot = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 16383 }));
 const Range = Schema.Tuple([Slot, Slot]).check(Schema.makeFilter(([start, end]) => start <= end));
 
-/** Experimental Redis slot-local deletion. This does not discover nodes or broadcast. */
+/** Experimental slot-local deletion; stock Redis 8.10.2 excludes this command at generation. */
 export const flushSlots = (
   ranges: readonly [readonly [number, number], ...Array<readonly [number, number]>],
   mode?: ScriptFlushMode,
@@ -27,5 +27,7 @@ export const flushSlots = (
       ];
     }),
     undefined,
-    ["Redis since 8.0.0; experimental slot-local operation"],
+    [
+      "Experimental metadata since Redis8.0; excluded by stock8.10.2 command generation; actual server availability applies",
+    ],
   );

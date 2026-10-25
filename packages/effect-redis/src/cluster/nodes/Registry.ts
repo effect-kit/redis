@@ -109,6 +109,12 @@ export const makeNodeRegistry = Effect.fnUntraced(function* <R>(
       Effect.gen(function* () {
         const entry = yield* acquire(address);
         return yield* restore(Effect.suspend(() => body(entry))).pipe(
+          Effect.onExit(() =>
+            Effect.sync(() => {
+              const failure = entry.pool.fatal();
+              if (failure !== undefined) fatal = failure;
+            }),
+          ),
           Effect.ensuring(
             lock.withPermit(
               Effect.gen(function* () {

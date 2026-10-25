@@ -1,4 +1,4 @@
-import { Context, Effect, Exit, Scope, Stream } from "effect";
+import { Context, Effect, Exit, Option, Scope, Stream } from "effect";
 import type { Cause } from "effect";
 
 import type { NodeRegistry } from "#/cluster/nodes/Registry";
@@ -10,10 +10,12 @@ import { keySlot } from "#/cluster/Slot";
 import type { Discovery } from "#/cluster/topology/Discovery";
 import { primaryForSlot } from "#/cluster/topology/Types";
 import type { Command, PreparedCommand } from "#/command/Command";
+import { decodeReply } from "#/command/Decode";
 import { Arguments, parse } from "#/commands/internal/Input";
 import { spublish } from "#/commands/pubsub/Publish";
 import { getBytes } from "#/commands/strings/Get";
 import { ClusterError } from "#/errors/ClusterError";
+import { ServerError } from "#/errors/ServerError";
 import type { RedisKey } from "#/keys/RedisKey";
 import type { RedisArgument } from "#/RedisArgument";
 import type { RedisConfig } from "#/RedisConfig";
@@ -35,6 +37,16 @@ export const makeClusterEvents = Effect.fnUntraced(function* <R>(
   const captured = yield* Effect.context<R | Transport>();
   let active = 0;
   let fatal: Cause.Cause<never> | undefined;
+
+  const observeRouting = <A, E, RUse>(effect: Effect.Effect<A, E, RUse>) =>
+    effect.pipe(
+      Effect.tapError((error) => {
+        if (!(error instanceof ServerError) || !["MOVED", "ASK"].includes(error.code))
+          return Effect.void;
+        discovery.stale();
+        return discovery.invalidate;
+      }),
+    );
 
   const open = <A, E>(
     target: ClusterTarget,
@@ -136,9 +148,9 @@ export const makeClusterEvents = Effect.fnUntraced(function* <R>(
               for (const channel of values)
                 yield* validate.command(yield* spublish(channel, "").prepare);
             }
-            const subscription = yield* client
-              .subscribe(values, selection)
-              .pipe(Scope.provide(scope));
+            const subscription = yield* observeRouting(client.subscribe(values, selection)).pipe(
+              Scope.provide(scope),
+            );
             // Topology invalidation terminates the old view explicitly; callers reacquire on the new owner.
             const guard = <A, E, RStream>(stream: Stream.Stream<A, E, RStream>) =>
               stream.pipe(
@@ -187,19 +199,34 @@ export const makeClusterEvents = Effect.fnUntraced(function* <R>(
           command.prepare.pipe(
             Effect.flatMap((intent) =>
               prepared(intent).pipe(
-                Effect.andThen(client.execute({ prepare: Effect.succeed(intent) })),
+                Effect.andThen(
+                  observeRouting(
+                    client.execute({
+                      prepare: Effect.succeed({ ...intent, decode: Effect.succeed }),
+                    }),
+                  ),
+                ),
+                Effect.flatMap((reply) => decodeReply(intent, reply)),
               ),
             ),
           );
         return {
           ...client,
           execute,
-          getBytes: (name: RedisArgument) => key(name).pipe(Effect.andThen(client.getBytes(name))),
+          getBytes: (name: RedisArgument) =>
+            key(name).pipe(Effect.andThen(observeRouting(client.getBytes(name)))),
           caching: <A, E, RD, RE>(mode: "YES" | "NO", command: Command<A, E, RD, RE>) =>
             command.prepare.pipe(
               Effect.flatMap((intent) =>
                 prepared(intent).pipe(
-                  Effect.andThen(client.caching(mode, { prepare: Effect.succeed(intent) })),
+                  Effect.andThen(
+                    observeRouting(
+                      client.caching(mode, {
+                        prepare: Effect.succeed({ ...intent, decode: Effect.succeed }),
+                      }),
+                    ),
+                  ),
+                  Effect.flatMap((reply) => decodeReply(intent, reply)),
                 ),
               ),
             ),
@@ -207,14 +234,23 @@ export const makeClusterEvents = Effect.fnUntraced(function* <R>(
           cache: (cacheOptions?: CacheOptions) =>
             check.pipe(
               Effect.andThen(client.cache(cacheOptions).pipe(Scope.provide(scope))),
-              Effect.map((cache) => ({
-                clear: cache.clear,
-                snapshot: cache.snapshot,
-                getBytes: (name: RedisArgument) =>
-                  key(name).pipe(Effect.andThen(cache.getBytes(name))),
-                getKey: <A, RD, RE>(typed: RedisKey<A, RD, RE>) =>
-                  key(typed.name).pipe(Effect.andThen(cache.getKey(typed))),
-              })),
+              Effect.map((cache) => {
+                const read = (name: RedisArgument) =>
+                  key(name).pipe(Effect.andThen(observeRouting(cache.getBytes(name))));
+                return {
+                  clear: cache.clear,
+                  snapshot: cache.snapshot,
+                  getBytes: read,
+                  getKey: <A, RD, RE>(typed: RedisKey<A, RD, RE>) =>
+                    read(typed.name).pipe(
+                      Effect.flatMap((value) =>
+                        Option.isNone(value)
+                          ? Effect.succeed(Option.none<A>())
+                          : typed.codec.decode(value.value).pipe(Effect.map(Option.some)),
+                      ),
+                    ),
+                };
+              }),
             ),
         };
       }),

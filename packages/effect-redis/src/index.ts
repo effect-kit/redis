@@ -5,6 +5,11 @@ export type { RedisConfig } from "#/RedisConfig";
 export { RedisCluster, makeRedisCluster } from "#/cluster/RedisCluster";
 export type { RedisClusterClient } from "#/cluster/RedisCluster";
 export type { ClusterOptions } from "#/cluster/Options";
+export type { SlotRanges as ClusterSlotRanges } from "#/commands/cluster/Build";
+export type { ClusterSlotStatsOptions } from "#/commands/cluster/Inspection";
+export type { ClusterSlotState } from "#/commands/cluster/Management";
+export type { ClusterMigrationGroups } from "#/commands/cluster/Migration";
+export type { ClusterScanOptions } from "#/commands/cluster/Scan";
 export type { ClusterTarget } from "#/cluster/sessions/Sessions";
 export type {
   ClusterAddress,

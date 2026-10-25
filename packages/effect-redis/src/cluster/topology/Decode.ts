@@ -18,6 +18,13 @@ const invalid = () => new ClusterError({ reason: "invalid-topology", delivery: "
 const values = array(Effect.succeed);
 const fields = pairs(simpleText, Effect.succeed);
 
+const fieldMap = Effect.fnUntraced(function* (reply: RespValue) {
+  const entries = yield* fields(reply);
+  const map = new Map(entries);
+  if (map.size !== entries.length) return yield* invalid();
+  return map;
+});
+
 export const decodeAddress = (address: ClusterAddress) =>
   Schema.decodeUnknownEffect(Address)(address).pipe(Effect.mapError(invalid));
 
@@ -63,7 +70,7 @@ export const decodeShards = Effect.fnUntraced(function* (
 ) {
   const shards: ClusterShard[] = [];
   for (const input of yield* values(reply)) {
-    const properties = new Map(yield* fields(input));
+    const properties = yield* fieldMap(input);
     const ranges = properties.get("slots");
     const entries = properties.get("nodes");
     if (ranges === undefined || entries === undefined) return yield* invalid();
@@ -79,7 +86,7 @@ export const decodeShards = Effect.fnUntraced(function* (
 
     const nodes: ClusterNode[] = [];
     for (const entry of yield* values(entries)) {
-      const node = new Map(yield* fields(entry));
+      const node = yield* fieldMap(entry);
       const id = node.get("id");
       const role = node.get("role");
       const endpoint = node.get("endpoint") ?? node.get("ip");
@@ -126,11 +133,15 @@ export const validateTopology = Effect.fnUntraced(function* (
 ) {
   const occupied = new Uint8Array(16384);
   const nodes = new Map<string, string>();
+  const endpoints = new Map<string, string>();
   for (const shard of shards) {
     for (const node of [shard.primary, ...shard.replicas]) {
-      const identity = JSON.stringify(node.address);
+      const endpoint = JSON.stringify(node.address);
+      const identity = JSON.stringify([endpoint, node.role, node.primaryId]);
       if (nodes.has(node.id) && nodes.get(node.id) !== identity) return yield* invalid();
+      if (endpoints.has(endpoint) && endpoints.get(endpoint) !== node.id) return yield* invalid();
       nodes.set(node.id, identity);
+      endpoints.set(endpoint, node.id);
     }
     for (const [first, last] of shard.slots) {
       if (first < 0 || last >= 16384 || first > last) return yield* invalid();

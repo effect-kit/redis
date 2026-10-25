@@ -1,5 +1,5 @@
 import { expect, it } from "@effect/vitest";
-import { Effect, Fiber } from "effect";
+import { Deferred, Effect, Fiber, Option } from "effect";
 import { TestClock } from "effect/testing";
 
 import * as Commands from "#/commands/index";
@@ -9,7 +9,7 @@ import { bytes, sent } from "#test/support/connection/Controlled";
 it.effect("bounds active operations and snapshots mutable key bytes before routing waits", () =>
   Effect.gen(function* () {
     const { client, a } = yield* clusterControlled({ maxOperations: 1 });
-    const key = bytes("foo");
+    const key = Buffer.from("foo");
     const read = yield* Effect.forkChild(client.redis.getBytes(key));
     yield* sent(a, ["READWRITE"], "+OK\r\n");
     key.set(bytes("bar"));
@@ -125,5 +125,24 @@ it.effect("close rejects retained clients and waits for native resource release"
       _tag: "ClusterError",
       reason: "closed",
     });
+  }),
+);
+
+it.effect("explicit forever blocking retains its separate reply lifetime", () =>
+  Effect.gen(function* () {
+    const { client, a } = yield* clusterControlled({ refreshIntervalMillis: 1_000_000 });
+    const done = yield* Deferred.make<void>();
+    const blocked = yield* Effect.forkChild(
+      client
+        .blpop(["foo"], { blockFor: "forever" })
+        .pipe(Effect.onExit(() => Deferred.succeed(done, undefined))),
+    );
+    yield* sent(a, ["READWRITE"], "+OK\r\n");
+    yield* sent(a, ["BLPOP", "foo", "0"]);
+    yield* TestClock.adjust(60_000);
+
+    expect(yield* Deferred.isDone(done)).toBe(false);
+    yield* a.receive(bytes("*-1\r\n"));
+    expect(yield* Fiber.join(blocked)).toEqual(Option.none());
   }),
 );

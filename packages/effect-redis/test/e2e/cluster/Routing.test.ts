@@ -3,7 +3,7 @@ import { Effect, Option, Result, Stream } from "effect";
 
 import { Commands, keySlot, RedisScript, Reply } from "#/index";
 import { clusterFixture } from "#test/support/cluster/Fixture";
-import { primaryCases } from "#test/support/commands/Backend";
+import { atLeast, primaryCases } from "#test/support/commands/Backend";
 import { cryptoLayer } from "#test/support/commands/Crypto";
 import { recordFixture } from "#test/support/servers/Evidence";
 
@@ -67,6 +67,27 @@ it.live.each(primaryCases)(
       const node = topology.shards[0]?.primary;
       if (node === undefined) return yield* Effect.die("Missing primary");
       expect(yield* client.admin(node.id).dbsize()).toBeGreaterThanOrEqual(0n);
+      expect(yield* client.node(node.id).execute(Commands.clusterMyId())).toBe(node.id);
+      expect(yield* client.node(node.id).execute(Commands.clusterSlots())).not.toHaveLength(0);
+      expect(yield* client.node(node.id).execute(Commands.clusterHelp())).not.toHaveLength(0);
+      if (atLeast(target.version, "7.0.0")) {
+        expect(yield* client.node(node.id).execute(Commands.clusterShards())).toHaveLength(3);
+        expect(yield* client.node(node.id).execute(Commands.clusterLinks())).not.toHaveLength(0);
+      } else
+        expect(
+          yield* Effect.flip(client.node(node.id).execute(Commands.clusterShards())),
+        ).toMatchObject({ _tag: "ServerError" });
+      if (atLeast(target.version, "7.2.0"))
+        expect(yield* client.node(node.id).execute(Commands.clusterMyShardId())).toMatch(
+          /^[a-f0-9]{40}$/,
+        );
+      else
+        expect(
+          yield* Effect.flip(client.node(node.id).execute(Commands.clusterMyShardId())),
+        ).toMatchObject({ _tag: "ServerError" });
+      const identities = yield* client.onPrimaries(Commands.clusterMyId()).pipe(Stream.runCollect);
+      expect(identities).toHaveLength(3);
+      expect(identities.every(({ result }) => Result.isSuccess(result))).toBe(true);
       expect(yield* Effect.flip(redis.scan())).toMatchObject({
         reason: "explicit-target-required",
       });

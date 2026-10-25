@@ -22,7 +22,7 @@ export const snapshotArguments = Effect.fnUntraced(function* (
 
   // Strings are immutable. Only binary payloads need a second owner across recovery attempts.
   return {
-    keys: input.keys.map((key) => (typeof key === "string" ? key : key.slice())),
-    args: (input.args ?? []).map((arg) => (typeof arg === "string" ? arg : arg.slice())),
+    keys: input.keys.map((key) => (typeof key === "string" ? key : new Uint8Array(key))),
+    args: (input.args ?? []).map((arg) => (typeof arg === "string" ? arg : new Uint8Array(arg))),
   };
 });
