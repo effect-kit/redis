@@ -11,6 +11,7 @@ import {
   Stream,
 } from "effect";
 
+import { undecorate } from "#/command/reply/Scalars";
 import { Arguments, parse } from "#/commands/internal/Input";
 import { SubscriptionError } from "#/errors/SubscriptionError";
 import { makeControlGate } from "#/events/ControlGate";
@@ -95,7 +96,12 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
     (reply, cost, generation) =>
       Effect.gen(function* () {
         const frame = yield* eventFrame(reply);
-        if (frame === undefined) return false;
+        if (frame === undefined) {
+          // This socket has no ordinary array-returning operations; preserve future RESP2 events.
+          if (undecorate(reply)._tag !== "Array") return false;
+          unknown.offer(() => ({ generation, value: reply }), cost);
+          return true;
+        }
 
         if (frame._tag === "Acknowledgment") {
           if (frame.target.length > policy.maxInterestBytes)

@@ -103,20 +103,27 @@ it.effect(
     }),
 );
 
-it.effect("PUSH: RESP3 unknown pushes never become ordinary acknowledgments", () =>
-  Effect.gen(function* () {
-    const fixture = yield* pubsubFixture({}, "resp3");
-    const opening = yield* Effect.forkChild(fixture.pubsub.subscribe(["c"]));
-    yield* sent(fixture.primary, ["HELLO", "3"], "%1\r\n$5\r\nproto\r\n:3\r\n");
-    yield* sent(fixture.primary, ["SUBSCRIBE", "c"]);
-    yield* fixture.primary.receive(
-      bytes(`>2\r\n$6\r\nfuture\r\n:9\r\n${acknowledgment("subscribe").replace("*3", ">3")}`),
-    );
-    yield* Fiber.join(opening);
+it.effect.each(["resp2", "resp3"] as const)(
+  "PUSH: %s unknown events never become ordinary acknowledgments",
+  (protocol) =>
+    Effect.gen(function* () {
+      const fixture = yield* pubsubFixture({}, protocol);
+      const opening = yield* Effect.forkChild(fixture.pubsub.subscribe(["c"]));
+      if (protocol === "resp3")
+        yield* sent(fixture.primary, ["HELLO", "3"], "%1\r\n$5\r\nproto\r\n:3\r\n");
+      yield* sent(fixture.primary, ["SUBSCRIBE", "c"]);
+      yield* fixture.primary.receive(
+        bytes(
+          `${protocol === "resp3" ? ">" : "*"}2\r\n$6\r\nfuture\r\n:9\r\n${protocol === "resp3" ? acknowledgment("subscribe").replace("*3", ">3") : acknowledgment("subscribe")}`,
+        ),
+      );
+      yield* Fiber.join(opening);
 
-    expect(
-      yield* Stream.runCollect(fixture.pubsub.unknownPushes.pipe(Stream.take(1))),
-    ).toMatchObject([{ generation: 1, value: { _tag: "Push" } }]);
-    yield* fixture.finish;
-  }),
+      expect(
+        yield* Stream.runCollect(fixture.pubsub.unknownPushes.pipe(Stream.take(1))),
+      ).toMatchObject([
+        { generation: 1, value: { _tag: protocol === "resp3" ? "Push" : "Array" } },
+      ]);
+      yield* fixture.finish;
+    }),
 );

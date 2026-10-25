@@ -72,7 +72,11 @@ export const makeRedisTracking = Effect.fnUntraced(function* <R = never>(
       // Data arrays are replies even when their first element is a Pub/Sub event name.
       if (!subscriptionArrays && undecorate(reply)._tag !== "Push") return false;
       const frame = yield* eventFrame(reply);
-      if (frame === undefined) return false;
+      if (frame === undefined) {
+        if (!subscriptionArrays || undecorate(reply)._tag !== "Array") return false;
+        unknown.offer(() => ({ value: reply, generation }), cost);
+        return true;
+      }
       if (frame._tag === "Invalidate") {
         state.invalidate(frame.keys);
         events.offer(() => ({ ...frame, generation }), cost);
