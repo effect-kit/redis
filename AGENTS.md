@@ -13,7 +13,8 @@ conformance. Phase 07 adds native leases, pipelines/transactions, WATCH, blockin
 operations and connection-relative controls with controlled/public-type tests and
 primary Redis/Valkey conformance. Detailed verification is tracked privately.
 Phase 08 adds typed scans/Streams, scoped readers, pending/claim recovery, processing
-policies and explicit payload envelopes; final gates are tracked privately.
+policies and explicit payload envelopes with controlled/type/primary Redis/Valkey
+conformance and packed/fresh-consumer verification.
 Subscriptions, scripting and topology remain pending.
 Never describe planned command or server compatibility as implemented or verified.
 

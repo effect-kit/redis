@@ -13,9 +13,9 @@ ordinary commands across strings, hashes, lists, sets, keys/TTL, sorted sets, bi
 HyperLogLog, geo and arrays, plus custom descriptors and explicit payload codecs.
 There are 187 reviewed ordinary commands; available commands/options depend on the
 actual server. Native sessions add pipelines, transactions, WATCH, connection controls
-and blocking leases. Scan commands, Redis Streams and scoped consumer workflows are
-implemented; Phase 08 final verification is in progress. Subscriptions and topology
-routing remain pending.
+and blocking leases. Scan commands, Redis Streams and scoped consumer workflows have
+unit, controlled, primary Redis/Valkey and packed-consumer coverage. Subscriptions
+and topology routing remain pending.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -263,19 +263,26 @@ XAUTOCLAIM's deleted-ID list is also optional because older replies omit it.
 native Layer. `makeRedisStreams(redis, sessions)` supports explicit composition.
 
 ```ts
+import { Stream } from "effect";
+
+import { RedisStreams } from "@envoy1084/effect-redis";
+
 const streamsLive = RedisStreams.layer.pipe(Layer.provideMerge(live));
 
-const events = streams.read([["events", "$"]]);
-const pending = streams.pending("jobs", "workers", "worker-1", { count: 64 });
-const claims = streams.claim("jobs", "workers", "worker-2", 60_000);
+const streamProgram = Effect.gen(function* () {
+  const streams = yield* RedisStreams;
+
+  return yield* streams.read([["events", "$"]]).pipe(Stream.take(10), Stream.runCollect);
+}).pipe(Effect.provide(streamsLive));
 ```
 
 `read` resolves $ once and advances concrete per-stream IDs. `readGroup` requests new
 entries; `pending` reads this consumer's history; `claim` emits complete recovery pages,
 including empty continuation pages and deletion evidence. Readers hold dedicated
 blocking capacity, use a one-entry handoff queue, and default to COUNT 64 and a
-five-second server wait. A decoded server batch can also remain in memory. Explicit count/cumulative-size options retain server availability rules; MAXSIZE can
-still return one oversized entry, independently of the client protocol byte limits.
+five-second server wait. A decoded server batch can also remain in memory. Explicit
+count/cumulative-size options retain server availability rules; MAXSIZE can still
+return one oversized entry, independently of the client protocol byte limits.
 Connection failure terminates the reader; resumption/recovery is explicit.
 
 `process(group, messages, handle, options)` acknowledges after the application Effect
