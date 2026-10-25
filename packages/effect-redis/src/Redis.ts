@@ -4,8 +4,16 @@ import { CommandExecutor } from "#/command/Executor";
 import type { RedisExecutor } from "#/command/Executor";
 import { raw } from "#/command/Raw";
 import type { RawContract } from "#/command/Raw";
+import { arrayFamily } from "#/commands/arrays/Family";
+import { bitmapFamily } from "#/commands/bitmaps/Family";
 import { connectionFamily } from "#/commands/connection/Ping";
-import { sortedSetFamily } from "#/commands/sorted-sets/Zscore";
+import { geoFamily } from "#/commands/geo/Family";
+import { hashFamily } from "#/commands/hashes/Family";
+import { hyperloglogFamily } from "#/commands/hyperloglog/Family";
+import { keyCommandFamily } from "#/commands/keys/Family";
+import { listFamily } from "#/commands/lists/Family";
+import { setFamily } from "#/commands/sets/Family";
+import { sortedSetFamily } from "#/commands/sorted-sets/Family";
 import { stringFamily } from "#/commands/strings/Family";
 import { keyFamily } from "#/keys/Commands";
 import type { RedisCommand } from "#/protocol/encode";
@@ -14,6 +22,14 @@ export const makeRedis = (executor: RedisExecutor) => ({
   ...connectionFamily(executor),
   ...stringFamily(executor),
   ...sortedSetFamily(executor),
+  ...hashFamily(executor),
+  ...listFamily(executor),
+  ...setFamily(executor),
+  ...hyperloglogFamily(executor),
+  ...bitmapFamily(executor),
+  ...keyCommandFamily(executor),
+  ...arrayFamily(executor),
+  ...geoFamily(executor),
   ...keyFamily(executor),
 
   execute: executor.execute,

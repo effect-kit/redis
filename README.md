@@ -4,8 +4,9 @@ A Redis protocol client built with Effect v4 and runtime platform APIs. The goal
 complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities across
 Redis-compatible servers and transports.
 
-**Status:** Phase 05 adds a typed Redis service, reusable command descriptors,
-explicit text/Schema payload codecs, and a verified PING/GET/SET/INCR/ZSCORE slice.
+**Status:** Phase 06 is in progress: ordinary string/hash/list/set/key/sorted-set,
+bitmap, HyperLogLog, geo and array command builders now extend the typed Redis
+service. Remaining phase gates are tracked privately until complete.
 Scoped Node TCP/TLS/Unix, bounded scheduling and lossless RESP2/RESP3 are implemented.
 Broad typed command families, sessions, topologies and engine/provider certification
 remain in later phases.

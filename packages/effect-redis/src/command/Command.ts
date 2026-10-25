@@ -60,7 +60,10 @@ export const defineCommand = <A, E = never, R = never>(
       Effect.mapError(() => new CommandInputError({ delivery: "unsent", reason: "arguments" })),
     );
 
-    if (routing._tag === "Keys" && routing.keys.some((key) => key.index >= tokens.length))
+    if (
+      (routing._tag === "Keys" || routing._tag === "Dynamic") &&
+      routing.keys.some((key) => key.index >= tokens.length)
+    )
       return yield* new CommandInputError({ delivery: "unsent", reason: "routing" });
 
     const [first, ...rest] = tokens;

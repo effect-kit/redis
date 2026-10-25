@@ -1,0 +1,117 @@
+// Reviewed availability from the Redis 8.10.2 / Valkey 9.1.2 source inventories.
+import { metadata } from "#/commands/Metadata";
+
+export const catalog = {
+  HDEL: metadata("HDEL", "hashes", ["CORE-HASHES"], ["Redis since 2.0.0", "Valkey since 2.0.0"]),
+  HEXISTS: metadata(
+    "HEXISTS",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 2.0.0", "Valkey since 2.0.0"],
+  ),
+  HEXPIRE: metadata(
+    "HEXPIRE",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 7.4.0", "Valkey since 9.0.0"],
+  ),
+  HEXPIREAT: metadata(
+    "HEXPIREAT",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 7.4.0", "Valkey since 9.0.0"],
+  ),
+  HEXPIRETIME: metadata(
+    "HEXPIRETIME",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 7.4.0", "Valkey since 9.0.0"],
+  ),
+  HGET: metadata("HGET", "hashes", ["CORE-HASHES"], ["Redis since 2.0.0", "Valkey since 2.0.0"]),
+  HGETALL: metadata(
+    "HGETALL",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 2.0.0", "Valkey since 2.0.0"],
+  ),
+  HGETDEL: metadata(
+    "HGETDEL",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 8.0.0", "Valkey since 9.1.0"],
+  ),
+  HGETEX: metadata(
+    "HGETEX",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 8.0.0", "Valkey since 9.0.0"],
+  ),
+  HINCRBY: metadata(
+    "HINCRBY",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 2.0.0", "Valkey since 2.0.0"],
+  ),
+  HINCRBYFLOAT: metadata(
+    "HINCRBYFLOAT",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 2.6.0", "Valkey since 2.6.0"],
+  ),
+  HKEYS: metadata("HKEYS", "hashes", ["CORE-HASHES"], ["Redis since 2.0.0", "Valkey since 2.0.0"]),
+  HLEN: metadata("HLEN", "hashes", ["CORE-HASHES"], ["Redis since 2.0.0", "Valkey since 2.0.0"]),
+  HMGET: metadata("HMGET", "hashes", ["CORE-HASHES"], ["Redis since 2.0.0", "Valkey since 2.0.0"]),
+  HMSET: metadata("HMSET", "hashes", ["CORE-HASHES"], ["Redis since 2.0.0", "Valkey since 2.0.0"]),
+  HPERSIST: metadata(
+    "HPERSIST",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 7.4.0", "Valkey since 9.0.0"],
+  ),
+  HPEXPIRE: metadata(
+    "HPEXPIRE",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 7.4.0", "Valkey since 9.0.0"],
+  ),
+  HPEXPIREAT: metadata(
+    "HPEXPIREAT",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 7.4.0", "Valkey since 9.0.0"],
+  ),
+  HPEXPIRETIME: metadata(
+    "HPEXPIRETIME",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 7.4.0", "Valkey since 9.0.0"],
+  ),
+  HPTTL: metadata("HPTTL", "hashes", ["CORE-HASHES"], ["Redis since 7.4.0", "Valkey since 9.0.0"]),
+  HRANDFIELD: metadata(
+    "HRANDFIELD",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 6.2.0", "Valkey since 6.2.0"],
+  ),
+  HSET: metadata("HSET", "hashes", ["CORE-HASHES"], ["Redis since 2.0.0", "Valkey since 2.0.0"]),
+  HSETEX: metadata(
+    "HSETEX",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 8.0.0", "Valkey since 9.0.0"],
+  ),
+  HSETNX: metadata(
+    "HSETNX",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 2.0.0", "Valkey since 2.0.0"],
+  ),
+  HSTRLEN: metadata(
+    "HSTRLEN",
+    "hashes",
+    ["CORE-HASHES"],
+    ["Redis since 3.2.0", "Valkey since 3.2.0"],
+  ),
+  HTTL: metadata("HTTL", "hashes", ["CORE-HASHES"], ["Redis since 7.4.0", "Valkey since 9.0.0"]),
+  HVALS: metadata("HVALS", "hashes", ["CORE-HASHES"], ["Redis since 2.0.0", "Valkey since 2.0.0"]),
+};

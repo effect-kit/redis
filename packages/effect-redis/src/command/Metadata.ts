@@ -35,6 +35,16 @@ export const Routing = Schema.Union([
       }),
     ),
   }),
+  Schema.Struct({
+    _tag: Schema.Literal("Dynamic"),
+    keys: Schema.NonEmptyArray(
+      Schema.Struct({
+        index: Schema.Int.check(Schema.isGreaterThan(0)),
+        access: Schema.Literals(["read", "write", "read-write"]),
+      }),
+    ),
+    patterns: Schema.NonEmptyArray(Schema.Union([Schema.String, Schema.Uint8Array])),
+  }),
   Schema.Struct({ _tag: Schema.Literal("Node"), node: Schema.NonEmptyString }),
 ]);
 export type Routing = typeof Routing.Type;

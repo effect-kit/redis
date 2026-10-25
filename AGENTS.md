@@ -7,8 +7,9 @@ contains a bounded RESP codec, validated configuration, scoped Node byte transpo
 offline/live networking tests, and test-owned fixtures. The ordinary connection
 engine implements handshake, bounded admission/reply ownership, cancellation, shutdown
 and future-work reconnection. Phase 05 adds the Redis service, typed descriptors,
-explicit payload/key codecs and a PING/GET/SET/INCR/ZSCORE slice. Broad typed command
-families remain planned.
+explicit payload/key codecs and a PING/GET/SET/INCR/ZSCORE slice. Phase 06 adds
+ordinary data-command families; its remaining type/conformance/release checks are
+tracked in the private phase report until complete.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -321,6 +322,19 @@ Implemented command-system policy:
   expectations in `test/fixtures/commands/` must match production metadata. Keep broad command
   coverage/progress inventories in research; active catalogs do not imply completeness.
   Use handwritten reviewed overlays until generation has a demonstrated repeated need.
+- New ordinary collection operations preserve binary values and ordered pairs by
+  default. Count/detail variants have separately named typed builders (lpopCount,
+  zrangeWithScores, lcsMatches, geosearchWith); never assert an unchecked generic reply.
+  Preserve per-field/key TTL negative sentinels. Long-double results use decimalToken,
+  while score/scoreToken retain sorted-set IEEE-double semantics. Array indexes/cursors
+  support uint64 and RESP2 decimal bulk/RESP3 big-number replies without Number coercion.
+- SORT BY/GET indirect patterns use Routing.Dynamic with explicit primary/store keys
+  plus unresolved patterns. Standalone execution is valid; future topology executors
+  must resolve/review or reject this variant, never route only the primary key. COPY
+  DB/MOVE/keyspace operations also need explicit topology policy before Cluster claims.
+- Availability notes describe pinned source baselines, not automatic preflight gates.
+  Older/alternative engines return typed server errors for unsupported commands/options;
+  do not emulate them or equate absence in one engine with universal unsupported state.
 - GET text is strict UTF-8 with BOM preservation; getBytes/raw preserve binary data.
   Missing blobs use Option, integer replies use bigint, and zscoreToken preserves
   decimal wire text. zscore explicitly converts to the server's IEEE double domain.

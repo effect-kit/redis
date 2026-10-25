@@ -1,10 +1,24 @@
 export { ping } from "#/commands/connection/Ping";
 
-export { get, getBytes } from "#/commands/strings/Get";
-export { set } from "#/commands/strings/Set";
-export { incr } from "#/commands/strings/Incr";
+export * from "#/commands/strings/index";
 
-export { zscore, zscoreToken } from "#/commands/sorted-sets/Zscore";
+export * from "#/commands/hashes/index";
+
+export * from "#/commands/lists/index";
+
+export * from "#/commands/sets/index";
+
+export * from "#/commands/hyperloglog/index";
+
+export * from "#/commands/bitmaps/index";
+
+export * from "#/commands/keys/index";
+
+export * from "#/commands/sorted-sets/index";
+
+export * from "#/commands/geo/index";
+
+export * from "#/commands/arrays/index";
 
 export { getKey, setKey } from "#/keys/Commands";
 

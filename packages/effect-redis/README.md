@@ -9,7 +9,8 @@ The universal entrypoint also exports `makeConnection`, the `Connection` service
 its scoped Layer, connection options/snapshots, and typed admission/handshake/connection
 failures. The engine executes caller-declared ordinary single-reply commands. `Redis`,
 `CommandExecutor`, `Commands`, `Reply`, `RedisKey` and `PayloadCodec` add a typed
-PING/GET/SET/INCR/ZSCORE slice, custom descriptors and explicit payload codecs.
+ordinary string/hash/list/set/key/sorted-set/bitmap/HyperLogLog/geo/array builders,
+custom descriptors and explicit payload codecs. Phase 06 verification is in progress.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -164,3 +165,11 @@ Node resolves them through package imports; tsdown rewrites built module referen
 The three TypeScript configs separate universal code without Node globals, native
 source declaration builds, and development files/type contracts. Two Vitest configs
 under test/ separate offline tests from explicitly selected live integration/e2e tests.
+
+New collection APIs preserve bytes and ordered pairs. Use named result variants such
+as lpopCount, zrangeWithScores, lcsMatches and geosearchWith for replies whose shape
+changes with options. Numeric string/hash/array aggregates retain decimal wire tokens;
+TTL results keep -1/-2 sentinels and array cursors use exact unsigned bigint values.
+SORT BY/GET patterns carry unresolved routing metadata: standalone support does not
+imply Cluster execution. Commands/options are sent explicitly; older servers may
+reject them with typed server errors, and no semantic emulation or replay occurs.

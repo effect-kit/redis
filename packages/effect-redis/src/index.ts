@@ -58,3 +58,5 @@ export { ReplyError } from "#/errors/ReplyError";
 export { ServerError } from "#/errors/ServerError";
 export { PayloadError } from "#/errors/PayloadError";
 export { UnsupportedCommandError } from "#/errors/UnsupportedCommandError";
+
+export type { Integer as RedisInteger, Decimal as RedisDecimal } from "#/commands/internal/Input";

@@ -1,0 +1,280 @@
+import { expect, it } from "@effect/vitest";
+import { Effect, Option } from "effect";
+
+import type { Command } from "#/command/Command";
+import * as C from "#/commands/strings/index";
+import {
+  array,
+  blob,
+  bytes,
+  commandCases,
+  integer,
+  missing,
+  ok,
+} from "#test/support/commands/CoreCase";
+
+commandCases("CORE-STRINGS", [
+  {
+    label: "APPEND binary",
+    command: C.append("k", new Uint8Array([255])),
+    tokens: ["APPEND", "k", new Uint8Array([255])],
+    reply: integer(3n),
+    expected: 3n,
+    keys: [1],
+  },
+  {
+    label: "STRLEN",
+    command: C.strlen("k"),
+    tokens: ["STRLEN", "k"],
+    reply: integer(0n),
+    expected: 0n,
+    keys: [1],
+  },
+  {
+    label: "GETDEL missing",
+    command: C.getdel("k"),
+    tokens: ["GETDEL", "k"],
+    reply: missing,
+    expected: Option.none(),
+    keys: [1],
+  },
+  {
+    label: "GETSET empty",
+    command: C.getset("k", "v"),
+    tokens: ["GETSET", "k", "v"],
+    reply: blob(""),
+    expected: Option.some(bytes("")),
+    keys: [1],
+  },
+  {
+    label: "GETEX",
+    command: C.getex("k", { type: "PX", value: 100n }),
+    tokens: ["GETEX", "k", "PX", "100"],
+    reply: blob("v"),
+    expected: Option.some(bytes("v")),
+    keys: [1],
+  },
+  {
+    label: "GETRANGE",
+    command: C.getrange("k", -2, -1),
+    tokens: ["GETRANGE", "k", "-2", "-1"],
+    reply: blob("hi"),
+    expected: bytes("hi"),
+    keys: [1],
+  },
+  {
+    label: "SUBSTR alias",
+    command: C.substr("k", 0, 1),
+    tokens: ["SUBSTR", "k", "0", "1"],
+    reply: blob("hi"),
+    expected: bytes("hi"),
+    keys: [1],
+  },
+  {
+    label: "SETRANGE",
+    command: C.setrange("k", 1, "v"),
+    tokens: ["SETRANGE", "k", "1", "v"],
+    reply: integer(2n),
+    expected: 2n,
+    keys: [1],
+  },
+  {
+    label: "INCRBY int64",
+    command: C.incrby("k", 9007199254740993n),
+    tokens: ["INCRBY", "k", "9007199254740993"],
+    reply: integer(9007199254740993n),
+    expected: 9007199254740993n,
+    keys: [1],
+  },
+  {
+    label: "DECR",
+    command: C.decr("k"),
+    tokens: ["DECR", "k"],
+    reply: integer(-1n),
+    expected: -1n,
+    keys: [1],
+  },
+  {
+    label: "DECRBY",
+    command: C.decrby("k", -2),
+    tokens: ["DECRBY", "k", "-2"],
+    reply: integer(1n),
+    expected: 1n,
+    keys: [1],
+  },
+  {
+    label: "INCRBYFLOAT exact token",
+    command: C.incrbyfloat("k", 0.1),
+    tokens: ["INCRBYFLOAT", "k", "0.1"],
+    reply: blob("0.10000000000000001"),
+    expected: "0.10000000000000001",
+    keys: [1],
+  },
+  {
+    label: "DIGEST missing",
+    command: C.digest("k"),
+    tokens: ["DIGEST", "k"],
+    reply: missing,
+    expected: Option.none(),
+    keys: [1],
+  },
+  {
+    label: "DELIFEQ",
+    command: C.delifeq("k", "v"),
+    tokens: ["DELIFEQ", "k", "v"],
+    reply: integer(1n),
+    expected: true,
+    keys: [1],
+  },
+  {
+    label: "DELEX condition",
+    command: C.delex("k", { type: "IFNE", value: "v" }),
+    tokens: ["DELEX", "k", "IFNE", "v"],
+    reply: integer(0n),
+    expected: false,
+    keys: [1],
+  },
+  {
+    label: "MGET ordered missing/empty",
+    command: C.mget(["a", "b"]),
+    tokens: ["MGET", "a", "b"],
+    reply: array(missing, blob("")),
+    expected: [Option.none(), Option.some(bytes(""))],
+    keys: [1, 2],
+  },
+  {
+    label: "MSET",
+    command: C.mset([
+      ["a", "1"],
+      ["b", "2"],
+    ]),
+    tokens: ["MSET", "a", "1", "b", "2"],
+    reply: ok,
+    expected: undefined,
+    keys: [1, 3],
+  },
+  {
+    label: "MSETNX",
+    command: C.msetnx([["a", "1"]]),
+    tokens: ["MSETNX", "a", "1"],
+    reply: integer(0n),
+    expected: false,
+    keys: [1],
+  },
+  {
+    label: "MSETEX counted keys",
+    command: C.msetex(
+      [
+        ["a", "1"],
+        ["b", "2"],
+      ],
+      { condition: "NX", expiry: { type: "EX", value: 5 } },
+    ),
+    tokens: ["MSETEX", "2", "a", "1", "b", "2", "NX", "EX", "5"],
+    reply: integer(1n),
+    expected: true,
+    keys: [2, 4],
+  },
+  {
+    label: "SETNX",
+    command: C.setnx("a", "v"),
+    tokens: ["SETNX", "a", "v"],
+    reply: integer(1n),
+    expected: true,
+    keys: [1],
+  },
+  {
+    label: "SETEX",
+    command: C.setex("a", 2, "v"),
+    tokens: ["SETEX", "a", "2", "v"],
+    reply: ok,
+    expected: undefined,
+    keys: [1],
+  },
+  {
+    label: "PSETEX",
+    command: C.psetex("a", 2000, "v"),
+    tokens: ["PSETEX", "a", "2000", "v"],
+    reply: ok,
+    expected: undefined,
+    keys: [1],
+  },
+  {
+    label: "LCS bytes",
+    command: C.lcs("a", "b"),
+    tokens: ["LCS", "a", "b"],
+    reply: blob("abc"),
+    expected: bytes("abc"),
+    keys: [1, 2],
+  },
+  {
+    label: "LCS length",
+    command: C.lcsLength("a", "b"),
+    tokens: ["LCS", "a", "b", "LEN"],
+    reply: integer(3n),
+    expected: 3n,
+    keys: [1, 2],
+  },
+  {
+    label: "LCS matches",
+    command: C.lcsMatches("a", "b", { withMatchLength: true }),
+    tokens: ["LCS", "a", "b", "IDX", "WITHMATCHLEN"],
+    reply: {
+      _tag: "Map",
+      entries: [
+        [blob("len"), integer(1n)],
+        [
+          blob("matches"),
+          array(
+            array(array(integer(0n), integer(0n)), array(integer(1n), integer(1n)), integer(1n)),
+          ),
+        ],
+      ],
+    },
+    expected: {
+      length: 1n,
+      matches: [{ first: [0n, 0n], second: [1n, 1n], length: Option.some(1n) }],
+    },
+    keys: [1, 2],
+  },
+  {
+    label: "INCREX integer",
+    command: C.increx("k", {
+      increment: 2n,
+      lower: -1n,
+      saturate: true,
+      expiry: { type: "EX", value: 5 },
+      onlyWithoutExpiry: true,
+    }),
+    tokens: ["INCREX", "k", "BYINT", "2", "LBOUND", "-1", "SATURATE", "EX", "5", "ENX"],
+    reply: array(integer(2n), integer(2n)),
+    expected: [2n, 2n],
+    keys: [1],
+  },
+  {
+    label: "INCREX float",
+    command: C.increxFloat("k", { increment: 0.5 }),
+    tokens: ["INCREX", "k", "BYFLOAT", "0.5"],
+    reply: array(blob("0.5"), blob("0.5")),
+    expected: ["0.5", "0.5"],
+    keys: [1],
+  },
+]);
+
+const invalid: ReadonlyArray<Command<unknown>> = [
+  C.incrby("k", Number.MAX_SAFE_INTEGER + 1),
+  C.incrby("k", 9223372036854775808n),
+  C.setrange("k", -1, "v"),
+  C.incrbyfloat("k", Infinity),
+  C.increx("k", { onlyWithoutExpiry: true }),
+  C.mget([] as unknown as readonly [string]),
+];
+
+it.effect.each(invalid)("CORE-STRINGS: invalid inputs fail before admission %#", (command) =>
+  Effect.gen(function* () {
+    expect(yield* Effect.flip(command.prepare.pipe(Effect.asVoid))).toMatchObject({
+      _tag: "CommandInputError",
+      delivery: "unsent",
+    });
+  }),
+);

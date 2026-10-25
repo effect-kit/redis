@@ -1,0 +1,132 @@
+// Reviewed availability from the Redis 8.10.2 / Valkey 9.1.2 source inventories.
+import { metadata } from "#/commands/Metadata";
+
+export const catalog = {
+  APPEND: metadata(
+    "APPEND",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 2.0.0", "Valkey since 2.0.0"],
+  ),
+  DECR: metadata("DECR", "strings", ["CORE-STRINGS"], ["Redis since 1.0.0", "Valkey since 1.0.0"]),
+  DECRBY: metadata(
+    "DECRBY",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 1.0.0", "Valkey since 1.0.0"],
+  ),
+  DELEX: metadata(
+    "DELEX",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 8.4.0", "Absent from Valkey 9.1.2 source baseline"],
+  ),
+  DELIFEQ: metadata(
+    "DELIFEQ",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Absent from Redis 8.10.2 source baseline", "Valkey since 9.0.0"],
+  ),
+  DIGEST: metadata(
+    "DIGEST",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 8.4.0", "Absent from Valkey 9.1.2 source baseline"],
+  ),
+  GET: metadata("GET", "strings", ["CORE-STRINGS"], ["Redis since 1.0.0", "Valkey since 1.0.0"]),
+  GETDEL: metadata(
+    "GETDEL",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 6.2.0", "Valkey since 6.2.0"],
+  ),
+  GETEX: metadata(
+    "GETEX",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 6.2.0", "Valkey since 6.2.0"],
+  ),
+  GETRANGE: metadata(
+    "GETRANGE",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 2.4.0", "Valkey since 2.4.0"],
+  ),
+  GETSET: metadata(
+    "GETSET",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 1.0.0", "Valkey since 1.0.0"],
+  ),
+  INCR: metadata("INCR", "strings", ["CORE-STRINGS"], ["Redis since 1.0.0", "Valkey since 1.0.0"]),
+  INCRBY: metadata(
+    "INCRBY",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 1.0.0", "Valkey since 1.0.0"],
+  ),
+  INCRBYFLOAT: metadata(
+    "INCRBYFLOAT",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 2.6.0", "Valkey since 2.6.0"],
+  ),
+  INCREX: metadata(
+    "INCREX",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 8.8.0", "Absent from Valkey 9.1.2 source baseline"],
+  ),
+  LCS: metadata("LCS", "strings", ["CORE-STRINGS"], ["Redis since 7.0.0", "Valkey since 7.0.0"]),
+  MGET: metadata("MGET", "strings", ["CORE-STRINGS"], ["Redis since 1.0.0", "Valkey since 1.0.0"]),
+  MSET: metadata("MSET", "strings", ["CORE-STRINGS"], ["Redis since 1.0.1", "Valkey since 1.0.1"]),
+  MSETEX: metadata(
+    "MSETEX",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 8.4.0", "Valkey since 9.1.0"],
+  ),
+  MSETNX: metadata(
+    "MSETNX",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 1.0.1", "Valkey since 1.0.1"],
+  ),
+  PSETEX: metadata(
+    "PSETEX",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 2.6.0", "Valkey since 2.6.0"],
+  ),
+  SET: metadata("SET", "strings", ["CORE-STRINGS"], ["Redis since 1.0.0", "Valkey since 1.0.0"]),
+  SETEX: metadata(
+    "SETEX",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 2.0.0", "Valkey since 2.0.0"],
+  ),
+  SETNX: metadata(
+    "SETNX",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 1.0.0", "Valkey since 1.0.0"],
+  ),
+  SETRANGE: metadata(
+    "SETRANGE",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 2.2.0", "Valkey since 2.2.0"],
+  ),
+  STRLEN: metadata(
+    "STRLEN",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 2.2.0", "Valkey since 2.2.0"],
+  ),
+  SUBSTR: metadata(
+    "SUBSTR",
+    "strings",
+    ["CORE-STRINGS"],
+    ["Redis since 1.0.0", "Valkey since 1.0.0"],
+  ),
+};
