@@ -550,6 +550,9 @@ Implemented Cluster policy:
 - Topology changes/redirects clear old tracking/cache cohorts before publishing routes.
   Old subscriptions fail visibly; reacquire on the new owner. Opt-in reconnect within
   one node retains DeliveryGap/Ready semantics. Never imply recovery of missed messages.
+  Fork cohorts from their caller Scope so retirement unlinks parent finalizers. Observe
+  topology before choosing an owner; failed acquisition releases cohort capacity. Closing
+  the client stops event admission and attempts every cohort cleanup before propagating defects.
 - Keep cluster tests under test/unit/cluster, integration/cluster and e2e/cluster. Owned
   six-node fixtures use pinned images; partition fixtures route inter-server data and
   bus links through an owned bounded native Node proxy. A Docker network detach alone

@@ -71,6 +71,7 @@ export const makeRedisCluster = Effect.fnUntraced(function* <R = never>(
   const leases = makeClusterSessions(registry, discovery, router, config.database);
   const batches = makeClusterBatches(leases, router, registry.sessionPolicy);
   const events = yield* makeClusterEvents(registry, discovery, policy, options, config.database);
+  yield* Effect.addFinalizer(() => events.close);
   const executor = router.executor();
   const redis = { ...makeRedis(executor), ...batches };
 
@@ -196,7 +197,7 @@ export const makeRedisCluster = Effect.fnUntraced(function* <R = never>(
         refreshFailures: discovery.failures(),
       };
     }),
-    close: registry.close,
+    close: events.close.pipe(Effect.ensuring(registry.close)),
   };
 });
 

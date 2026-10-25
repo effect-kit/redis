@@ -36,6 +36,7 @@ export const makeClusterEvents = Effect.fnUntraced(function* <R>(
 ) {
   const captured = yield* Effect.context<R | Transport>();
   let active = 0;
+  let closed = false;
   let fatal: Cause.Cause<never> | undefined;
 
   const observeRouting = <A, E, RUse>(effect: Effect.Effect<A, E, RUse>) =>
@@ -59,72 +60,82 @@ export const makeClusterEvents = Effect.fnUntraced(function* <R>(
   ) =>
     Effect.gen(function* () {
       if (fatal !== undefined) return yield* Effect.failCause(fatal);
+      if (closed) return yield* new ClusterError({ reason: "closed", delivery: "unsent" });
       if (active >= policy.maxEventCohorts)
         return yield* new ClusterError({ reason: "capacity", delivery: "unsent" });
-      const topology = yield* discovery.ensure;
-      const node =
-        "node" in target
-          ? topology.shards.find((shard) => shard.primary.id === target.node)?.primary
-          : primaryForSlot(topology, keySlot(target.key))?.primary;
-      if (node === undefined)
-        return yield* new ClusterError({ reason: "node-unavailable", delivery: "unsent" });
       const caller = yield* Effect.scope;
-
-      return yield* registry.withNode(node.address, (entry) =>
-        Effect.gen(function* () {
-          if (active >= policy.maxEventCohorts)
-            return yield* new ClusterError({ reason: "capacity", delivery: "unsent" });
-          const scope = yield* Scope.fork(entry.scope);
-          active++;
-          let lost = false;
-          let alive = true;
-          yield* Effect.addFinalizer(() =>
-            Effect.sync(() => {
-              active--;
-              alive = false;
-            }),
-          ).pipe(Scope.provide(scope));
-          const close = Scope.close(scope, Exit.void).pipe(
-            Effect.onExit((exit) =>
-              Effect.sync(() => {
-                if (Exit.isFailure(exit)) {
-                  fatal = exit.cause;
-                  registry.poison(exit.cause);
-                }
-              }),
-            ),
-          );
-          yield* Scope.addFinalizer(caller, close);
-          yield* discovery
-            .observe(
-              Effect.sync(() => {
-                lost = true;
-              }).pipe(Effect.andThen(close)),
-            )
-            .pipe(Scope.provide(scope));
-          const check = registry.check.pipe(
-            Effect.andThen(
-              Effect.suspend(() =>
-                lost || !alive
-                  ? Effect.fail(
-                      new ClusterError({ reason: "topology-changed", delivery: "unsent" }),
-                    )
-                  : Effect.void,
-              ),
-            ),
-          );
-          const validate = makeClusterSessionValidation(
-            discovery,
-            node,
-            database,
-            "key" in target ? keySlot(target.key) : undefined,
-          );
-          return yield* acquire(entry.config, scope, check, validate).pipe(
-            Effect.provideContext(Context.add(captured, Scope.Scope, scope)),
-            Effect.onExit((exit) => (Exit.isFailure(exit) ? close : Effect.void)),
-          );
+      // The caller owns this child; closing a retired cohort unlinks its parent finalizer.
+      const scope = yield* Scope.fork(caller);
+      active++;
+      let lost = false;
+      let alive = true;
+      yield* Effect.addFinalizer(() =>
+        Effect.sync(() => {
+          active--;
+          alive = false;
         }),
+      ).pipe(Scope.provide(scope));
+      const close = Scope.close(scope, Exit.void).pipe(
+        Effect.onExit((exit) =>
+          Effect.sync(() => {
+            if (Exit.isFailure(exit)) {
+              fatal = exit.cause;
+              registry.poison(exit.cause);
+            }
+          }),
+        ),
       );
+      const check = registry.check.pipe(
+        Effect.andThen(
+          Effect.suspend(() =>
+            closed
+              ? Effect.fail(new ClusterError({ reason: "closed", delivery: "unsent" }))
+              : lost || !alive
+                ? Effect.fail(new ClusterError({ reason: "topology-changed", delivery: "unsent" }))
+                : Effect.void,
+          ),
+        ),
+      );
+
+      // Observe before choosing an owner so a concurrent refresh cannot strand the new cohort.
+      return yield* discovery
+        .observe(
+          Effect.sync(() => {
+            lost = true;
+          }).pipe(Effect.andThen(close)),
+        )
+        .pipe(
+          Scope.provide(scope),
+          Effect.andThen(check),
+          Effect.andThen(discovery.ensure),
+          Effect.flatMap((topology) => {
+            const node =
+              "node" in target
+                ? topology.shards.find((shard) => shard.primary.id === target.node)?.primary
+                : primaryForSlot(topology, keySlot(target.key))?.primary;
+            if (node === undefined)
+              return Effect.fail(
+                new ClusterError({ reason: "node-unavailable", delivery: "unsent" }),
+              );
+            const validate = makeClusterSessionValidation(
+              discovery,
+              node,
+              database,
+              "key" in target ? keySlot(target.key) : undefined,
+            );
+            return check.pipe(
+              Effect.andThen(
+                registry.withNode(node.address, (entry) =>
+                  Effect.suspend(() => acquire(entry.config, scope, check, validate)).pipe(
+                    Effect.provideContext(Context.add(captured, Scope.Scope, scope)),
+                  ),
+                ),
+              ),
+            );
+          }),
+          Effect.tap(() => check),
+          Effect.onExit((exit) => (Exit.isFailure(exit) ? close : Effect.void)),
+        );
     });
 
   const pubsub = (target: ClusterTarget, selected: Omit<SubscriptionOptions, "credentials"> = {}) =>
@@ -256,5 +267,11 @@ export const makeClusterEvents = Effect.fnUntraced(function* <R>(
       }),
     );
 
-  return { pubsub, tracking, snapshot: () => ({ eventCohorts: active }) };
+  const close = Effect.uninterruptible(
+    Effect.sync(() => {
+      closed = true;
+    }).pipe(Effect.andThen(discovery.invalidate)),
+  );
+
+  return { pubsub, tracking, close, snapshot: () => ({ eventCohorts: active }) };
 });

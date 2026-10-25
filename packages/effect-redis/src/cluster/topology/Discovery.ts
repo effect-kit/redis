@@ -1,4 +1,4 @@
-import { Clock, Deferred, Effect, Exit } from "effect";
+import { Cause, Clock, Deferred, Effect, Exit } from "effect";
 
 import type { NodeRegistry } from "#/cluster/nodes/Registry";
 import type { ClusterPolicy } from "#/cluster/Options";
@@ -34,8 +34,13 @@ export const makeDiscovery = (
   let refreshWaiters = 0;
   let unhealthy: string | undefined;
   const observers = new Set<Effect.Effect<void>>();
-  const invalidate = Effect.suspend(() =>
-    Effect.forEach(observers, (observer) => observer, { discard: true }),
+  const invalidate = Effect.uninterruptible(
+    Effect.gen(function* () {
+      // Finish every cohort even when one physical cleanup fails, then preserve the combined Cause.
+      const exits = yield* Effect.forEach([...observers], (observer) => Effect.exit(observer));
+      const reasons = exits.flatMap((exit) => (Exit.isFailure(exit) ? exit.cause.reasons : []));
+      if (reasons.length !== 0) return yield* Effect.failCause(Cause.fromReasons(reasons));
+    }),
   );
 
   const discover = Effect.fnUntraced(function* () {
