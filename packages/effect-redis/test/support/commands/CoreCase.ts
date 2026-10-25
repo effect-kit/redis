@@ -31,7 +31,7 @@ export const commandCases = (family: string, cases: ReadonlyArray<CommandCase>) 
 
         expect(prepared.tokens).toEqual(tokens);
         expect(prepared.metadata.name).toBe(
-          ["OBJECT", "XGROUP", "XINFO"].includes(String(tokens[0]))
+          ["OBJECT", "XGROUP", "XINFO", "PUBSUB"].includes(String(tokens[0]))
             ? `${String(tokens[0])} ${String(tokens[1])}`
             : tokens[0],
         );

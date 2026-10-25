@@ -164,3 +164,10 @@ export type { FailureDecision, ProcessingOptions } from "#/streams/Processing";
 export * as StreamPayload from "#/streams/Payload";
 
 export type { PendingReadOptions } from "#/streams/Recovery";
+
+export { RedisPubSub, makeRedisPubSub } from "#/subscriptions/RedisPubSub";
+export type { RedisPubSubClient } from "#/subscriptions/RedisPubSub";
+export type { SubscriptionOptions } from "#/subscriptions/Options";
+export type { PubSubMessage, SubscriptionEvent, SubscribeOptions } from "#/subscriptions/Types";
+export type { TrackingOptions, TrackingInfo } from "#/commands/tracking/Controls";
+export { SubscriptionError } from "#/errors/SubscriptionError";

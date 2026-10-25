@@ -25,3 +25,6 @@ export { getKey, setKey } from "#/keys/Commands";
 export { raw } from "#/command/Raw";
 
 export * from "#/commands/streams/index";
+
+export * from "#/commands/pubsub/index";
+export { clientTracking, clientTrackingInfo } from "#/commands/tracking/Controls";
