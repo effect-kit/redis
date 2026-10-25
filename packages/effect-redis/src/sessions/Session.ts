@@ -4,6 +4,7 @@ import type { Command, PreparedCommand } from "#/command/Command";
 import { decodeReply } from "#/command/Decode";
 import type { RedisExecutor } from "#/command/Executor";
 import { status } from "#/command/reply/Scalars";
+import { blockingFamily } from "#/commands/blocking/Family";
 import { Arguments, parse } from "#/commands/internal/Input";
 import { checkOrdinary } from "#/connection/OrdinaryCommand";
 import { SessionError } from "#/errors/SessionError";
@@ -12,27 +13,44 @@ import type { RedisArgument } from "#/RedisArgument";
 import { runPipeline } from "#/sessions/batch/Pipeline";
 import { prepareBatch } from "#/sessions/batch/Prepare";
 import type { AnyCommand, PreparedBatch } from "#/sessions/batch/Types";
+import { adjacencyControls } from "#/sessions/controls/Adjacency";
+import { connectionControls } from "#/sessions/controls/Connection";
+import { durabilityControls } from "#/sessions/controls/Durability";
 import { exchange } from "#/sessions/controls/Exchange";
+import { checkAdvanced, isBlocking } from "#/sessions/controls/Guard";
+import { replyModeControls } from "#/sessions/controls/ReplyMode";
 import type { SessionPolicy } from "#/sessions/pool/Options";
 import type { SessionWire } from "#/sessions/pool/Wire";
 import { runTransaction } from "#/sessions/transaction/Execute";
 import { makeSessionState } from "#/sessions/transaction/State";
 
 export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
+  let tainted = false;
   const state = makeSessionState(wire, policy.cleanupTimeoutMillis);
 
   const executePrepared = <A, E, R>(command: PreparedCommand<A, E, R>) =>
     state.run(() =>
       Effect.gen(function* () {
-        if (
-          command.metadata.execution !== "ordinary" ||
-          checkOrdinary(command.tokens) !== undefined
-        )
-          return yield* new SessionError({ reason: "execution-mode", delivery: "unsent" });
+        const mode = command.metadata.execution;
+        if (mode === "ordinary") {
+          if (checkOrdinary(command.tokens) !== undefined)
+            return yield* new SessionError({ reason: "execution-mode", delivery: "unsent" });
+        } else if (mode === "blocking") {
+          if (!isBlocking(command.tokens))
+            return yield* new SessionError({ reason: "execution-mode", delivery: "unsent" });
+        } else if (mode === "exclusive" || mode === "advanced") {
+          const error = checkAdvanced(command.tokens);
+          if (error !== undefined) return yield* error;
+          tainted = true;
+        } else return yield* new SessionError({ reason: "execution-mode", delivery: "unsent" });
+
         if (command.routing._tag === "Node")
           return yield* new SessionError({ reason: "routing", delivery: "unsent" });
 
-        return yield* decodeReply(command, yield* wire.execute(command.tokens));
+        return yield* decodeReply(
+          command,
+          yield* wire.execute(command.tokens, command.replyTimeoutMillis),
+        );
       }),
     );
   const executor: RedisExecutor = {
@@ -46,6 +64,13 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
 
   const client = {
     ...makeRedis(executor),
+    ...blockingFamily(executor),
+    ...durabilityControls(wire, state),
+    ...connectionControls(wire, state, () => {
+      tainted = true;
+    }),
+    ...adjacencyControls(wire, state),
+    ...replyModeControls(wire, state, policy),
     pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
       state.run(() =>
         prepareBatch(commands, policy.maxBatchCommands).pipe(
@@ -80,7 +105,17 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
     snapshot: Effect.sync(() => ({ generation: wire.id, mode: state.get() })),
   };
 
-  return { client, finish: state.finish, transactionPrepared };
+  return {
+    client,
+    finish: state.finish.pipe(
+      Effect.ensuring(
+        Effect.sync(() => {
+          if (tainted) wire.retire();
+        }),
+      ),
+    ),
+    transactionPrepared,
+  };
 };
 
 export type RedisSession = ReturnType<typeof makeSession>["client"];

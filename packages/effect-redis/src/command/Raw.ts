@@ -7,6 +7,7 @@ import type { RedisCommand } from "#/protocol/encode";
 export interface RawContract {
   readonly execution: CommandMetadata["execution"];
   readonly routing: Routing;
+  readonly replyTimeoutMillis?: number | "forever";
 }
 
 /** Explicit single-reply intent; unknown commands remain possible without a brand allowlist. */
@@ -23,6 +24,9 @@ export const raw = (tokens: RedisCommand, contract: RawContract) =>
     },
     tokens,
     routing: contract.routing,
+    ...(contract.replyTimeoutMillis === undefined
+      ? {}
+      : { replyTimeoutMillis: contract.replyTimeoutMillis }),
     decode: Effect.succeed,
     serverErrors: "preserve",
   });

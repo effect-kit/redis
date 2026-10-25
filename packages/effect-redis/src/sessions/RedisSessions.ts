@@ -1,6 +1,9 @@
 import { Context, Effect, Layer } from "effect";
 
 import { BatchExecutor } from "#/command/BatchExecutor";
+import type { RedisExecutor } from "#/command/Executor";
+import { blockingFamily } from "#/commands/blocking/Family";
+import { SessionError } from "#/errors/SessionError";
 import type { RedisArgument } from "#/RedisArgument";
 import type { RedisConfig } from "#/RedisConfig";
 import { runPipeline } from "#/sessions/batch/Pipeline";
@@ -48,7 +51,25 @@ export const makeRedisSessions = Effect.fnUntraced(function* <R = never>(
       ),
   };
 
+  const blockingExecutor: RedisExecutor = {
+    execute: (command) =>
+      command.prepare.pipe(
+        Effect.flatMap((prepared) => blockingExecutor.executePrepared(prepared)),
+      ),
+    executePrepared: (prepared) =>
+      prepared.metadata.execution !== "blocking"
+        ? Effect.fail(new SessionError({ reason: "execution-mode", delivery: "unsent" }))
+        : pool.use("blocking", (wire) => {
+            const session = makeSession(wire, policy);
+            return session.client
+              .executePrepared(prepared)
+              .pipe(Effect.onExit(() => session.finish));
+          }),
+  };
+
   return {
+    ...blockingFamily(blockingExecutor),
+    executeBlocking: blockingExecutor.execute,
     ...batches,
     withSession,
     watch: <A, E, RUse>(

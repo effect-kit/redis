@@ -41,8 +41,12 @@ export const faultProxy = Effect.fnUntraced(function* (
 
   let repliesReleased = !options?.holdReplies;
   let requestsReleased = !options?.pauseRequests;
+  let heldReply: Deferred.Deferred<void> | undefined;
   const markRequest = () => Deferred.doneUnsafe(firstPausedRequest, Effect.void);
-  const markReply = () => Deferred.doneUnsafe(firstReply, Effect.void);
+  const markReply = () => {
+    Deferred.doneUnsafe(firstReply, Effect.void);
+    if (heldReply !== undefined) Deferred.doneUnsafe(heldReply, Effect.void);
+  };
 
   const peer = yield* loopback((client) => {
     const upstream = createConnection({ host: "127.0.0.1", port: targetPort });
@@ -77,9 +81,22 @@ export const faultProxy = Effect.fnUntraced(function* (
       const split = new Transform({
         transform(bytes: Buffer, _encoding, callback) {
           Deferred.doneUnsafe(firstReply, Effect.void);
-          for (let offset = 0; offset < bytes.length; offset += size)
-            this.push(bytes.subarray(offset, offset + size));
-          callback();
+          const emit = () => {
+            for (let offset = 0; offset < bytes.length; offset += size)
+              this.push(bytes.subarray(offset, offset + size));
+            callback();
+          };
+          if (repliesReleased) emit();
+          else {
+            markReply();
+            const resume = () => {
+              release.delete(resume);
+              emit();
+            };
+            // Holding the transform callback applies native backpressure even if pipe resumes its source.
+            release.add(resume);
+            this.once("close", () => release.delete(resume));
+          }
         },
       });
       upstream.pipe(split).pipe(client);
@@ -102,6 +119,20 @@ export const faultProxy = Effect.fnUntraced(function* (
     releaseReplies: Effect.sync(() => {
       repliesReleased = true;
       for (const start of release) start();
+      for (const socket of upstreams) {
+        socket.off("readable", markReply);
+        socket.resume();
+      }
+    }),
+    holdReplies: Effect.sync(() => {
+      repliesReleased = false;
+      heldReply = Deferred.makeUnsafe<void>();
+      for (const socket of upstreams) {
+        socket.pause();
+        socket.once("readable", markReply);
+        if (socket.readableLength > 0) markReply();
+      }
+      return Deferred.await(heldReply);
     }),
     resumeRequests: Effect.sync(() => {
       requestsReleased = true;

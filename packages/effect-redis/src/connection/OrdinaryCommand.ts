@@ -33,13 +33,14 @@ const modes = new Set([
   "BRPOP",
   "BRPOPLPUSH",
   "BLMOVE",
+  "BLMOVEM",
   "BLMPOP",
   "BZPOPMIN",
   "BZPOPMAX",
   "BZMPOP",
 ]);
 
-const token = (value: string | Uint8Array | undefined) =>
+export const commandToken = (value: string | Uint8Array | undefined) =>
   typeof value === "string"
     ? value.length <= 64
       ? value.toUpperCase()
@@ -55,7 +56,7 @@ const blockingRead = (command: RedisCommand, group: boolean) => {
 
   // After STREAMS, tokens are keys and IDs; a key named BLOCK must not change the mode.
   while (index < command.length) {
-    const option = token(command[index]);
+    const option = commandToken(command[index]);
     if (option === "STREAMS") return false;
     if (option === "BLOCK") return true;
 
@@ -69,8 +70,8 @@ const blockingRead = (command: RedisCommand, group: boolean) => {
 export const checkOrdinary = (command: RedisCommand) => {
   if (!Array.isArray(command) || command.length === 0) return undefined;
 
-  const name = token(command[0]);
-  const subcommand = token(command[1]);
+  const name = commandToken(command[0]);
+  const subcommand = commandToken(command[1]);
 
   if (
     modes.has(name) ||

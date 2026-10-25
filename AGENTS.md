@@ -9,7 +9,9 @@ engine implements handshake, bounded admission/reply ownership, cancellation, sh
 and future-work reconnection. Phase 05 adds the Redis service, typed descriptors,
 explicit payload/key codecs and a PING/GET/SET/INCR/ZSCORE slice. Phase 06 adds
 187 ordinary data commands with unit/type/composition tests and primary Redis/Valkey
-conformance. Sessions, scans/Streams, subscriptions, scripting and topology are pending.
+conformance. Phase 07 adds native leases, pipelines/transactions, WATCH, blocking
+operations and connection-relative controls; final gates are tracked privately.
+Scans/Streams, subscriptions, scripting and topology remain pending.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -356,6 +358,44 @@ Implemented command-system policy:
   routing are rejected by the standalone executor; known session guards still apply.
 - Compile-only positive/negative API contracts live in test/types and are checked by
   the development typecheck. Vitest never executes them; keep this in aggregate CI.
+
+Implemented native-session policy:
+
+- `RedisSessions.layer(config, options)` provides `RedisSessions` plus `BatchExecutor`.
+  Ordinary `Redis` composition stays valid; pipeline/transaction methods require the
+  batch capability. Leased clients capture it. HTTP may later provide batches alone.
+- Session and blocking sockets use separate lazy bounded lanes. Their limits exclude
+  separately owned ordinary Connections. Bound waiters and lease acquisition; release
+  permits through Effect finalizers even when acquisition, user code or cleanup fails.
+- A lease stays on one physical generation. Sequential session use is required;
+  concurrent/nested transaction use fails explicitly. Retained clients fail after
+  scope exit. Clean known WATCH/MULTI state or retire uncertain state before reuse.
+- Prepare whole batches before writes. Preserve readonly Result tuples and codec
+  requirements. `BatchError.outcomes` is redacted: Completed has a decoded result,
+  Replied retains an undecoded raw reply, Unsent/Unknown preserve indexed evidence.
+  Interruption/defects remain in the Cause. Use the protected batch-error mapper;
+  an interruptible recovery boundary can discard attached failure evidence in v4.
+- Transactions distinguish Committed results, WATCH Conflict and queue/EXEC rejection.
+  QUEUED proves queueing only. Individual EXEC failures do not roll back siblings;
+  uncertain EXEC is never replayed. Cleanup failures propagate and prevent unsafe reuse.
+- Blocking builders remain grouped with lists/sorted sets. Scoped blocking leases use
+  explicit Duration waits or `"forever"`, an independent reply deadline and bounded
+  socket-write deadlines. Server timeout is an absent value; reply loss after a pop
+  can mean consumption. Do not replace server blocking semantics with polling.
+- WAIT/WAITAOF are leased-client methods so acknowledgments stay with preceding writes.
+  Return actual bigint counts, including shortfalls on server timeout. AOF/replica
+  fixture acknowledgments do not prove hardware durability or strong consistency.
+- CLIENT CACHING is paired with its command under one session operation. Advanced raw
+  controls declare one reply and taint their lease for retirement; known reply/mode
+  switches require reviewed APIs. Full tracking/invalidation semantics remain in09.
+- Reply suppression admits OFF/SKIP, ordinary commands and ON as one fenced write with
+  one expected reply. Individual outcomes are intentionally discarded; failed fences
+  retain unknown mutation evidence. Compound encoding retains at most two wire budgets
+  during fragment/output copying. RESET/QUIT retire; Valkey CAPA/IMPORT-SOURCE flags
+  are isolated to their scope and retain actual server/version/configuration behavior.
+- Session conformance lives in test/e2e/sessions; controlled lifecycle/fault cases in
+  test/integration/sessions and type contracts in test/types. Replication/AOF fixtures
+  own their Testcontainers network and both servers; no implicit image pulls/reuse.
 
 ### Streams, subscriptions and recovery
 

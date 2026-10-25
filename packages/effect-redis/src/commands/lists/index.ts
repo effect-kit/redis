@@ -21,3 +21,5 @@ export {
   lposCount,
 } from "#/commands/lists/Values";
 export type * from "#/commands/lists/Values";
+
+export { blpop, brpop, brpoplpush, blmove, blmpop, blmovem } from "#/commands/lists/Blocking";

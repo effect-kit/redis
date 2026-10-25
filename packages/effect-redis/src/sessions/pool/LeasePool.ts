@@ -4,6 +4,7 @@ import { decodePolicy } from "#/connection/Options";
 import type { ConnectionOptions } from "#/connection/Options";
 import { ConnectionError } from "#/errors/ConnectionError";
 import { ProtocolError } from "#/errors/ProtocolError";
+import { RedisConfigError } from "#/errors/RedisConfigError";
 import { SessionError } from "#/errors/SessionError";
 import { TransportError } from "#/errors/TransportError";
 import type { RedisConfig } from "#/RedisConfig";
@@ -30,6 +31,11 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
 ) {
   const { credentials, ...policyInput } = connection;
   const connectionPolicy = yield* decodePolicy(policyInput);
+  if (credentials !== undefined && config.credentials !== undefined)
+    return yield* new RedisConfigError({
+      field: "connection.credentials",
+      reason: "Choose fixed credentials or an Effect credential source",
+    });
   const captured = yield* Effect.context<R | Transport>();
   const owner = yield* Scope.fork(yield* Effect.scope);
   const sessionPermits = yield* Semaphore.make(policy.maxSessionConnections);
@@ -59,7 +65,12 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
     let entry = idle[mode].shift();
     while (entry !== undefined) {
       if (entry.wire.isReady()) return entry;
+      const defect = entry.wire.fatal();
       yield* discard(entry);
+      if (defect !== undefined) {
+        fatal = defect;
+        return yield* Effect.failCause(defect);
+      }
       entry = idle[mode].shift();
     }
 
@@ -82,7 +93,17 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
             })
           : error,
       ),
-      Effect.onExit((exit) => (Exit.isFailure(exit) ? Scope.close(scope, Exit.void) : Effect.void)),
+      Effect.onExit((exit) =>
+        Exit.isFailure(exit)
+          ? Scope.close(scope, Exit.void).pipe(
+              Effect.onExit((cleanup) =>
+                Effect.sync(() => {
+                  if (Exit.isFailure(cleanup)) fatal = cleanup.cause;
+                }),
+              ),
+            )
+          : Effect.void,
+      ),
     );
     const created = { mode, wire };
     entries.add(created);
@@ -102,7 +123,8 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
           entry.wire.drain.pipe(
             Effect.timeoutOrElse({
               duration: policy.cleanupTimeoutMillis,
-              orElse: () => Effect.fail(unavailable("cleanup")),
+              orElse: () =>
+                Effect.fail(new SessionError({ reason: "cleanup", delivery: "replied" })),
             }),
           ),
         );

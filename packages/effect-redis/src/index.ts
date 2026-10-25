@@ -124,3 +124,5 @@ export type {
 export { SessionError } from "#/errors/SessionError";
 export { BatchError } from "#/errors/BatchError";
 export { TransactionError } from "#/errors/TransactionError";
+
+export type { BlockingOptions } from "#/commands/blocking/Timing";

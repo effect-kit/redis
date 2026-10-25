@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { Effect, Redacted, Schedule } from "effect";
 
 import { Wait } from "testcontainers";
+import type { StartedNetwork } from "testcontainers";
 
 import {
   containerRequest,
@@ -30,6 +31,8 @@ export const allocateServer = Effect.fnUntraced(function* (
     readonly extraConfig?: ReadonlyArray<string>;
     readonly readinessMillis?: number;
     readonly unixVolume?: string;
+    readonly network?: StartedNetwork;
+    readonly networkAlias?: string;
   },
 ) {
   const directory = yield* temporaryDirectory;
@@ -102,6 +105,11 @@ export const allocateServer = Effect.fnUntraced(function* (
     .withWaitStrategy(Wait.forAll([]))
     .withStartupTimeout(15_000);
   if (options?.unixVolume !== undefined) container.sharedVolume(options.unixVolume, "/socket");
+
+  if (options?.network !== undefined) {
+    container.withNetwork(options.network);
+    if (options.networkAlias !== undefined) container.withNetworkAliases(options.networkAlias);
+  }
 
   const started = yield* scopedContainer(container);
   const name = container.fixtureName;

@@ -77,6 +77,7 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
     commands: ReadonlyArray<RedisCommand>,
     replyTimeoutMillis: number | "forever" = config.commandTimeoutMillis,
     phase: "pipeline" | "transaction-queue" | "single" = "pipeline",
+    fenced = false,
   ) {
     const tickets: Ticket[] = [];
 
@@ -86,8 +87,11 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
         const now = yield* Clock.currentTimeMillis;
 
         // Reserve the entire batch before making any frame visible to the writer.
-        for (const command of commands) {
-          const reserved = admission.reserve(command, now, config.commandTimeoutMillis);
+        for (const command of fenced ? [commands[0]] : commands) {
+          if (command === undefined) return yield* Effect.die(new Error("Empty fenced exchange"));
+          const reserved = fenced
+            ? admission.reserveExchange(commands, now, config.commandTimeoutMillis)
+            : admission.reserve(command, now, config.commandTimeoutMillis);
           if (reserved instanceof AdmissionError || reserved instanceof ProtocolError) {
             for (const ticket of tickets) admission.release(ticket);
             return yield* reserved;
@@ -185,7 +189,19 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
     return outcome._tag === "Replied" ? outcome.reply : yield* outcome.error;
   });
 
+  const fence = Effect.fnUntraced(function* (commands: ReadonlyArray<RedisCommand>) {
+    const [outcome] = yield* batch(
+      commands,
+      config.commandTimeoutMillis,
+      "single",
+      true,
+    ) as Effect.Effect<ReadonlyArray<WireOutcome>, ExecutionError>;
+    if (outcome === undefined) return yield* Effect.die(new Error("Missing fenced reply"));
+    return outcome._tag === "Replied" ? outcome.reply : yield* outcome.error;
+  });
+
   return {
+    fence,
     id,
     batch,
     execute,

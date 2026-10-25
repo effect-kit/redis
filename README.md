@@ -7,8 +7,9 @@ Redis-compatible servers and transports.
 **Status:** The typed Redis service covers 187 ordinary commands across strings,
 hashes, lists, sets, keys/TTL, sorted sets, bitmaps, HyperLogLog, geo and arrays.
 Scoped Node TCP/TLS/Unix, bounded scheduling and lossless RESP2/RESP3 are implemented.
-Sessions, scans/Streams, subscriptions, scripting, topologies, runtime adapters and
-engine/provider certification remain in later phases.
+Native sessions now add scoped leases, typed pipelines/transactions, WATCH workflows
+and blocking operations; Phase 07 verification is in progress. Scans/Streams,
+subscriptions, scripting, topologies and broader runtime/provider certification follow.
 
 ## Development
 

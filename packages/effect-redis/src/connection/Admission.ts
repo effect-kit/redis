@@ -8,6 +8,7 @@ import type { HandshakeError } from "#/errors/HandshakeError";
 import type { ProtocolError } from "#/errors/ProtocolError";
 import { encodeCommand } from "#/protocol/encode";
 import type { RedisCommand } from "#/protocol/encode";
+import { encodeBatch } from "#/protocol/encodeBatch";
 import type { RespValue } from "#/protocol/RespValue";
 
 export type ExecutionError = AdmissionError | ConnectionError | HandshakeError | ProtocolError;
@@ -50,6 +51,22 @@ export class Admission {
     queuedAt: number,
     timeoutMillis: number,
   ): Ticket | AdmissionError | ProtocolError {
+    return this.reserveWith(queuedAt, timeoutMillis, (capacity) =>
+      encodeCommand(command, { ...this.limits, maxQueuedBytes: capacity }),
+    );
+  }
+
+  reserveExchange(commands: ReadonlyArray<RedisCommand>, queuedAt: number, timeoutMillis: number) {
+    return this.reserveWith(queuedAt, timeoutMillis, (capacity) =>
+      encodeBatch(commands, { ...this.limits, maxQueuedBytes: capacity }),
+    );
+  }
+
+  private reserveWith(
+    queuedAt: number,
+    timeoutMillis: number,
+    encode: (capacity: number) => Result.Result<Uint8Array, ProtocolError>,
+  ): Ticket | AdmissionError | ProtocolError {
     const reject = (reason: AdmissionError["reason"]) => {
       this.rejected++;
       return new AdmissionError({ reason, delivery: "unsent" });
@@ -64,7 +81,7 @@ export class Admission {
     if (capacity === 0) return reject("bytes");
 
     // The encoder measures before allocating; rejected work cannot allocate a full frame outside admission.
-    const encoded = encodeCommand(command, { ...this.limits, maxQueuedBytes: capacity });
+    const encoded = encode(capacity);
 
     if (Result.isFailure(encoded)) {
       if (encoded.failure.limit === "maxQueuedBytes")

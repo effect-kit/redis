@@ -12,7 +12,9 @@ failures. The engine executes caller-declared ordinary single-reply commands. `R
 ordinary commands across strings, hashes, lists, sets, keys/TTL, sorted sets, bitmaps,
 HyperLogLog, geo and arrays, plus custom descriptors and explicit payload codecs.
 There are 187 reviewed ordinary commands; available commands/options depend on the
-actual server. Sessions, scans/Streams, subscriptions and topology routing are pending.
+actual server. Native sessions add pipelines, transactions, WATCH, connection controls
+and blocking leases; Phase 07 verification is in progress. Scans/Streams, subscriptions
+and topology routing are pending.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -180,3 +182,63 @@ reject them with typed server errors, and no semantic emulation or replay occurs
 Positional replies such as MGET, HMGET and BITFIELD must match the prepared request
 length. Reply shape errors mean the server has already replied; they do not cause
 replay. Binary key/member/value arguments remain bytes throughout encoding/decoding.
+
+Native `RedisSessions.layer(config, options)` provides `RedisSessions` and `BatchExecutor`.
+Add it to the existing native composition with `Layer.provideMerge`; ordinary-only
+programs keep their current Layer. `redis.pipeline` and `redis.transaction` require
+`BatchExecutor`, while a leased session has its batch executor captured already.
+
+```ts
+import { RedisSessions } from "@envoy1084/effect-redis";
+
+const live = Redis.layer.pipe(
+  Layer.provide(CommandExecutor.layer),
+  Layer.provide(Connection.layer(config)),
+  Layer.provideMerge(RedisSessions.layer(config)),
+  Layer.provide(NodeTransport),
+);
+```
+
+Pipelines accept readonly heterogeneous `Commands` tuples and return per-slot Effect
+Results. Transactions return `{ _tag: "Committed", results }` or `{ _tag: "Conflict" }`;
+queue rejection is a separate `TransactionError`. Runtime EXEC errors remain individual
+results. Neither mechanism rolls back successful mutations or replays uncertain work.
+`BatchError.outcomes` is redacted and retains indexed completed, received, unsent and
+unknown slots. Explicit `Redacted.value` inspection can reveal application values.
+Interruption and defects remain in the Cause alongside available batch evidence.
+
+Use `sessions.watch(keys, use)` or `sessions.withSession(use)` for a generation-bound
+client. Use it sequentially: concurrent calls and nested transaction attempts fail
+explicitly. Scope exit cleans known WATCH/MULTI state or retires the connection;
+a retained session object fails after its scope ends. Advanced/exclusive raw calls
+must declare single-reply semantics and retire their lease on release; their raw
+contract can set `replyTimeoutMillis`, including explicit `"forever"`. Known mode
+switches still require their reviewed APIs.
+
+Blocking operations are available on `RedisSessions` and leased clients, with builders
+under `Commands`. For example, `sessions.blpop(["jobs"], { blockFor: Duration.seconds(30) })`
+returns an optional binary key/value pair. `blockFor: "forever"` is explicit. The optional
+`timeout` sets an independent client deadline; otherwise finite waits allow one extra
+second and forever waits remain scoped until completion/cancellation. Writes always
+retain the configured bounded write deadline. Server timeout is an absent value;
+a lost reply after a destructive pop can mean the element was already consumed.
+
+`session.waitForReplicas` and `session.waitForAof` stay with the preceding writes on
+that session. They return actual acknowledgment counts, including when a server wait
+expires. Both take the same explicit duration options; server waits use whole milliseconds.
+Local AOF acknowledgment counts are zero or one. These APIs do not promise strong
+consistency or protection from every failover/storage failure.
+
+`session.caching(mode, command)` keeps CLIENT CACHING adjacent to its command; the caller
+must configure a compatible tracking mode. Full tracking/invalidation handling follows
+in the subscriptions phase. `withoutReplies(commands)` and `skipReply(command)` restore
+REPLY ON with a fenced compound write and intentionally discard individual results/errors.
+Failure of that fence can leave mutations uncertain. RESET and QUIT retire the lease;
+Valkey capability/import-source flags are isolated to the owning scope.
+
+Session options default to four session sockets, two blocking sockets, 128 queued
+acquisitions, a five-second lease-acquisition deadline, a one-second cleanup deadline
+and 256 commands per batch. Both socket lanes are lazy and separately bounded; the
+ordinary Connection remains separately owned. Existing wire count/byte limits also
+apply. `connection.credentials` captures an Effect credential source for each newly
+opened physical lease connection, or configuration supplies fixed credentials.

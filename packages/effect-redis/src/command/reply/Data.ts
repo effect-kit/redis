@@ -100,6 +100,23 @@ export const tuple =
     return Effect.all([atIndex(left, 0)(a), atIndex(right, 1)(b)]);
   };
 
+export const triple =
+  <A, B, C>(
+    first: ReplyDecoder<A>,
+    second: ReplyDecoder<B>,
+    third: ReplyDecoder<C>,
+  ): ReplyDecoder<readonly [A, B, C]> =>
+  (reply) => {
+    const value = undecorate(reply);
+    if (value._tag !== "Array" || value.values.length !== 3)
+      return Effect.fail(mismatch("array", reply));
+    const [a, b, c] = value.values;
+    if (a === undefined || b === undefined || c === undefined)
+      return Effect.fail(mismatch("array", reply));
+
+    return Effect.all([atIndex(first, 0)(a), atIndex(second, 1)(b), atIndex(third, 2)(c)]);
+  };
+
 export const blobs = array(blob);
 
 export const simpleText: ReplyDecoder<string> = (reply) => {

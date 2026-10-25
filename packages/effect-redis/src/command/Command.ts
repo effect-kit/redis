@@ -16,6 +16,7 @@ export interface PreparedCommand<A, E = never, R = never> {
   readonly routing: Routing;
   readonly decode: ReplyDecoder<A, E, R>;
   readonly serverErrors: "fail" | "preserve";
+  readonly replyTimeoutMillis?: number | "forever";
 }
 
 export interface Command<A, E = never, RD = never, RE = never> {
@@ -28,6 +29,7 @@ export interface CommandDefinition<A, E = never, R = never> {
   readonly routing: Routing;
   readonly decode: ReplyDecoder<A, E, R>;
   readonly serverErrors?: "fail" | "preserve";
+  readonly replyTimeoutMillis?: number | "forever";
 }
 
 const Arguments = Schema.NonEmptyArray(Schema.Union([Schema.String, Schema.Uint8Array]));
@@ -36,6 +38,12 @@ const parseMetadata = Schema.decodeUnknownEffect(CommandMetadata, { onExcessProp
 const parseRouting = Schema.decodeUnknownEffect(Routing, { onExcessProperty: "error" });
 const parseServerErrors = Schema.decodeUnknownEffect(Schema.Literals(["fail", "preserve"]));
 const parseArguments = Schema.decodeUnknownEffect(Arguments);
+const parseReplyTimeout = Schema.decodeUnknownEffect(
+  Schema.Union([
+    Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER })),
+    Schema.Literal("forever"),
+  ]),
+);
 
 /** Preparation validates intent; connection admission snapshots bytes within its wire budget. */
 export const defineCommand = <A, E = never, R = never>(
@@ -66,6 +74,18 @@ export const defineCommand = <A, E = never, R = never>(
     )
       return yield* new CommandInputError({ delivery: "unsent", reason: "routing" });
 
+    const replyTimeoutMillis =
+      definition.replyTimeoutMillis === undefined
+        ? undefined
+        : yield* parseReplyTimeout(definition.replyTimeoutMillis).pipe(
+            Effect.mapError(() => new CommandInputError({ delivery: "unsent", reason: "options" })),
+          );
+    if (
+      replyTimeoutMillis !== undefined &&
+      !["blocking", "exclusive", "advanced"].includes(metadata.execution)
+    )
+      return yield* new CommandInputError({ delivery: "unsent", reason: "options" });
+
     const [first, ...rest] = tokens;
 
     return {
@@ -74,6 +94,7 @@ export const defineCommand = <A, E = never, R = never>(
       tokens: [first, ...rest] satisfies RedisCommand,
       decode: definition.decode,
       serverErrors,
+      ...(replyTimeoutMillis === undefined ? {} : { replyTimeoutMillis }),
     };
   }),
 });

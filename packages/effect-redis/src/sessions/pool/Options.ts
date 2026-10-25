@@ -18,7 +18,10 @@ const Policy = Schema.Struct({
 export type SessionPolicy = typeof Policy.Type;
 
 export interface SessionOptions<R = never> extends Partial<SessionPolicy> {
-  readonly connection?: ConnectionOptions<R>;
+  readonly connection?: Pick<
+    ConnectionOptions<R>,
+    "credentials" | "maxPushMessages" | "maxPushBytes"
+  >;
 }
 
 export const decodeSessionPolicy = (options: unknown) => decode(Policy, "sessions", options);

@@ -58,3 +58,5 @@ export type * from "#/commands/sorted-sets/Values";
 
 export { zscore, zscoreToken } from "#/commands/sorted-sets/Zscore";
 export type * from "#/commands/sorted-sets/Zscore";
+
+export { bzpopmin, bzpopmax, bzmpop } from "#/commands/sorted-sets/Blocking";

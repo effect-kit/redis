@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import type { PreparedCommand } from "#/command/Command";
 import { checkOrdinary } from "#/connection/OrdinaryCommand";
 import type { CommandInputError } from "#/errors/CommandInputError";
 import { SessionError } from "#/errors/SessionError";
@@ -24,12 +25,7 @@ export const prepareBatch = <const Cs extends ReadonlyArray<AnyCommand>>(
 
     const input: ReadonlyArray<AnyCommand> = commands;
     const prepared = yield* Effect.forEach(input, (command) => command.prepare);
-    for (const command of prepared) {
-      if (command.metadata.execution !== "ordinary" || checkOrdinary(command.tokens) !== undefined)
-        return yield* new SessionError({ reason: "execution-mode", delivery: "unsent" });
-      if (command.routing._tag === "Node")
-        return yield* new SessionError({ reason: "routing", delivery: "unsent" });
-    }
+    for (const command of prepared) yield* validateOrdinary(command);
 
     return prepared;
   }) as Effect.Effect<
@@ -37,3 +33,12 @@ export const prepareBatch = <const Cs extends ReadonlyArray<AnyCommand>>(
     CommandInputError | SessionError | CommandFailure<Cs[number]>,
     PrepareRequirements<Cs[number]>
   >;
+
+export const validateOrdinary = (command: PreparedCommand<unknown, unknown, unknown>) =>
+  Effect.suspend(() => {
+    if (command.metadata.execution !== "ordinary" || checkOrdinary(command.tokens) !== undefined)
+      return Effect.fail(new SessionError({ reason: "execution-mode", delivery: "unsent" }));
+    if (command.routing._tag === "Node")
+      return Effect.fail(new SessionError({ reason: "routing", delivery: "unsent" }));
+    return Effect.void;
+  });

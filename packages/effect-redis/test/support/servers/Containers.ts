@@ -63,7 +63,7 @@ export class FixtureContainer extends GenericContainer {
 const missing = (cause: unknown) =>
   typeof cause === "object" && cause !== null && "statusCode" in cause && cause.statusCode === 404;
 
-const requireImage = Effect.fnUntraced(function* (reference: string) {
+export const requireImage = Effect.fnUntraced(function* (reference: string) {
   const client = yield* containerRequest("container-runtime", getContainerRuntimeClient);
   const exists = yield* containerRequest("image-inspect", () =>
     client.image.exists(ImageName.fromString(reference)),

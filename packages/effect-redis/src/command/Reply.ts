@@ -19,6 +19,7 @@ export {
   members,
   pairs,
   tuple,
+  triple,
   unsigned,
   decimalToken,
   withLength,
