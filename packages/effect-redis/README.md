@@ -18,7 +18,8 @@ and blocking leases. Scan commands, Redis Streams and scoped consumer workflows 
 unit, controlled, primary Redis/Valkey and packed-consumer coverage. Scoped Pub/Sub,
 client tracking and bounded GET-byte caches extend event delivery. Lua/functions,
 administration, native hash imports/backups and diagnostic modes are implemented.
-Topology routing remains pending.
+Native Redis/Valkey Cluster adds slot routing, topology recovery and node-bound workflows.
+Sentinel remains pending.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -337,7 +338,8 @@ the caller's Scope also owns cleanup. Unknown pushes have a bounded diagnostic S
 Default disconnect fails. `{ recovery: "resubscribe" }` enables bounded recovery;
 consume `events` to observe DeliveryGap and subsequent Ready events. `messages` fails
 on a gap. These are single-consumer views of one mailbox. Pub/Sub has no durable
-replay. Sharded support depends on the server and does not provide Cluster routing.
+replay. Sharded support depends on the server. Standalone subscriptions stay node-bound;
+use the Cluster service below for explicit slot-owner selection and topology lifetimes.
 
 Defaults bound active/retiring listeners to 128, unique interests to 1,024/1 MiB,
 mailboxes to 64 events/1 MiB and shared retained events to 16 MiB. Lifecycle events
