@@ -15,7 +15,9 @@ const Policy = Schema.Struct({
   maxBytes: defaulted(1024 * 1024),
   maxRetainedBytes: defaulted(16 * 1024 * 1024),
   heartbeatMillis: defaulted(30_000),
-  reconnectAttempts: defaulted(3),
+  reconnectAttempts: PositiveInteger.check(Schema.isLessThanOrEqualTo(10)).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(3)),
+  ),
   reconnectDelayMillis: NonNegativeInteger.pipe(Schema.withDecodingDefaultKey(Effect.succeed(100))),
 });
 

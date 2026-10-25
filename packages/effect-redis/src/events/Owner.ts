@@ -37,6 +37,7 @@ export const makeEventOwner = Effect.fnUntraced(function* <R>(
   let poison: Cause.Cause<never> | undefined;
 
   const release = Effect.gen(function* () {
+    if (poison !== undefined) return yield* Effect.failCause(poison);
     if (resource === undefined) return;
     const closing = resource;
     resource = undefined;
@@ -76,8 +77,7 @@ export const makeEventOwner = Effect.fnUntraced(function* <R>(
     );
 
     if (Exit.isFailure(acquired)) {
-      yield* release;
-      return yield* Effect.failCause(acquired.cause);
+      return yield* Effect.failCause(acquired.cause).pipe(Effect.onExit(() => release));
     }
 
     current = acquired.value;

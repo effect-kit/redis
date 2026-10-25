@@ -171,3 +171,10 @@ export type { SubscriptionOptions } from "#/subscriptions/Options";
 export type { PubSubMessage, SubscriptionEvent, SubscribeOptions } from "#/subscriptions/Types";
 export type { TrackingOptions, TrackingInfo } from "#/commands/tracking/Controls";
 export { SubscriptionError } from "#/errors/SubscriptionError";
+
+export { RedisTracking, makeRedisTracking } from "#/tracking/RedisTracking";
+export type { RedisTrackingClient } from "#/tracking/RedisTracking";
+export type { TrackingRuntimeOptions } from "#/tracking/Options";
+export type { Invalidation } from "#/tracking/Invalidation";
+export { RedisCache } from "#/tracking/RedisCache";
+export type { RedisCacheClient, CacheOptions } from "#/tracking/cache/Cache";

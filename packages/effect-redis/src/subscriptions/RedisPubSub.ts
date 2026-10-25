@@ -1,9 +1,20 @@
-import { Cause, Context, Effect, Layer, Queue, Schedule, Schema, Semaphore, Stream } from "effect";
+import {
+  Cause,
+  Context,
+  Effect,
+  Exit,
+  Layer,
+  Queue,
+  Schedule,
+  Schema,
+  Scope,
+  Stream,
+} from "effect";
 
-import { checkServerReply } from "#/command/Decode";
-import { status } from "#/command/reply/Scalars";
 import { Arguments, parse } from "#/commands/internal/Input";
 import { SubscriptionError } from "#/errors/SubscriptionError";
+import { makeControlGate } from "#/events/ControlGate";
+import { pingEventWire } from "#/events/Heartbeat";
 import { makeMailbox } from "#/events/Mailbox";
 import { makeEventOwner } from "#/events/Owner";
 import type { EventError } from "#/events/Types";
@@ -13,7 +24,13 @@ import type { RespValue } from "#/protocol/RespValue";
 import type { RedisArgument } from "#/RedisArgument";
 import type { RedisConfig } from "#/RedisConfig";
 import { subscriptionControl } from "#/subscriptions/Control";
-import { byteIdentity, eventFrame, subscribeKind, unsubscribeKind } from "#/subscriptions/Frames";
+import {
+  acknowledgmentModes,
+  byteIdentity,
+  eventFrame,
+  subscribeKind,
+  unsubscribeKind,
+} from "#/subscriptions/Frames";
 import { copyMessage, interestId, messageMatches } from "#/subscriptions/Interests";
 import type { Interest, Listener } from "#/subscriptions/Interests";
 import { decodeSubscriptionPolicy } from "#/subscriptions/Options";
@@ -31,13 +48,12 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
 ) {
   const { credentials, ...input } = options;
   const policy = yield* decodeSubscriptionPolicy(input);
-  const mutex = yield* Semaphore.make(1);
   const wake = yield* Queue.make<void>({ capacity: 1, strategy: "dropping" });
   const interests = new Map<string, Interest>();
   const listeners = new Set<Listener>();
+  const retiring = new Set<Listener>();
   const budget = { bytes: 0, maximum: policy.maxRetainedBytes };
   let stopped = false;
-  let waiters = 0;
 
   const unknown = yield* makeMailbox<{
     readonly generation: number;
@@ -46,6 +62,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
 
   const failListener = (listener: Listener, cause: Cause.Cause<EventError>) => {
     listener.closed = true;
+    retiring.add(listener);
     listener.mailbox.fail(cause);
     listeners.delete(listener);
     for (const interest of interests.values()) interest.listeners.delete(listener);
@@ -81,18 +98,15 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
         if (frame === undefined) return false;
 
         if (frame._tag === "Acknowledgment") {
-          for (const interest of interests.values()) {
-            if (byteIdentity(interest.target) !== byteIdentity(frame.target)) continue;
-            if (frame.kind === subscribeKind(interest.mode)) interest.active = true;
-            if (frame.kind === unsubscribeKind(interest.mode)) interest.active = false;
+          if (frame.target.length > policy.maxInterestBytes)
+            return yield* new SubscriptionError({ reason: "invalid-frame", generation });
+          const mode = acknowledgmentModes[frame.kind];
+          if (mode !== undefined) {
+            const interest = interests.get(interestId(mode, frame.target));
+            if (interest !== undefined) interest.active = frame.kind === subscribeKind(mode);
           }
           for (const listener of listeners) {
-            if (
-              !listener.ready &&
-              listener.targets.every(
-                (target) => interests.get(interestId(listener.mode, target))?.active,
-              )
-            ) {
+            if (!listener.ready && listener.interests.every((interest) => interest.active)) {
               listener.ready = true;
               if (!listener.mailbox.offer(() => ({ _tag: "Ready", generation }), 0))
                 failListener(
@@ -126,23 +140,11 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
     policy.maxWaiters,
   );
 
-  const locked = <A, E, RU>(body: Effect.Effect<A, E, RU>) =>
-    Effect.suspend<A, E | SubscriptionError, RU>(() => {
-      if (waiters >= policy.maxWaiters)
-        return Effect.fail(
-          new SubscriptionError({ reason: "capacity", generation: owner.generation() }),
-        );
-      return Effect.acquireUseRelease(
-        Effect.sync(() => {
-          waiters++;
-        }),
-        () => mutex.withPermits(1)(body),
-        () =>
-          Effect.sync(() => {
-            waiters--;
-          }),
-      );
-    });
+  const locked = yield* makeControlGate(
+    policy.maxWaiters,
+    config.commandTimeoutMillis,
+    owner.generation,
+  );
 
   const restore = Effect.gen(function* () {
     const wire = yield* owner.open;
@@ -165,33 +167,31 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
         yield* subscriptionControl(wire, unsubscribeKind(interest.mode), [interest.target]);
       interests.delete(key);
     }
+    for (const listener of retiring) {
+      retiring.delete(listener);
+      yield* Scope.close(listener.scope, Exit.void);
+    }
   });
 
   const remove = (listener: Listener) =>
-    locked(
-      Effect.gen(function* () {
-        listener.closed = true;
-        listeners.delete(listener);
-        listener.mailbox.fail(Cause.fail(Cause.Done()));
+    Effect.suspend(() => {
+      if (listener.closed) return Effect.void;
+      listener.closed = true;
+      listeners.delete(listener);
+      listener.mailbox.fail(Cause.fail(Cause.Done()));
+      if (listener.interests.length === 0) return Effect.void;
 
-        for (const target of listener.targets) {
-          const key = interestId(listener.mode, target);
-          const interest = interests.get(key);
-          if (interest === undefined) continue;
-          interest.listeners.delete(listener);
-          if (interest.listeners.size > 0) continue;
+      retiring.add(listener);
+      for (const interest of listener.interests) interest.listeners.delete(listener);
+      Queue.offerUnsafe(wake, undefined);
+      // One release per listener plus one supervisor has reserved, bounded control admission.
+      return locked(prune, true);
+    });
 
-          const wire = owner.current();
-          if (interest.active && wire?.isReady())
-            yield* subscriptionControl(wire, unsubscribeKind(listener.mode), [target]);
-          interests.delete(key);
-        }
-      }),
-    );
-
-  const subscribe = Effect.fnUntraced(function* (
+  const acquire = Effect.fnUntraced(function* (
     targets: readonly [RedisArgument, ...RedisArgument[]],
-    selection: SubscribeOptions = {},
+    selection: SubscribeOptions,
+    scope: Scope.Closeable,
   ) {
     const selected = yield* parse(Selection, selection);
     const values = yield* parse(Arguments, targets);
@@ -214,8 +214,9 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
       owner.generation,
     );
     const listener: Listener = {
+      scope,
       mode,
-      targets: [...unique.values()],
+      interests: [],
       recovery: selected.recovery ?? "fail",
       mailbox,
       ready: false,
@@ -229,7 +230,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
       Effect.gen(function* () {
         if (stopped)
           return yield* new SubscriptionError({ reason: "closed", generation: owner.generation() });
-        const missing = listener.targets.filter(
+        const missing = [...unique.values()].filter(
           (target) => !interests.has(interestId(mode, target)),
         );
         const interestBytes = [...interests.values()].reduce(
@@ -237,7 +238,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
           0,
         );
         if (
-          listeners.size >= policy.maxListeners ||
+          listeners.size + retiring.size >= policy.maxListeners ||
           interests.size + missing.length > policy.maxInterests ||
           interestBytes + missing.reduce((sum, target) => sum + target.length, 0) >
             policy.maxInterestBytes
@@ -248,18 +249,16 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
           });
 
         listeners.add(listener);
-        for (const target of listener.targets) {
+        for (const target of unique.values()) {
           const key = interestId(mode, target);
           let interest = interests.get(key);
           if (interest === undefined) {
-            interest = { mode, target, active: false, listeners: new Set() };
+            interest = { id: key, mode, target, active: false, listeners: new Set() };
             interests.set(key, interest);
           }
           interest.listeners.add(listener);
+          listener.interests.push(interest);
         }
-        listener.targets = listener.targets.map(
-          (target) => interests.get(interestId(mode, target))?.target ?? target,
-        );
 
         yield* restore.pipe(
           Effect.onExit((exit) => {
@@ -288,10 +287,27 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
       ),
     );
 
-    return { events: mailbox.stream, messages, close: () => remove(listener) };
+    return {
+      events: mailbox.stream,
+      messages,
+      close: () => remove(listener).pipe(Effect.onExit(() => Scope.close(scope, Exit.void))),
+    };
+  });
+
+  const subscribe = Effect.fnUntraced(function* (
+    targets: readonly [RedisArgument, ...RedisArgument[]],
+    selection: SubscribeOptions = {},
+  ) {
+    // Manual close releases this child scope too, removing its finalizers from a long-lived caller.
+    const scope = yield* Scope.fork(yield* Effect.scope);
+    return yield* acquire(targets, selection, scope).pipe(
+      Scope.provide(scope),
+      Effect.onExit((exit) => (exit._tag === "Failure" ? Scope.close(scope, exit) : Effect.void)),
+    );
   });
 
   const workerFailed = (cause: Cause.Cause<EventError>) => {
+    stopped = true;
     for (const listener of listeners) failListener(listener, cause);
     unknown.fail(cause);
   };
@@ -321,6 +337,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
               interests.clear();
             }
           }),
+          true,
         );
       }
     }),
@@ -335,15 +352,18 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
           Effect.gen(function* () {
             const wire = owner.current();
             if (!wire?.isReady()) return;
-            const reply = yield* wire.request(["PING"], (value, handled) =>
-              eventFrame(value).pipe(Effect.map((frame) => frame?._tag === "Pong" || !handled)),
-            );
-            yield* checkServerReply(reply);
-            const frame = yield* eventFrame(reply);
-            if (frame?._tag !== "Pong") yield* status("PONG")(reply);
+            yield* pingEventWire(wire);
           }),
         ).pipe(
-          Effect.catch((error) => Effect.sync(() => owner.current()?.retire(Cause.fail(error)))),
+          Effect.catch((error) => {
+            // Foreground admission pressure is not evidence of a dead connection.
+            if (
+              (error._tag === "SubscriptionError" && error.reason === "capacity") ||
+              (error._tag === "ConnectionError" && error.delivery === "unsent")
+            )
+              return Effect.void;
+            return Effect.sync(() => owner.current()?.retire(Cause.fail(error)));
+          }),
         );
       }
     }),
@@ -351,12 +371,16 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
   );
 
   yield* Effect.addFinalizer(() =>
-    Effect.sync(() => {
+    Effect.gen(function* () {
       stopped = true;
       failed(
         Cause.fail(new SubscriptionError({ reason: "closed", generation: owner.generation() })),
         owner.generation(),
       );
+      for (const listener of retiring) {
+        retiring.delete(listener);
+        yield* Scope.close(listener.scope, Exit.void);
+      }
     }),
   );
 
@@ -374,6 +398,7 @@ export const makeRedisPubSub = Effect.fnUntraced(function* <R = never>(
     snapshot: Effect.sync(() => ({
       generation: owner.generation(),
       listeners: listeners.size,
+      retiring: retiring.size,
       interests: interests.size,
       retainedBytes: budget.bytes,
     })),

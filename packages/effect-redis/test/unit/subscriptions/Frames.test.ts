@@ -48,7 +48,7 @@ it.effect("TRACK: key invalidations differ from flush and ordinary Pub/Sub paylo
     ).toMatchObject({ _tag: "Invalidate", keys: [new TextEncoder().encode("k")] });
     expect(
       yield* eventFrame(array(blob("message"), blob("__redis__:invalidate"), missing)),
-    ).toEqual({ _tag: "Invalidate", keys: null });
+    ).toMatchObject({ _tag: "Invalidate", keys: null });
     expect(
       yield* eventFrame(array(blob("message"), blob("__redis__:invalidate"), blob("ordinary"))),
     ).toMatchObject({ _tag: "Message" });

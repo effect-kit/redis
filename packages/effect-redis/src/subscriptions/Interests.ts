@@ -1,9 +1,12 @@
+import type { Scope } from "effect";
+
 import type { Mailbox } from "#/events/Mailbox";
 import { byteIdentity, sameBytes } from "#/subscriptions/Frames";
 import type { EventFrame, SubscriptionMode } from "#/subscriptions/Frames";
 import type { SubscribeOptions, SubscriptionEvent } from "#/subscriptions/Types";
 
 export interface Interest {
+  readonly id: string;
   readonly mode: SubscriptionMode;
   readonly target: Uint8Array;
   readonly listeners: Set<Listener>;
@@ -11,8 +14,9 @@ export interface Interest {
 }
 
 export interface Listener {
+  readonly scope: Scope.Closeable;
   readonly mode: SubscriptionMode;
-  targets: ReadonlyArray<Uint8Array>;
+  readonly interests: Interest[];
   readonly recovery: NonNullable<SubscribeOptions["recovery"]>;
   readonly mailbox: Mailbox<SubscriptionEvent>;
   ready: boolean;
@@ -40,6 +44,7 @@ export const copyMessage = (
   ...frame,
   channel: frame.channel.slice(),
   payload: frame.payload.slice(),
+  attributes: structuredClone(frame.attributes),
   ...(frame._tag === "PatternMessage" ? { pattern: frame.pattern.slice() } : {}),
   generation,
 });

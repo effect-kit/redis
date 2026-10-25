@@ -65,7 +65,7 @@ commandCases("PUBSUB", [
     label: "HELP",
     command: Commands.pubsubHelp(),
     tokens: ["PUBSUB", "HELP"],
-    reply: array(blob("help")),
+    reply: array({ _tag: "SimpleString", value: new TextEncoder().encode("help") }),
     expected: ["help"],
     keys: [],
   },

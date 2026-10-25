@@ -7,6 +7,8 @@ import { status } from "#/command/reply/Scalars";
 import { blockingFamily } from "#/commands/blocking/Family";
 import { Arguments, parse } from "#/commands/internal/Input";
 import { blockingStreamFamily } from "#/commands/streams/ReadFamily";
+import { clientTracking, clientTrackingInfo } from "#/commands/tracking/Controls";
+import type { TrackingOptions } from "#/commands/tracking/Controls";
 import { checkOrdinary } from "#/connection/OrdinaryCommand";
 import { SessionError } from "#/errors/SessionError";
 import { makeRedis } from "#/Redis";
@@ -73,6 +75,9 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
     }),
     ...adjacencyControls(wire, state),
     ...replyModeControls(wire, state, policy),
+    tracking: (enabled: boolean, options?: TrackingOptions) =>
+      executor.execute(clientTracking(enabled, options)),
+    trackingInfo: () => executor.execute(clientTrackingInfo()),
     pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
       state.run(() =>
         prepareBatch(commands, policy.maxBatchCommands).pipe(

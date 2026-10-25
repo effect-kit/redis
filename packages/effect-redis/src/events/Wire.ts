@@ -42,6 +42,16 @@ export const makeEventWire = Effect.fnUntraced(function* <R>(
   let stopped: Cause.Cause<EventError> | undefined;
   let waiters = 0;
 
+  const networkError = (error: EventError): EventError =>
+    error._tag === "TransportError" || error._tag === "ProtocolError" || error._tag === "ReplyError"
+      ? new ConnectionError({
+          reason: error._tag === "TransportError" ? "transport" : "protocol",
+          generation: id,
+          delivery: pending === undefined ? "unsent" : "possibly-written",
+          cause: Redacted.make(error),
+        })
+      : error;
+
   const retire = (cause: Cause.Cause<EventError>) => {
     if (stopped !== undefined) return;
 
@@ -105,6 +115,7 @@ export const makeEventWire = Effect.fnUntraced(function* <R>(
         if (++turns % 64 === 0) yield* Effect.yieldNow;
       }
     }).pipe(
+      Effect.mapError(networkError),
       Effect.raceFirst(
         Deferred.await(retired).pipe(
           Effect.andThen(
@@ -148,7 +159,15 @@ export const makeEventWire = Effect.fnUntraced(function* <R>(
       () =>
         mutex.withPermits(1)(
           Effect.gen(function* () {
-            if (stopped !== undefined) return yield* Effect.failCause(stopped);
+            if (stopped !== undefined) {
+              if (Cause.hasDies(stopped)) return yield* Effect.failCause(stopped);
+              return yield* new ConnectionError({
+                reason: "unavailable",
+                generation: id,
+                delivery: "unsent",
+                cause: Redacted.make(stopped),
+              });
+            }
             const frame = yield* Effect.fromResult(
               encodeCommand(command, {
                 ...config.limits,
@@ -164,11 +183,24 @@ export const makeEventWire = Effect.fnUntraced(function* <R>(
               pending = { result, accept };
               // Reply ownership precedes the first byte; cancellation after this point retires the socket.
               return restore(
-                physical.write(frame).pipe(Effect.andThen(Deferred.await(result))),
+                physical
+                  .write(frame)
+                  .pipe(Effect.mapError(networkError), Effect.andThen(Deferred.await(result))),
               ).pipe(
                 Effect.onExit((exit) =>
                   Effect.sync(() => {
-                    if (Exit.isFailure(exit)) retire(exit.cause);
+                    if (Exit.isFailure(exit))
+                      retire(
+                        Cause.hasInterrupts(exit.cause) && !Cause.hasDies(exit.cause)
+                          ? Cause.fail(
+                              new ConnectionError({
+                                reason: "aborted",
+                                generation: id,
+                                delivery: "possibly-written",
+                              }),
+                            )
+                          : exit.cause,
+                      );
                   }),
                 ),
               );

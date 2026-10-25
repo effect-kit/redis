@@ -12,6 +12,7 @@ const backend = (name: string) => `test/integration/backends/${name}.test.ts`;
 const commandFiles = "test/e2e/commands/*.test.ts";
 const streamFiles = "test/e2e/streams/*.test.ts";
 const sessionFiles = "test/e2e/sessions/*.test.ts";
+const subscriptionFiles = "test/e2e/subscriptions/*.test.ts";
 
 const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
   all: [
@@ -20,9 +21,16 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
     commandFiles,
     sessionFiles,
     streamFiles,
+    subscriptionFiles,
   ],
   core: ["test/integration/transport/node/*.test.ts"],
-  redis: ["test/integration/backends/*.test.ts", commandFiles, sessionFiles, streamFiles],
+  redis: [
+    "test/integration/backends/*.test.ts",
+    commandFiles,
+    sessionFiles,
+    streamFiles,
+    subscriptionFiles,
+  ],
   valkey: [
     backend("Transport"),
     backend("Connection"),
@@ -30,6 +38,7 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
     commandFiles,
     sessionFiles,
     streamFiles,
+    subscriptionFiles,
   ],
 };
 

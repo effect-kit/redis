@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { array } from "#/command/reply/Collections";
 import { unsigned } from "#/command/reply/Data";
 import { blob, mismatch, undecorate } from "#/command/reply/Scalars";
-import type { RespValue } from "#/protocol/RespValue";
+import type { RespPairs, RespValue } from "#/protocol/RespValue";
 
 export type SubscriptionMode = "channel" | "pattern" | "shard";
 
@@ -14,15 +14,30 @@ export type EventFrame =
       readonly target: Uint8Array;
       readonly count: bigint;
     }
-  | { readonly _tag: "Message"; readonly channel: Uint8Array; readonly payload: Uint8Array }
+  | {
+      readonly _tag: "Message";
+      readonly channel: Uint8Array;
+      readonly payload: Uint8Array;
+      readonly attributes: RespPairs;
+    }
   | {
       readonly _tag: "PatternMessage";
       readonly pattern: Uint8Array;
       readonly channel: Uint8Array;
       readonly payload: Uint8Array;
+      readonly attributes: RespPairs;
     }
-  | { readonly _tag: "ShardMessage"; readonly channel: Uint8Array; readonly payload: Uint8Array }
-  | { readonly _tag: "Invalidate"; readonly keys: ReadonlyArray<Uint8Array> | null }
+  | {
+      readonly _tag: "ShardMessage";
+      readonly channel: Uint8Array;
+      readonly payload: Uint8Array;
+      readonly attributes: RespPairs;
+    }
+  | {
+      readonly _tag: "Invalidate";
+      readonly keys: ReadonlyArray<Uint8Array> | null;
+      readonly attributes: RespPairs;
+    }
   | { readonly _tag: "TrackingLost" }
   | { readonly _tag: "Pong" }
   | { readonly _tag: "UnknownPush"; readonly value: RespValue };
@@ -36,6 +51,15 @@ export const acknowledgmentKinds = new Set([
   "sunsubscribe",
 ]);
 
+export const acknowledgmentModes: Readonly<Record<string, SubscriptionMode | undefined>> = {
+  subscribe: "channel",
+  unsubscribe: "channel",
+  psubscribe: "pattern",
+  punsubscribe: "pattern",
+  ssubscribe: "shard",
+  sunsubscribe: "shard",
+};
+
 const invalidateChannel = new TextEncoder().encode("__redis__:invalidate");
 
 export const sameBytes = (left: Uint8Array, right: Uint8Array) =>
@@ -45,6 +69,12 @@ export const sameBytes = (left: Uint8Array, right: Uint8Array) =>
 export const eventFrame = Effect.fnUntraced(function* (reply: RespValue) {
   const value = undecorate(reply);
   if (value._tag !== "Array" && value._tag !== "Push") return undefined;
+  const attributes: Array<readonly [RespValue, RespValue]> = [];
+  let decorated = reply;
+  while (decorated._tag === "Attribute") {
+    attributes.push(...decorated.entries);
+    decorated = decorated.value;
+  }
 
   const first = value.values[0];
   const kind =
@@ -75,6 +105,7 @@ export const eventFrame = Effect.fnUntraced(function* (reply: RespValue) {
     yield* size(4);
     return {
       _tag: "PatternMessage",
+      attributes,
       pattern: yield* binary(1),
       channel: yield* binary(2),
       payload: yield* binary(3),
@@ -94,11 +125,13 @@ export const eventFrame = Effect.fnUntraced(function* (reply: RespValue) {
     )
       return {
         _tag: "Invalidate",
+        attributes,
         keys: undecorate(payload)._tag === "Null" ? null : yield* array(blob)(payload),
       } satisfies EventFrame;
 
     return {
       _tag: kind === "message" ? "Message" : "ShardMessage",
+      attributes,
       channel,
       payload: yield* binary(2),
     } satisfies EventFrame;
@@ -110,6 +143,7 @@ export const eventFrame = Effect.fnUntraced(function* (reply: RespValue) {
     if (keys === undefined) return yield* mismatch("array-length", reply);
     return {
       _tag: "Invalidate",
+      attributes,
       keys: undecorate(keys)._tag === "Null" ? null : yield* array(blob)(keys),
     } satisfies EventFrame;
   }

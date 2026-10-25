@@ -2,8 +2,8 @@ import { Effect, Schema } from "effect";
 
 import type { ReplyDecoder } from "#/command/Command";
 import { array } from "#/command/reply/Collections";
-import { pairs, unsigned } from "#/command/reply/Data";
-import { blob, text } from "#/command/reply/Scalars";
+import { pairs, simpleText, unsigned } from "#/command/reply/Data";
+import { blob } from "#/command/reply/Scalars";
 import { ordinary } from "#/commands/internal/Command";
 import { Argument, parse } from "#/commands/internal/Input";
 import { metadata } from "#/commands/Metadata";
@@ -39,4 +39,4 @@ export const pubsubShardNumSub = (channels: ReadonlyArray<RedisArgument> = []) =
 
 export const pubsubNumPat = () => inspect("NUMPAT", [], unsigned);
 
-export const pubsubHelp = () => inspect("HELP", [], array(text));
+export const pubsubHelp = () => inspect("HELP", [], array(simpleText));
