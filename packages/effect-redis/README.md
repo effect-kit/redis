@@ -465,3 +465,60 @@ no positive claim on pinned Valkey 9.1; topology/module scenarios keep their own
 Private replication/RDB, protected debug and interactive Lua debugger protocols are
 excluded. Four BLESS catalog records describe Redis 8.12 without a verified
 reply contract in the pinned baselines; they have no invented typed wrappers.
+
+## Cluster
+
+`RedisCluster.layer(config, options)` provides `Redis`, `CommandExecutor`, `BatchExecutor`
+and `RedisCluster`. Existing typed commands keep their result/error/codec contracts.
+The factory captures the same services without requiring an application Layer:
+
+```ts
+import { Effect } from "effect";
+
+import { decodeRedisConfig, makeRedisCluster } from "@envoy1084/effect-redis";
+import { layer as NodeTransport } from "@envoy1084/effect-redis/node";
+
+const clusterProgram = Effect.scoped(
+  Effect.gen(function* () {
+    const config = yield* decodeRedisConfig({ endpoint: { host: "localhost", port: 7000 } });
+    const cluster = yield* makeRedisCluster(config, {
+      seeds: [{ host: "localhost", port: 7001 }],
+    });
+
+    yield* cluster.redis.set("user:{42}:name", "Ada");
+    return yield* cluster.redis.get("user:{42}:name");
+  }),
+).pipe(Effect.provide(NodeTransport));
+```
+
+Default execution targets primaries. `readPreference: "replica-preferred"` explicitly
+permits stale replica reads for eligible commands. SHARDS/SLOTS discovery and periodic
+refresh are bounded; ACL errors do not authorize legacy fallback. `addressMap` translates
+announced host/port pairs and can set `serverName` independently of the dial address.
+Redis clients use DB0. Configured Valkey multi-DB needs `databaseCapability:
+"valkey-multi-db"`; its server must enable the selected database with `cluster-databases`.
+
+`cluster.pipeline`/`transaction` require a single slot. `withSession({ key }, use)` pins
+that slot/node; `{ node: id }` explicitly selects a node. Cross-slot operations fail
+before application writes. A lease never migrates with an active WATCH/transaction.
+MOVED/ASK rejection recovery is bounded; uncertain wire outcomes and EXEC never replay.
+Native blocking helpers retain their explicit reply deadlines, including scoped forever.
+
+`node(id)` and `admin(id)` expose explicit node operations. `onPrimaries(command)` is a
+lazy sequential Stream of per-node Results. `scanKeys` traverses distinct primaries,
+preserves duplicates and fails if the observed topology changes; it is not a snapshot.
+Valkey's `clusterScan`/`scanCluster` retain opaque tagged cursors and actual availability.
+Dynamic SORT patterns require an explicit node; COPY DB/MOVE/SWAPDB remain rejected.
+
+`scripts({ key })` loads missing scripts on their actual node and lease, including
+ASK/NOSCRIPT adjacency. Application decoders run after recovery. Managed Lua must not
+forge reserved cache/routing rejections. `streams(target)`, `pubsub(target)` and
+`tracking(target)` bind their dedicated lifetimes explicitly. Topology changes/redirects
+close old cohorts and clear their caches; reacquire on the new owner. Node reconnect
+can expose DeliveryGap/Ready, without recovering missed publications.
+
+Defaults: 64 node pools including retained seeds/retiring resources, four session and
+two blocking sockets per node, 1,024 admitted commands/16 MiB retained intent, eight
+redirects, 64 event cohorts and 30-second ordinary deadlines/refresh intervals. Event
+cohorts own additional dedicated sockets. All resources belong to Scope. Full hosted
+provider and secondary-engine Cluster certification remains separate.

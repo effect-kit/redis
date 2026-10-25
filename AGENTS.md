@@ -19,7 +19,8 @@ Phase 09 adds scoped Pub/Sub, explicit recovery gaps, managed tracking and bound
 GET-byte caches with controlled/type/primary Redis/Valkey conformance.
 Phase 10 adds typed Lua/functions, bounded script loading, explicit administration,
 public HIMPORT/BACKUP operations and isolated MONITOR/SHUTDOWN modes.
-Topology remains pending.
+Phase 11 adds native client-routed Redis/Valkey Cluster, node-bound sessions/scripts,
+bounded topology recovery and topology-bound event/cache lifetimes. Sentinel remains pending.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -510,6 +511,52 @@ Implemented subscription/tracking policy:
   gap; never silently drop messages or imply reconnect recovered missed events.
 
 ### Topology and capability policy
+
+Implemented Cluster policy:
+
+- `RedisCluster.layer` provides RedisCluster, Redis, CommandExecutor and BatchExecutor;
+  `makeRedisCluster` captures Transport and credential services. Reuse native lease/FIFO
+  machinery. Keep Cluster routing free of Node globals and runtime dependencies.
+- Hash exact key bytes with CRC16-XMODEM and first-brace hash tags. Validate all known
+  keys before writes; global pipelines/transactions require one slot. Explicit node
+  pipelines can span that node's slots; transactions and WATCH remain single-slot.
+  Optional session validation covers prepared calls, batches, WATCH, caching prefixes,
+  reply suppression and database controls. Never silently move an active lease.
+- Publish only complete, nonoverlapping SHARDS/SLOTS maps. Bound nodes, retiring pools,
+  operations, retained intent bytes, refresh owners and event cohorts. Coalesce refresh;
+  own periodic refresh in the client Scope and record failures while retaining the last
+  valid snapshot. ACL/auth/protocol errors cannot authorize a discovery fallback.
+- Follow bounded MOVED/ASK rejections only before decoding; ASKING and the command own
+  one exclusive lease. Failed wire work is never replayed. Mark discovery stale for new
+  work after connection/CLUSTERDOWN/READONLY failures. Preserve indexed EXEC uncertainty.
+  Failed physical cleanup poisons replacement acquisition across the registry.
+- Snapshot binary retry intent using `new Uint8Array(value)`: Buffer.slice borrows memory.
+  Measure against retained budgets before copying. Blocking `forever` keeps an explicit
+  scoped reply lifetime; discovery/admission/writes retain separate bounded policies.
+- Translate announced addresses at the dial boundary; retain announced TLS identity
+  unless explicitly mapped. Redis uses DB0; configured Valkey multi-DB requires an
+  explicit capability and real `cluster-databases` fixture configuration. Keep a client's
+  database identity fixed across leases, tracking and cache scopes.
+- Replica reads are explicit and potentially stale. Use READONLY/READWRITE on exclusive
+  leases; exclude unsuitable/keyless/script operations from automatic replica routing.
+  Keyless keyspace/admin calls require explicit nodes. onPrimaries is a lazy sequential
+  Stream of per-node Results, with no global atomicity or implicit replay.
+- Managed Cluster scripts load on the rejected node/physical lease; include node identity
+  in shared receipts. After ASK/NOSCRIPT/loading, re-arm ASKING before retrying. Application
+  decoders run outside recovery. Lua must not forge reserved cache/routing rejections.
+- Global scans traverse distinct primaries and check topology at every page, including
+  empty terminal pages. CLUSTERSCAN cursors are opaque NOT_KEY routing tokens: even
+  initial "0" hashes as its actual bytes; SLOT selects the following tagged cursor.
+- Topology changes/redirects clear old tracking/cache cohorts before publishing routes.
+  Old subscriptions fail visibly; reacquire on the new owner. Opt-in reconnect within
+  one node retains DeliveryGap/Ready semantics. Never imply recovery of missed messages.
+- Keep cluster tests under test/unit/cluster, integration/cluster and e2e/cluster. Owned
+  six-node fixtures use pinned images; partition fixtures route inter-server data and
+  bus links through an owned bounded native Node proxy. A Docker network detach alone
+  does not prove established links were cut. Preserve main/manual-PR CI trust policy.
+- Public CLUSTER MIGRATION and TRIMSLOTS supersede old internal inventory labels;
+  CLUSTER SYNCSLOTS remains a guarded replication-channel protocol. Stock Redis8.10.2
+  generation excludes experimental SFLUSH; record actual absence, not positive support.
 
 - Standalone, Cluster, Sentinel, explicit-node and HTTP are separate execution
   modes with shared contracts where appropriate. Support for encoding a command

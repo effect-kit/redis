@@ -13,8 +13,9 @@ and Redis Streams add typed commands, scoped readers and consumer recovery/proce
 Scoped Pub/Sub adds acknowledged subscriptions and explicit delivery gaps. Client
 tracking adds invalidations and bounded GET-byte caches. Typed Lua/functions,
 bounded script loading, explicit administration, session-local hash imports,
-server backups, MONITOR and SHUTDOWN modes are implemented. Topologies and broader
-runtime/provider certification follow.
+server backups, MONITOR and SHUTDOWN modes are implemented. Native Redis/Valkey Cluster
+adds explicit routing, bounded discovery/redirects, node-bound sessions and topology-aware
+event/cache lifetimes. Sentinel and broader runtime/provider certification follow.
 
 ## Development
 
@@ -98,8 +99,9 @@ The matrix pins Redis 6.2.19/7.2.11/7.4.6/8.10.2, Valkey 7.2.11/8.0.3/9.1.2,
 Dragonfly 2.0.2, KeyDB 6.3.4, Redict 7.3.6, Garnet 2.2.4 and Kvrocks 2.17.0.
 All seven engines have transport and isolated binary state smoke tests. Ordinary
 command-family conformance runs on the seven pinned Redis/Valkey builds in RESP2/3,
-including explicit errors for unavailable commands/options. Full engine, topology,
-module and hosted-provider certification remains pending. Bun is a runtime, rather
+including explicit errors for unavailable commands/options. Cluster suites own three
+primaries and three replicas, including resharding, promotion, partitions and TLS.
+Full engine, module and hosted-provider certification remains pending. Bun is a runtime, rather
 than a server fixture. Endpoint mode also accepts `EFFECT_REDIS_TEST_CA` for a custom
 CA file; it never downloads images or starts/stops the external server.
 

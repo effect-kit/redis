@@ -59,6 +59,15 @@ ACL/configuration, migration between two owned servers, public HIMPORT/BACKUP an
 MONITOR/SHUTDOWN. Destructive cases own their servers. Positive backup/module/topology
 availability is distinguished from expected rejections on restricted/older fixtures.
 
+`unit/cluster/` and `integration/cluster/` cover binary slots, discovery, redirects,
+bounded ownership, script recovery, indexed EXEC loss and cleanup defects. `e2e/cluster/`
+owns six-node Redis/Valkey clusters, with reshard/promotion, translated TLS identities,
+replica reads, explicit Valkey multi-DB and topology-bound events/caches. Network
+partition cases use `fixtures/cluster/bus-proxy.mjs` in the existing pinned Node image
+to cut established inter-server data/bus links while preserving inspection access.
+All containers, networks and proxy resources have awaited cleanup; no images are pulled
+implicitly. These suites join the existing main/manual-PR live lanes.
+
 The live runner also supports `--mode binary --engine redis|valkey --binary /absolute/path`
 for an owned local process. `--mode endpoint` requires `EFFECT_REDIS_TEST_URL` and
 only authenticates and sends read-only PING/ECHO; optional `EFFECT_REDIS_TEST_CA`
