@@ -10,7 +10,9 @@ Scoped Node TCP/TLS/Unix, bounded scheduling and lossless RESP2/RESP3 are implem
 Native sessions add scoped leases, typed pipelines/transactions, WATCH workflows,
 nine blocking list/sorted-set commands and connection-relative controls. Cursor scans
 and Redis Streams add typed commands, scoped readers and consumer recovery/processing.
-Subscriptions, scripting, topologies and broader runtime/provider certification follow.
+Scoped Pub/Sub adds acknowledged subscriptions and explicit delivery gaps. Client
+tracking adds invalidations and bounded GET-byte caches. Scripting, topologies and
+broader runtime/provider certification follow.
 
 ## Development
 

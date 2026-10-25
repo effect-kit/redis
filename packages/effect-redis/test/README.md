@@ -46,6 +46,12 @@ client against seven pinned Redis/Valkey builds in RESP2/3, with an independent 
 for selected state observations. Newer commands have explicit availability/error cases
 on older builds. This is separate from the other engines' transport/state smoke tests.
 
+`integration/sessions/`, `integration/streams/` and `integration/subscriptions/` prove
+scoped ownership, controlled faults and deterministic policy behavior. Their `e2e/`
+counterparts use real backends. Subscription tests include acknowledgment/readiness,
+shared interests, gaps, tracking modes, cache invalidation and byte/codec identity;
+proxy faults prove restart and publication uncertainty without automatic replay.
+
 The live runner also supports `--mode binary --engine redis|valkey --binary /absolute/path`
 for an owned local process. `--mode endpoint` requires `EFFECT_REDIS_TEST_URL` and
 only authenticates and sends read-only PING/ECHO; optional `EFFECT_REDIS_TEST_CA`

@@ -15,7 +15,9 @@ primary Redis/Valkey conformance. Detailed verification is tracked privately.
 Phase 08 adds typed scans/Streams, scoped readers, pending/claim recovery, processing
 policies and explicit payload envelopes with controlled/type/primary Redis/Valkey
 conformance and packed/fresh-consumer verification.
-Subscriptions, scripting and topology remain pending.
+Phase 09 adds scoped Pub/Sub, explicit recovery gaps, managed tracking and bounded
+GET-byte caches with controlled/type/primary Redis/Valkey conformance.
+Scripting and topology remain pending.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -432,6 +434,28 @@ Implemented scan/stream policy:
   Keep all detailed coverage/version records and progress under ignored research.
 
 ### Streams, subscriptions and recovery
+
+Implemented subscription/tracking policy:
+
+- `RedisPubSub.layer(config, options)` owns a dedicated event connection. Reuse
+  Transport/handshake/codec boundaries; never put subscription acknowledgments into
+  ordinary FIFO slots. Acquisition waits for ACKs, and duplicate local interests
+  share server ownership. Channel/pattern/shard modes remain distinct.
+- Bound event count/bytes and active/retiring listeners. Reader dispatch never waits
+  for application Effects. Manual close releases the listener's child Scope; failed
+  ownership is pruned with reserved bounded cleanup admission. Preserve cleanup poison.
+- Default disconnect fails. Opt-in resubscribe exposes DeliveryGap/Ready events;
+  the message-only view fails on gaps. Never replay PUBLISH/SPUBLISH. Foreground
+  admission pressure defers heartbeat rather than declaring a dead socket.
+- `RedisTracking` owns one data connection plus a redirected receiver when needed.
+  Critical invalidation precedes observer delivery; observer overflow cannot block
+  eviction. Receiver/data loss clears the whole cohort. Restart is explicit and
+  waits for cleanup/rebinding. Future rejected calls are unsent.
+- `RedisCache` caches only GET bytes and decodes each RedisKey codec anew. Isolate
+  backend/DB identities, preserve binary keys and bound entries/bytes/loads/TTL.
+  Reject stale insertion after invalidation; clear on gaps/flush/restart and handle
+  local writes/NOLOOP explicitly. Do not add arbitrary command-result caching without
+  a reviewed invalidation contract. Shard commands do not establish Cluster routing.
 
 - One-shot XREAD/XREADGROUP returns an Effect; a continuous reader is a scoped
   Stream. Preserve exact stream IDs, ordered fields, tombstones and option-dependent

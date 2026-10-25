@@ -14,8 +14,9 @@ HyperLogLog, geo and arrays, plus custom descriptors and explicit payload codecs
 There are 187 reviewed ordinary commands; available commands/options depend on the
 actual server. Native sessions add pipelines, transactions, WATCH, connection controls
 and blocking leases. Scan commands, Redis Streams and scoped consumer workflows have
-unit, controlled, primary Redis/Valkey and packed-consumer coverage. Subscriptions
-and topology routing remain pending.
+unit, controlled, primary Redis/Valkey and packed-consumer coverage. Scoped Pub/Sub,
+client tracking and bounded GET-byte caches extend event delivery. Topology routing
+remains pending.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -99,8 +100,8 @@ redacted credentials and map expected source failures to `HandshakeError`.
 `close` stops admission and drains with a deadline; `abort` retires immediately and
 awaits scoped cleanup. Cleanup defects propagate and prevent replacement acquisition.
 `takePush` permits one waiting consumer, preserves attributes and tags generations;
-overflow retires the connection. This is the bounded push boundary for later
-subscriptions. `snapshot` exposes safe counters without arguments or payloads.
+overflow retires the connection. Managed event lifetimes use `RedisPubSub` and
+`RedisTracking`. `snapshot` exposes safe counters without arguments or payloads.
 
 The typed service composes over the same connection:
 
@@ -302,3 +303,83 @@ envelope. `redis.xaddPayload` retains encoding services; payload.decode/decodeGr
 retain decoding services. Missing, duplicate, malformed and tombstoned payload fields
 fail with PayloadError. Raw stream entries remain available and no raw value is
 implicitly JSON-encoded or acknowledged because decoding failed.
+
+`RedisPubSub.layer(config, options)` owns a dedicated scoped event connection;
+`makeRedisPubSub` supports explicit construction. Acquisition waits for server
+acknowledgments. Duplicate local listeners share server subscriptions; Pub/Sub is
+server-wide across databases. Publication counts report recipients, not processing.
+
+```ts
+import { RedisPubSub } from "@envoy1084/effect-redis";
+
+const subscriptionsLive = RedisPubSub.layer(config).pipe(
+  Layer.provideMerge(live),
+  Layer.provide(NodeTransport),
+);
+
+const subscriptionProgram = Effect.gen(function* () {
+  const pubsub = yield* RedisPubSub;
+  const redis = yield* Redis;
+  const subscription = yield* pubsub.subscribe(["orders.created"]);
+
+  yield* redis.publish("orders.created", "order-123");
+  return yield* subscription.messages.pipe(Stream.take(1), Stream.runCollect);
+}).pipe(Effect.scoped, Effect.provide(subscriptionsLive));
+```
+
+`psubscribe` and `ssubscribe` select pattern/sharded modes. Messages preserve binary
+payloads, channel/pattern identities, RESP attributes and connection generations.
+Each local listener owns its buffers. `close()` releases its child Scope immediately;
+the caller's Scope also owns cleanup. Unknown pushes have a bounded diagnostic Stream.
+
+Default disconnect fails. `{ recovery: "resubscribe" }` enables bounded recovery;
+consume `events` to observe DeliveryGap and subsequent Ready events. `messages` fails
+on a gap. These are single-consumer views of one mailbox. Pub/Sub has no durable
+replay. Sharded support depends on the server and does not provide Cluster routing.
+
+Defaults bound active/retiring listeners to 128, unique interests to 1,024/1 MiB,
+mailboxes to 64 events/1 MiB and shared retained events to 16 MiB. Lifecycle events
+also consume count capacity. Overflow fails visibly; a slow listener never suspends
+the reader. Control admission defaults to 128 owners; whole-operation deadlines use
+the Redis config. Heartbeats run every 30 seconds. Recovery defaults to three attempts
+with 100 ms spacing, and never retries publications or authentication rejection.
+
+`RedisTracking.layer(config, options)` owns tracked execution and invalidation state.
+It supports default, optin, optout and broadcast-prefix modes. RESP3 uses inline
+invalidations by default; RESP2 and `delivery: "redirect"` own a separate receiver.
+Managed tracking owns its redirect ID; `session.tracking`/`trackingInfo` expose
+exclusive controls, including custom redirection. `tracking.caching(mode, command)`
+pairs the next-command flag with its command. Typed GET helpers opt in automatically.
+
+`tracking.events` exposes TrackingReady/TrackingGap/Invalidate; `invalidations` filters
+readiness and fails on gaps. Both views share one observer mailbox. Critical cache
+eviction happens before observers, so observer overflow cannot prevent invalidation.
+Connection loss clears the cohort. Calls fail until explicit `tracking.restart`
+re-establishes it; no mutation is replayed. Unknown pushes remain separately observable.
+
+```ts
+import { RedisCache, RedisTracking } from "@envoy1084/effect-redis";
+
+const cacheLive = RedisCache.layer({ maxEntries: 1024 }).pipe(
+  Layer.provideMerge(RedisTracking.layer(config, { tracking: { mode: "optin" } })),
+  Layer.provide(NodeTransport),
+);
+
+const cachedProgram = RedisCache.pipe(
+  Effect.flatMap((cache) =>
+    cache.getKey(RedisKey.json("user:1", Schema.Struct({ name: Schema.String }))),
+  ),
+  Effect.provide(cacheLive),
+);
+```
+
+Provide cache Layers once for the application lifetime. Cache helpers store GET bytes;
+each typed codec decodes anew with its own services. Backend/database identity, binary
+keys, missing values and codec results remain separate. Defaults are 1,024 entries,
+8 MiB of values/key identities, 128 in-flight loads, 64 KiB eligible keys and a 30-second
+maximum local TTL. Oversized keys/values bypass storage. Returned bytes are owned;
+eviction uses LRU. Broadcast caches store only keys under tracked prefixes.
+
+Invalidation before a delayed GET reply prevents insertion. Declared local writes,
+flushes, connection gaps and restart invalidate affected state. Invalidation delivery
+is asynchronous; these helpers do not create strong consistency or exactly-once delivery.
