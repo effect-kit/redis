@@ -237,6 +237,14 @@ commandCases("CORE-KEYS", [
     keys: [1],
   },
   {
+    label: "SORT signed limit",
+    command: C.sort("k", { limit: { offset: -1, count: -1 } }),
+    tokens: ["SORT", "k", "LIMIT", "-1", "-1"],
+    reply: array(blob("1")),
+    expected: [Option.some(bytes("1"))],
+    keys: [1],
+  },
+  {
     label: "SORT_RO",
     command: C.sortRo("k", { alpha: true, order: "DESC" }),
     tokens: ["SORT_RO", "k", "DESC", "ALPHA"],

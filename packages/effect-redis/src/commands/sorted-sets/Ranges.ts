@@ -41,7 +41,9 @@ export type SortedRange =
       readonly limit?: RangeLimit;
     };
 
-const encodeRange = (range: SortedRange) =>
+export type SortedRangeWithScores = Exclude<SortedRange, { readonly by: "lex" }>;
+
+const encodeRange = (range: SortedRange, withScores = false) =>
   Effect.gen(function* () {
     // Validate the discriminant/options before consulting branch-specific fields.
     const o = yield* parse(
@@ -56,6 +58,10 @@ const encodeRange = (range: SortedRange) =>
       }),
       range,
     );
+
+    if (withScores && o.by === "lex")
+      return yield* new CommandInputError({ delivery: "unsent", reason: "options" });
+
     let bounds: string[] | RedisArgument[];
     const flags: RedisArgument[] = [];
 
@@ -86,19 +92,14 @@ const encodeRange = (range: SortedRange) =>
 
     if (o.reverse) flags.push("REV");
 
-    return [...bounds, ...flags, ...(yield* limit(o.limit))];
+    return [...bounds, ...flags, ...(yield* limit(o.limit)), ...(withScores ? ["WITHSCORES"] : [])];
   });
 
 export const zrange = (key: RedisArgument, range: SortedRange) =>
   keyed(catalog.ZRANGE, key, encodeRange(range), array(blob));
 
-export const zrangeWithScores = (key: RedisArgument, range: SortedRange) =>
-  keyed(
-    catalog.ZRANGE,
-    key,
-    encodeRange(range).pipe(Effect.map((args) => [...args, "WITHSCORES"])),
-    pairs(blob, scoreToken),
-  );
+export const zrangeWithScores = (key: RedisArgument, range: SortedRangeWithScores) =>
+  keyed(catalog.ZRANGE, key, encodeRange(range, true), pairs(blob, scoreToken));
 
 export const zrangestore = (
   destination: RedisArgument,

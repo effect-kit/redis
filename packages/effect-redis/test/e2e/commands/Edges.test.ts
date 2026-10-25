@@ -33,7 +33,21 @@ it.live.each(primaryCases)(
       yield* redis.rpush(binaryKey, [binaryValue]);
       expect(yield* redis.lpopCount(binaryKey, 0)).toEqual(Option.some([]));
       expect(yield* redis.lpop(binaryKey)).toEqual(Option.some(binaryValue));
+      yield* redis.rpush(`${prefix}:sort`, ["2", "1"]);
+      expect(yield* redis.sort(`${prefix}:sort`, { limit: { offset: -1, count: -1 } })).toEqual([
+        Option.some(bytes("1")),
+        Option.some(bytes("2")),
+      ]);
+
       yield* redis.zadd(binaryKey, [["+inf", binaryValue]]);
+      expect(
+        yield* redis.zrange(binaryKey, {
+          by: "score",
+          min: "-inf",
+          max: "+inf",
+          limit: { offset: -1, count: -1 },
+        }),
+      ).toEqual([]);
       expect(
         yield* redis.zrangeWithScores(binaryKey, { by: "score", min: "-inf", max: "+inf" }),
       ).toEqual([[binaryValue, "inf"]]);

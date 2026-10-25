@@ -3,7 +3,7 @@ import { Effect } from "effect";
 
 import type { BitfieldOperation } from "#/commands/bitmaps/Bitfield";
 import { Commands } from "#/index";
-import type { Command, GeoOrigin, SortedRange } from "#/index";
+import type { Command, GeoOrigin, SortedRange, SortedRangeWithScores } from "#/index";
 
 const invalid: ReadonlyArray<Command<unknown>> = [
   Commands.lpos("k", "v", { rank: 0 }),
@@ -23,6 +23,11 @@ const invalid: ReadonlyArray<Command<unknown>> = [
     limit: { offset: 0, count: 2 },
   } as unknown as SortedRange),
   Commands.zcount("k", "not-a-number", 1),
+  Commands.zrangeWithScores("k", {
+    by: "lex",
+    min: "-",
+    max: "+",
+  } as unknown as SortedRangeWithScores),
   Commands.bitop("NOT", "out", ["a", "b"]),
   Commands.bitpos("k", 1, { start: 0, unit: "BIT" }),
   Commands.bitfield("k", [

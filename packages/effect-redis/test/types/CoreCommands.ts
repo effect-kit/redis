@@ -121,6 +121,9 @@ redis.zrange("z", { by: "rank", start: 0, end: -1, limit: { offset: 0, count: 1 
 // @ts-expect-error A score range needs both endpoints.
 redis.zrange("z", { by: "score", min: 1 });
 
+// @ts-expect-error Redis rejects WITHSCORES together with BYLEX.
+redis.zrangeWithScores("z", { by: "lex", min: "-", max: "+" });
+
 // @ts-expect-error Exclusive lex bounds wrap bytes explicitly.
 redis.zlexcount("z", "[a", "+");
 

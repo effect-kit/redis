@@ -3,7 +3,7 @@ import { Effect, Schema } from "effect";
 import { array } from "#/command/reply/Collections";
 import { blob, integer, optional } from "#/command/reply/Scalars";
 import { ordinary } from "#/commands/internal/Command";
-import { Argument, Arguments, Integer, NonNegative, parse } from "#/commands/internal/Input";
+import { Argument, Arguments, Integer, parse } from "#/commands/internal/Input";
 import { catalog } from "#/commands/keys/Catalog";
 import type { RedisArgument } from "#/RedisArgument";
 
@@ -12,7 +12,8 @@ const Options = Schema.Struct({
   get: Schema.optionalKey(Arguments),
   order: Schema.optionalKey(Schema.Literals(["ASC", "DESC"])),
   alpha: Schema.optionalKey(Schema.Boolean),
-  limit: Schema.optionalKey(Schema.Struct({ offset: NonNegative, count: Integer })),
+  // SORT clamps negative offsets itself; retain its signed wire grammar.
+  limit: Schema.optionalKey(Schema.Struct({ offset: Integer, count: Integer })),
 });
 export type SortOptions = typeof Options.Type;
 

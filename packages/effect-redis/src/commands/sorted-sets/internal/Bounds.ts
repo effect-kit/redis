@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { Argument, Integer, NonNegative, parse } from "#/commands/internal/Input";
+import { Argument, Integer, parse } from "#/commands/internal/Input";
 import type { RedisArgument } from "#/RedisArgument";
 
 export type Score = number | string;
@@ -51,7 +51,8 @@ export const lexBound = (value: LexBound) =>
     }),
   );
 
-export const Limit = Schema.Struct({ offset: NonNegative, count: Integer });
+// Negative offsets are valid server input and produce an empty sorted range.
+export const Limit = Schema.Struct({ offset: Integer, count: Integer });
 export type RangeLimit = typeof Limit.Type;
 
 export const limit = (value: RangeLimit | undefined) =>

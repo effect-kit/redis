@@ -85,6 +85,7 @@ export type { SortOptions } from "#/commands/keys/Sort";
 export type { KeyExpireCondition } from "#/commands/keys/Expiry";
 export type {
   SortedRange,
+  SortedRangeWithScores,
   LexBound,
   ScoreBound,
   Score,

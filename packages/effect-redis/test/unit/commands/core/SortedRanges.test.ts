@@ -105,6 +105,14 @@ commandCases("CORE-SORTED-SETS", [
     keys: [1],
   },
   {
+    label: "ZRANGEBYSCORE signed limit",
+    command: C.zrangebyscore("k", "-inf", "+inf", { offset: -1, count: -1 }),
+    tokens: ["ZRANGEBYSCORE", "k", "-inf", "+inf", "LIMIT", "-1", "-1"],
+    reply: array(),
+    expected: [],
+    keys: [1],
+  },
+  {
     label: "ZRANGEBYSCORE scores",
     command: C.zrangebyscoreWithScores("k", 0, 1),
     tokens: ["ZRANGEBYSCORE", "k", "0", "1", "WITHSCORES"],
