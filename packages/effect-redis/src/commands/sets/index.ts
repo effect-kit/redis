@@ -25,3 +25,5 @@ export {
   smove,
 } from "#/commands/sets/Members";
 export type * from "#/commands/sets/Members";
+
+export * from "#/commands/sets/Scan";

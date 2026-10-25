@@ -35,3 +35,5 @@ export {
   hrandfieldWithValues,
 } from "#/commands/hashes/Fields";
 export type * from "#/commands/hashes/Fields";
+
+export * from "#/commands/hashes/Scan";

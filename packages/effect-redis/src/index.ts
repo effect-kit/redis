@@ -126,3 +126,7 @@ export { BatchError } from "#/errors/BatchError";
 export { TransactionError } from "#/errors/TransactionError";
 
 export type { BlockingOptions } from "#/commands/blocking/Timing";
+
+export type { ScanPage } from "#/commands/scan/Page";
+export type { ScanOptions, KeyScanOptions } from "#/commands/scan/Build";
+export type { ArrayScanOptions } from "#/commands/arrays/Scan";

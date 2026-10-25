@@ -13,6 +13,7 @@ import { hashFamily } from "#/commands/hashes/Family";
 import { hyperloglogFamily } from "#/commands/hyperloglog/Family";
 import { keyCommandFamily } from "#/commands/keys/Family";
 import { listFamily } from "#/commands/lists/Family";
+import { scanFamily } from "#/commands/scan/Family";
 import { setFamily } from "#/commands/sets/Family";
 import { sortedSetFamily } from "#/commands/sorted-sets/Family";
 import { stringFamily } from "#/commands/strings/Family";
@@ -22,6 +23,7 @@ import type { AnyCommand } from "#/sessions/batch/Types";
 
 export const makeRedis = (executor: RedisExecutor) => ({
   ...connectionFamily(executor),
+  ...scanFamily(executor),
   ...stringFamily(executor),
   ...sortedSetFamily(executor),
   ...hashFamily(executor),
