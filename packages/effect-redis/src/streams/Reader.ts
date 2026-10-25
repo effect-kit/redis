@@ -9,7 +9,7 @@ import type { StreamReadOptions } from "#/commands/streams/Read";
 import type { GroupEntry } from "#/commands/streams/Types";
 import { StreamConsumerError } from "#/errors/StreamConsumerError";
 import type { RedisArgument } from "#/RedisArgument";
-import type { RedisSessionsClient } from "#/sessions/RedisSessions";
+import type { SessionAccess } from "#/sessions/Access";
 import { argumentBytes, equalBytes } from "#/streams/internal/Argument";
 import { scopedReader } from "#/streams/internal/ScopedReader";
 import type { StreamMessage } from "#/streams/Types";
@@ -31,7 +31,7 @@ const readerOptions = (options: ReaderOptions) =>
     })),
   );
 
-export const makeReaders = (sessions: RedisSessionsClient) => ({
+export const makeReaders = (sessions: Pick<SessionAccess, "withBlockingSession">) => ({
   read: (streams: ContinuousReadStreams, options: ReaderOptions = {}) =>
     Stream.unwrap(
       Effect.gen(function* () {

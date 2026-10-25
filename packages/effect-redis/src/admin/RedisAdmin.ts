@@ -2,10 +2,10 @@ import { Context, Effect, Layer } from "effect";
 
 import type { Command } from "#/command/Command";
 import * as Commands from "#/commands/admin/index";
+import type { SessionAccess } from "#/sessions/Access";
 import { RedisSessions } from "#/sessions/RedisSessions";
-import type { RedisSessionsClient } from "#/sessions/RedisSessions";
 
-export const makeRedisAdmin = (sessions: RedisSessionsClient) => {
+export const makeRedisAdmin = (sessions: Pick<SessionAccess, "withSession">) => {
   const execute = <A, E, RD, RE>(command: Command<A, E, RD, RE>) =>
     sessions.withSession((session) => session.execute(command));
 

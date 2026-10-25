@@ -5,8 +5,8 @@ import { ReadOptionsSchema } from "#/commands/streams/Read";
 import { Redis } from "#/Redis";
 import type { RedisClient } from "#/Redis";
 import type { RedisArgument } from "#/RedisArgument";
+import type { SessionAccess } from "#/sessions/Access";
 import { RedisSessions } from "#/sessions/RedisSessions";
-import type { RedisSessionsClient } from "#/sessions/RedisSessions";
 import { processMessages } from "#/streams/Processing";
 import type { ProcessingOptions } from "#/streams/Processing";
 import { makeReaders } from "#/streams/Reader";
@@ -14,7 +14,10 @@ import type { GroupReaderKeys, ReaderOptions } from "#/streams/Reader";
 import { makeRecovery } from "#/streams/Recovery";
 import type { GroupMessage } from "#/streams/Types";
 
-export const makeRedisStreams = (redis: RedisClient, sessions: RedisSessionsClient) => {
+export const makeRedisStreams = (
+  redis: RedisClient,
+  sessions: Pick<SessionAccess, "withBlockingSession">,
+) => {
   const readers = makeReaders(sessions);
   const recovery = makeRecovery(redis);
   return {

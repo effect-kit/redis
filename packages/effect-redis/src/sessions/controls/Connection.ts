@@ -9,8 +9,14 @@ import type { RedisArgument } from "#/RedisArgument";
 import { exchange } from "#/sessions/controls/Exchange";
 import type { SessionWire } from "#/sessions/pool/Wire";
 import type { SessionState } from "#/sessions/transaction/State";
+import type { SessionValidation } from "#/sessions/Validation";
 
-export const connectionControls = (wire: SessionWire, state: SessionState, taint: () => void) => ({
+export const connectionControls = (
+  wire: SessionWire,
+  state: SessionState,
+  taint: () => void,
+  validation?: SessionValidation,
+) => ({
   authenticate: (credentials: typeof Credentials.Type) =>
     state.run(() =>
       Effect.gen(function* () {
@@ -32,6 +38,7 @@ export const connectionControls = (wire: SessionWire, state: SessionState, taint
     state.run(() =>
       Effect.gen(function* () {
         const selected = yield* parse(NonNegative, database);
+        if (validation !== undefined) yield* validation.database(selected);
         taint();
 
         yield* exchange(wire, ["SELECT", String(selected)], status("OK"));

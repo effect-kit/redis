@@ -2,6 +2,19 @@ export type { RedisArgument } from "#/RedisArgument";
 export { decodeRedisConfig } from "#/RedisConfig";
 export type { RedisConfig } from "#/RedisConfig";
 
+export { RedisCluster, makeRedisCluster } from "#/cluster/RedisCluster";
+export type { RedisClusterClient } from "#/cluster/RedisCluster";
+export type { ClusterOptions } from "#/cluster/Options";
+export type { ClusterTarget } from "#/cluster/sessions/Sessions";
+export type {
+  ClusterAddress,
+  ClusterNode,
+  ClusterShard,
+  ClusterTopology,
+} from "#/cluster/topology/Types";
+export { keySlot } from "#/cluster/Slot";
+export { ClusterError } from "#/errors/ClusterError";
+
 export { RedisConfigError } from "#/errors/RedisConfigError";
 export { TransportError } from "#/errors/TransportError";
 

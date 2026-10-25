@@ -12,8 +12,8 @@ import { SessionError } from "#/errors/SessionError";
 import type { RespValue } from "#/protocol/RespValue";
 import type { RedisScript } from "#/scripting/RedisScript";
 import { snapshotArguments } from "#/scripting/Snapshot";
+import type { SessionAccess } from "#/sessions/Access";
 import { RedisSessions } from "#/sessions/RedisSessions";
-import type { RedisSessionsClient } from "#/sessions/RedisSessions";
 import type { RedisSession } from "#/sessions/Session";
 
 export interface ScriptOptions {
@@ -43,7 +43,7 @@ const missingScript = (error: ServerError) => {
 };
 
 export const makeRedisScripts = Effect.fnUntraced(function* (
-  sessions: RedisSessionsClient,
+  sessions: Pick<SessionAccess, "withSession">,
   options: ScriptOptions = {},
 ) {
   const { maxConcurrentLoads, maxSnapshotBytes, loadScope } = yield* parse(

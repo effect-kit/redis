@@ -13,16 +13,19 @@ import type { AnyCommand, PartialBatchError } from "#/sessions/batch/Types";
 import type { SessionPolicy } from "#/sessions/pool/Options";
 import type { SessionWire } from "#/sessions/pool/Wire";
 import type { SessionState } from "#/sessions/transaction/State";
+import type { SessionValidation } from "#/sessions/Validation";
 
 export const replyModeControls = (
   wire: SessionWire,
   state: SessionState,
   policy: SessionPolicy,
+  validation?: SessionValidation,
 ) => {
   const suppress = <Cs extends ReadonlyArray<AnyCommand>>(mode: "OFF" | "SKIP", commands: Cs) =>
     state.run(() =>
       Effect.gen(function* () {
         const prepared = yield* prepareBatch(commands, policy.maxBatchCommands);
+        if (validation !== undefined) yield* validation.batch(prepared, false);
         const before = state.get();
         const failure = (error: unknown) => {
           const unsent =

@@ -5,6 +5,7 @@ import { decodeReply } from "#/command/Decode";
 import type { ExecutionError } from "#/connection/Admission";
 import { Connection } from "#/connection/Connection";
 import type { RedisConnection } from "#/connection/Connection";
+import type { ClusterError } from "#/errors/ClusterError";
 import type { CommandInputError } from "#/errors/CommandInputError";
 import type { ReplyError } from "#/errors/ReplyError";
 import type { ServerError } from "#/errors/ServerError";
@@ -17,6 +18,7 @@ export type RedisError =
   | ServerError
   | ReplyError
   | SessionError
+  | ClusterError
   | UnsupportedCommandError;
 
 export interface RedisExecutor {

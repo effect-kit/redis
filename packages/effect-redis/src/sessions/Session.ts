@@ -27,8 +27,13 @@ import type { SessionPolicy } from "#/sessions/pool/Options";
 import type { SessionWire } from "#/sessions/pool/Wire";
 import { runTransaction } from "#/sessions/transaction/Execute";
 import { makeSessionState } from "#/sessions/transaction/State";
+import type { SessionValidation } from "#/sessions/Validation";
 
-export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
+export const makeSession = (
+  wire: SessionWire,
+  policy: SessionPolicy,
+  validation?: SessionValidation,
+) => {
   let tainted = false;
   const state = makeSessionState(wire, policy.cleanupTimeoutMillis);
 
@@ -36,6 +41,7 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
     state.run(() =>
       Effect.gen(function* () {
         const mode = command.metadata.execution;
+        if (validation !== undefined) yield* validation.command(command);
         if (mode === "ordinary") {
           if (checkOrdinary(command.tokens) !== undefined)
             return yield* new SessionError({ reason: "execution-mode", delivery: "unsent" });
@@ -48,7 +54,7 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
           tainted = true;
         } else return yield* new SessionError({ reason: "execution-mode", delivery: "unsent" });
 
-        if (command.routing._tag === "Node")
+        if (command.routing._tag === "Node" && validation === undefined)
           return yield* new SessionError({ reason: "routing", delivery: "unsent" });
 
         return yield* decodeReply(
@@ -64,7 +70,20 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
   };
 
   const transactionPrepared = <Cs extends ReadonlyArray<AnyCommand>>(prepared: PreparedBatch<Cs>) =>
-    state.run(() => runTransaction<Cs>(wire, state, prepared), true);
+    state.run(
+      () =>
+        (validation?.batch(prepared, true) ?? Effect.void).pipe(
+          Effect.andThen(runTransaction<Cs>(wire, state, prepared)),
+        ),
+      true,
+    );
+
+  const pipelinePrepared = <Cs extends ReadonlyArray<AnyCommand>>(prepared: PreparedBatch<Cs>) =>
+    state.run(() =>
+      (validation?.batch(prepared, false) ?? Effect.void).pipe(
+        Effect.andThen(runPipeline<Cs>(wire, prepared)),
+      ),
+    );
 
   const client = {
     ...makeRedis(executor),
@@ -72,25 +91,38 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
     ...hashImportFamily(executor),
     ...blockingStreamFamily(executor),
     ...durabilityControls(wire, state),
-    ...connectionControls(wire, state, () => {
-      tainted = true;
-    }),
-    ...adjacencyControls(wire, state),
-    ...replyModeControls(wire, state, policy),
+    ...connectionControls(
+      wire,
+      state,
+      () => {
+        tainted = true;
+      },
+      validation,
+    ),
+    ...adjacencyControls(wire, state, validation),
+    ...replyModeControls(wire, state, policy, validation),
     tracking: (enabled: boolean, options?: TrackingOptions) =>
       executor.execute(clientTracking(enabled, options)),
     trackingInfo: () => executor.execute(clientTrackingInfo()),
     pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
       state.run(() =>
         prepareBatch(commands, policy.maxBatchCommands).pipe(
-          Effect.flatMap((prepared) => runPipeline<Cs>(wire, prepared)),
+          Effect.flatMap((prepared) =>
+            (validation?.batch(prepared, false) ?? Effect.void).pipe(
+              Effect.andThen(runPipeline<Cs>(wire, prepared)),
+            ),
+          ),
         ),
       ),
     transaction: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
       state.run(
         () =>
           prepareBatch(commands, policy.maxBatchCommands).pipe(
-            Effect.flatMap((prepared) => runTransaction<Cs>(wire, state, prepared)),
+            Effect.flatMap((prepared) =>
+              (validation?.batch(prepared, true) ?? Effect.void).pipe(
+                Effect.andThen(runTransaction<Cs>(wire, state, prepared)),
+              ),
+            ),
           ),
         true,
       ),
@@ -98,6 +130,7 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
       state.run(() =>
         Effect.gen(function* () {
           const prepared = yield* parse(Arguments, keys);
+          if (validation !== undefined) yield* validation.watch(prepared);
           state.set("uncertain");
           yield* exchange(wire, ["WATCH", ...prepared], status("OK"));
           state.set("watched");
@@ -124,6 +157,7 @@ export const makeSession = (wire: SessionWire, policy: SessionPolicy) => {
       ),
     ),
     transactionPrepared,
+    pipelinePrepared,
   };
 };
 
