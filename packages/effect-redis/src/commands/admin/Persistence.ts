@@ -9,11 +9,17 @@ import type { Integer } from "#/commands/internal/Input";
 import { ScriptFlushMode } from "#/commands/scripting/Script";
 
 export const dbsize = () => nodeCommand("DBSIZE", unsigned);
+
 export const lastSave = () => nodeCommand("LASTSAVE", unsigned);
+
 export const time = () => nodeCommand("TIME", tuple(unsigned, unsigned));
+
 export const role = () => nodeCommand("ROLE", array(lossless));
+
 export const save = () => nodeCommand("SAVE", status("OK"));
+
 export const bgrewriteaof = () => nodeCommand("BGREWRITEAOF", reportText);
+
 export const bgsave = (schedule = false) =>
   nodeCommand(
     "BGSAVE",
@@ -30,6 +36,7 @@ const flush = (name: "FLUSHDB" | "FLUSHALL", mode?: ScriptFlushMode) =>
     ),
   );
 export const flushDb = (mode?: ScriptFlushMode) => flush("FLUSHDB", mode);
+
 export const flushAll = (mode?: ScriptFlushMode) => flush("FLUSHALL", mode);
 
 export const swapDb = (first: Integer, second: Integer) =>

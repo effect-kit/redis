@@ -5,6 +5,7 @@ import { Commands, decodeRedisConfig, makeRedisAdmin, makeRedisSessions } from "
 import { layer } from "#/node";
 import { primaryCases } from "#test/support/commands/Backend";
 import { allocateServer } from "#test/support/servers/DockerServer";
+import { recordFixture } from "#test/support/servers/Evidence";
 
 it.live.each(primaryCases)(
   "ADMIN ACL: $target.fixture $protocol persisted rules, denial and lease identity",
@@ -54,5 +55,14 @@ it.live.each(primaryCases)(
       );
       expect(yield* admin.aclWhoAmI()).toBe("default");
       expect(yield* admin.aclDelUser(["limited"])).toBe(1n);
+      yield* recordFixture(`phase10-admin-acl-persistence-${target.fixture}-${protocol}`, {
+        fixture: target.fixture,
+        version: target.version,
+        image: target.reference,
+        protocol,
+        build: server.build,
+        configurationDigest: server.configurationDigest,
+        scenarios: ["ADMIN-ACL-PERSISTENCE"],
+      });
     }),
 );

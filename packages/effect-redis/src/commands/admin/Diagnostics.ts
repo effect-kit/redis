@@ -16,7 +16,9 @@ const optionalCount = (count?: Integer) =>
 export const slowlogGet = (count?: Integer) =>
   nodeCommand("SLOWLOG GET", sensitive(array(lossless)), optionalCount(count));
 export const slowlogLen = () => nodeCommand("SLOWLOG LEN", unsigned);
+
 export const slowlogReset = () => nodeCommand("SLOWLOG RESET", status("OK"));
+
 export const slowlogHelp = () => nodeCommand("SLOWLOG HELP", help);
 
 const LogKind = Schema.Literals(["slow", "large-request", "large-reply"]);
@@ -51,7 +53,9 @@ export const commandlogReset = (kind: CommandLogKind) =>
 export const commandlogHelp = () => nodeCommand("COMMANDLOG HELP", help);
 
 export const latencyDoctor = () => nodeCommand("LATENCY DOCTOR", reportText);
+
 export const latencyHelp = () => nodeCommand("LATENCY HELP", help);
+
 export const latencyGraph = (event: RedisArgument) =>
   nodeCommand(
     "LATENCY GRAPH",
@@ -130,6 +134,9 @@ export const hotkeysStart = (options: HotkeysOptions) =>
   );
 
 export const hotkeysGet = () => nodeCommand("HOTKEYS GET", sensitive(array(fields)));
+
 export const hotkeysStop = () => nodeCommand("HOTKEYS STOP", status("OK"));
+
 export const hotkeysReset = () => nodeCommand("HOTKEYS RESET", status("OK"));
+
 export const hotkeysHelp = () => nodeCommand("HOTKEYS HELP", help);

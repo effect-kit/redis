@@ -7,6 +7,7 @@ import { primaryCases } from "#test/support/commands/Backend";
 import { bytes } from "#test/support/commands/CoreCase";
 import { exchange } from "#test/support/networking/Exchange";
 import { allocateServer } from "#test/support/servers/DockerServer";
+import { recordFixture } from "#test/support/servers/Evidence";
 import { fixtureNetwork } from "#test/support/servers/Network";
 
 it.live.each(primaryCases)(
@@ -87,5 +88,17 @@ it.live.each(primaryCases)(
         ),
       ).toMatchObject({ _tag: "ServerError" });
       expect(yield* exchange(from, ["GET", "partial-busy"])).toMatchObject({ value: bytes("b") });
+      yield* recordFixture(`phase10-migrate-${target.fixture}-${protocol}`, {
+        fixture: target.fixture,
+        version: target.version,
+        image: target.reference,
+        protocol,
+        source: { build: source.build, configurationDigest: source.configurationDigest },
+        destination: {
+          build: destination.build,
+          configurationDigest: destination.configurationDigest,
+        },
+        scenarios: ["MIGRATE", "AUTH2", "PARTIAL-TRANSFER"],
+      });
     }),
 );

@@ -8,9 +8,13 @@ import type { Integer } from "#/commands/internal/Input";
 import type { RedisArgument } from "#/RedisArgument";
 
 export const memoryDoctor = () => nodeCommand("MEMORY DOCTOR", reportText);
+
 export const memoryHelp = () => nodeCommand("MEMORY HELP", help);
+
 export const memoryMallocStats = () => nodeCommand("MEMORY MALLOC-STATS", reportText);
+
 export const memoryPurge = () => nodeCommand("MEMORY PURGE", status("OK"));
+
 export const memoryStats = () => nodeCommand("MEMORY STATS", fields);
 
 export const memoryUsage = (key: RedisArgument, samples?: Integer) =>
