@@ -1,5 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 
+import { BatchExecutor } from "#/command/BatchExecutor";
 import { CommandExecutor } from "#/command/Executor";
 import type { RedisExecutor } from "#/command/Executor";
 import { raw } from "#/command/Raw";
@@ -17,6 +18,7 @@ import { sortedSetFamily } from "#/commands/sorted-sets/Family";
 import { stringFamily } from "#/commands/strings/Family";
 import { keyFamily } from "#/keys/Commands";
 import type { RedisCommand } from "#/protocol/encode";
+import type { AnyCommand } from "#/sessions/batch/Types";
 
 export const makeRedis = (executor: RedisExecutor) => ({
   ...connectionFamily(executor),
@@ -31,6 +33,11 @@ export const makeRedis = (executor: RedisExecutor) => ({
   ...arrayFamily(executor),
   ...geoFamily(executor),
   ...keyFamily(executor),
+
+  pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
+    BatchExecutor.pipe(Effect.flatMap((batches) => batches.pipeline(commands))),
+  transaction: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
+    BatchExecutor.pipe(Effect.flatMap((batches) => batches.transaction(commands))),
 
   execute: executor.execute,
   executePrepared: executor.executePrepared,

@@ -31,11 +31,11 @@ const failure = (stage: HandshakeError["stage"], reply: RespValue) =>
     cause: Redacted.make(reply),
   });
 
-export const handshake = Effect.fnUntraced(function* (
+export const handshake = Effect.fnUntraced(function* <R = never>(
   transport: TransportConnection,
   reader: ReplyReader,
   config: RedisConfig,
-  credentials: Effect.Effect<typeof Credentials.Type | undefined, HandshakeError>,
+  credentials: Effect.Effect<typeof Credentials.Type | undefined, HandshakeError, R>,
   push: (reply: RespValue, cost: number) => Effect.Effect<void, ConnectionError>,
   generation: number,
 ) {

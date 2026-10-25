@@ -1,0 +1,213 @@
+import { Cause, Context, Effect, Exit, Redacted, Scope, Semaphore } from "effect";
+
+import { decodePolicy } from "#/connection/Options";
+import type { ConnectionOptions } from "#/connection/Options";
+import { ConnectionError } from "#/errors/ConnectionError";
+import { ProtocolError } from "#/errors/ProtocolError";
+import { SessionError } from "#/errors/SessionError";
+import { TransportError } from "#/errors/TransportError";
+import type { RedisConfig } from "#/RedisConfig";
+import type { SessionPolicy } from "#/sessions/pool/Options";
+import { makeSessionWire } from "#/sessions/pool/Wire";
+import type { SessionWire } from "#/sessions/pool/Wire";
+import type { Transport } from "#/transport/Transport";
+
+export type LeaseMode = "session" | "blocking";
+
+interface Entry {
+  readonly mode: LeaseMode;
+  readonly wire: SessionWire;
+}
+
+const unavailable = (reason: SessionError["reason"] = "closed") =>
+  new SessionError({ reason, delivery: "unsent" });
+
+/** Separate bounded lanes keep waiting blocking consumers from exhausting session capacity. */
+export const makeLeasePool = Effect.fnUntraced(function* <R>(
+  config: RedisConfig,
+  policy: SessionPolicy,
+  connection: ConnectionOptions<R>,
+) {
+  const { credentials, ...policyInput } = connection;
+  const connectionPolicy = yield* decodePolicy(policyInput);
+  const captured = yield* Effect.context<R | Transport>();
+  const owner = yield* Scope.fork(yield* Effect.scope);
+  const sessionPermits = yield* Semaphore.make(policy.maxSessionConnections);
+  const blockingPermits = yield* Semaphore.make(policy.maxBlockingConnections);
+  const idle: Record<LeaseMode, Entry[]> = { session: [], blocking: [] };
+  const entries = new Set<Entry>();
+
+  let closed = false;
+  let fatal: Cause.Cause<never> | undefined;
+  let waiting = 0;
+  let leased = 0;
+  let generation = 0;
+  let retired = 0;
+
+  const discard = (entry: Entry) =>
+    entry.wire.close.pipe(
+      Effect.onExit((exit) =>
+        Effect.sync(() => {
+          entries.delete(entry);
+          retired++;
+          if (Exit.isFailure(exit)) fatal = exit.cause;
+        }),
+      ),
+    );
+
+  const open = Effect.fnUntraced(function* (mode: LeaseMode) {
+    let entry = idle[mode].shift();
+    while (entry !== undefined) {
+      if (entry.wire.isReady()) return entry;
+      yield* discard(entry);
+      entry = idle[mode].shift();
+    }
+
+    const scope = yield* Scope.fork(owner);
+    const wire = yield* makeSessionWire(
+      ++generation,
+      scope,
+      config,
+      { ...connectionPolicy, ...(credentials === undefined ? {} : { credentials }) },
+      connectionPolicy,
+    ).pipe(
+      Effect.provideContext(Context.add(captured, Scope.Scope, scope)),
+      Effect.mapError((error) =>
+        error instanceof TransportError || error instanceof ProtocolError
+          ? new ConnectionError({
+              reason: error instanceof ProtocolError ? "protocol" : "transport",
+              generation,
+              delivery: "unsent",
+              cause: Redacted.make(error),
+            })
+          : error,
+      ),
+      Effect.onExit((exit) => (Exit.isFailure(exit) ? Scope.close(scope, Exit.void) : Effect.void)),
+    );
+    const created = { mode, wire };
+    entries.add(created);
+
+    if (closed) {
+      yield* discard(created);
+      return yield* unavailable();
+    }
+
+    return created;
+  });
+
+  const release = (entry: Entry) =>
+    Effect.gen(function* () {
+      if (entry.wire.pending() !== 0) {
+        const drained = yield* Effect.result(
+          entry.wire.drain.pipe(
+            Effect.timeoutOrElse({
+              duration: policy.cleanupTimeoutMillis,
+              orElse: () => Effect.fail(unavailable("cleanup")),
+            }),
+          ),
+        );
+        if (drained._tag === "Failure") {
+          entry.wire.retire();
+          yield* discard(entry);
+          return yield* drained.failure;
+        }
+      }
+
+      if (closed || !entry.wire.isReady()) yield* discard(entry);
+      else idle[entry.mode].push(entry);
+    });
+
+  const use = <A, E, RUse>(
+    mode: LeaseMode,
+    body: (wire: SessionWire) => Effect.Effect<A, E, RUse>,
+  ) =>
+    Effect.uninterruptibleMask((restore) =>
+      Effect.gen(function* () {
+        if (fatal !== undefined) return yield* Effect.failCause(fatal);
+        if (closed) return yield* unavailable();
+        const permits = mode === "blocking" ? blockingPermits : sessionPermits;
+        const immediate = yield* permits.takeIfAvailable(1);
+
+        if (!immediate) {
+          if (waiting >= policy.maxWaiters) return yield* unavailable("pool-full");
+          waiting++;
+
+          yield* restore(
+            permits.take(1).pipe(
+              Effect.timeoutOrElse({
+                duration: policy.leaseTimeoutMillis,
+                orElse: () => Effect.fail(unavailable("lease-timeout")),
+              }),
+            ),
+          ).pipe(
+            Effect.ensuring(
+              Effect.sync(() => {
+                waiting--;
+              }),
+            ),
+          );
+        }
+
+        leased++;
+        let entry: Entry | undefined;
+
+        return yield* Effect.gen(function* () {
+          if (fatal !== undefined) return yield* Effect.failCause(fatal);
+          if (closed) return yield* unavailable();
+          entry = yield* restore(open(mode));
+          const active = entry;
+
+          return yield* restore(Effect.suspend(() => body(active.wire))).pipe(
+            Effect.onExit((exit) =>
+              Exit.isFailure(exit) && (Cause.hasInterrupts(exit.cause) || Cause.hasDies(exit.cause))
+                ? Effect.sync(active.wire.retire)
+                : Effect.void,
+            ),
+          );
+        }).pipe(
+          Effect.onExit(() =>
+            (entry === undefined ? Effect.void : release(entry)).pipe(
+              Effect.ensuring(
+                Effect.gen(function* () {
+                  leased--;
+                  yield* permits.release(1);
+                }),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+
+  const close = Effect.uninterruptible(
+    Effect.gen(function* () {
+      if (closed) return;
+      closed = true;
+      idle.session.length = 0;
+      idle.blocking.length = 0;
+
+      // Wake acquisition waiters; their closed check returns permits without opening sockets.
+      yield* sessionPermits.releaseAll;
+      yield* blockingPermits.releaseAll;
+      yield* Scope.close(owner, Exit.void);
+      entries.clear();
+    }),
+  );
+  yield* Effect.addFinalizer(() => close);
+
+  return {
+    use,
+    close,
+    snapshot: Effect.sync(() => ({
+      closed,
+      waiting,
+      leased,
+      connections: entries.size,
+      idle: idle.session.length + idle.blocking.length,
+      generations: generation,
+      retired,
+    })),
+  };
+});
+
+export type LeasePool = Effect.Success<ReturnType<typeof makeLeasePool>>;

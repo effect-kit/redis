@@ -108,3 +108,19 @@ export type {
   ArraySearchBound,
 } from "#/commands/arrays/Aggregation";
 export type { ArrayInfo, ArrayInfoDetails } from "#/commands/arrays/Info";
+
+export { BatchExecutor } from "#/command/BatchExecutor";
+export { RedisSessions, makeRedisSessions } from "#/sessions/RedisSessions";
+export type { RedisSessionsClient } from "#/sessions/RedisSessions";
+export type { RedisSession } from "#/sessions/Session";
+export type { SessionOptions } from "#/sessions/pool/Options";
+export type {
+  BatchResults,
+  BatchOutcomes,
+  BatchSlot,
+  PartialBatchError,
+  TransactionOutcome,
+} from "#/sessions/batch/Types";
+export { SessionError } from "#/errors/SessionError";
+export { BatchError } from "#/errors/BatchError";
+export { TransactionError } from "#/errors/TransactionError";

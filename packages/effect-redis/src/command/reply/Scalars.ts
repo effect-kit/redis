@@ -51,7 +51,7 @@ export const safeInteger: ReplyDecoder<number> = (reply) =>
   );
 
 export const status =
-  (expected: "OK" | "PONG"): ReplyDecoder<void> =>
+  (expected: "OK" | "PONG" | "QUEUED" | "RESET"): ReplyDecoder<void> =>
   (reply) => {
     const value = undecorate(reply);
 
