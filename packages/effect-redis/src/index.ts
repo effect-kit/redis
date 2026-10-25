@@ -178,3 +178,9 @@ export type { TrackingRuntimeOptions } from "#/tracking/Options";
 export type { Invalidation } from "#/tracking/Invalidation";
 export { RedisCache } from "#/tracking/RedisCache";
 export type { RedisCacheClient, CacheOptions } from "#/tracking/cache/Cache";
+
+export * as RedisScript from "#/scripting/RedisScript";
+export { RedisScripts, makeRedisScripts } from "#/scripting/RedisScripts";
+export type { RedisScriptsClient, ScriptOptions } from "#/scripting/RedisScripts";
+export type { ScriptArguments } from "#/commands/scripting/Invocation";
+export type { FunctionListOptions } from "#/commands/scripting/Functions";

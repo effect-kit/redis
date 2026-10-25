@@ -28,3 +28,5 @@ export * from "#/commands/streams/index";
 
 export * from "#/commands/pubsub/index";
 export { clientTracking, clientTrackingInfo } from "#/commands/tracking/Controls";
+
+export * from "#/commands/scripting/index";

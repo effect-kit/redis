@@ -15,6 +15,7 @@ import { keyCommandFamily } from "#/commands/keys/Family";
 import { listFamily } from "#/commands/lists/Family";
 import { pubsubFamily } from "#/commands/pubsub/Family";
 import { scanFamily } from "#/commands/scan/Family";
+import { scriptingFamily } from "#/commands/scripting/Family";
 import { setFamily } from "#/commands/sets/Family";
 import { sortedSetFamily } from "#/commands/sorted-sets/Family";
 import { streamFamily } from "#/commands/streams/Family";
@@ -25,6 +26,7 @@ import type { AnyCommand } from "#/sessions/batch/Types";
 
 export const makeRedis = (executor: RedisExecutor) => ({
   ...connectionFamily(executor),
+  ...scriptingFamily(executor),
   ...pubsubFamily(executor),
   ...scanFamily(executor),
   ...streamFamily(executor),
