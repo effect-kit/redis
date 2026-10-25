@@ -19,7 +19,10 @@ it.live.each(primaryCases)(
       const second = yield* pubsub.subscribe([channel]);
       const binary = new Uint8Array([0, 255, 128]);
 
-      expect(yield* redis.pubsubNumSub([channel])).toEqual([[bytes(channel), 1n]]);
+      expect(yield* redis.pubsubNumSub([channel, `${prefix}:absent`])).toEqual([
+        [bytes(channel), 1n],
+        [bytes(`${prefix}:absent`), 0n],
+      ]);
       expect(yield* redis.pubsubChannels(`${prefix}:*`)).toEqual([bytes(channel)]);
       expect(yield* redis.publish(channel, binary)).toBe(1n);
       expect(yield* Stream.runCollect(first.messages.pipe(Stream.take(1)))).toMatchObject([

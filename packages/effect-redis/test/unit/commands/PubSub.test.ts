@@ -4,6 +4,22 @@ import { Effect } from "effect";
 import { Commands } from "#/index";
 import { array, blob, commandCases, integer, ok } from "#test/support/commands/CoreCase";
 
+it.effect("PUBSUB: subscriber count lengths bind to prepared channel snapshots", () =>
+  Effect.gen(function* () {
+    const channels = ["a", "b"];
+    const prepared = yield* Commands.pubsubNumSub(channels).prepare;
+    channels.push("later");
+
+    expect(
+      yield* prepared.decode(array(blob("a"), integer(1n), blob("b"), integer(0n))),
+    ).toHaveLength(2);
+    expect(yield* Effect.flip(prepared.decode(array(blob("a"), integer(1n))))).toMatchObject({
+      _tag: "ReplyError",
+      expected: "array-length",
+    });
+  }),
+);
+
 commandCases("PUBSUB", [
   {
     label: "PUBLISH",
