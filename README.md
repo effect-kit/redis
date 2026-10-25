@@ -8,8 +8,9 @@ Redis-compatible servers and transports.
 hashes, lists, sets, keys/TTL, sorted sets, bitmaps, HyperLogLog, geo and arrays.
 Scoped Node TCP/TLS/Unix, bounded scheduling and lossless RESP2/RESP3 are implemented.
 Native sessions add scoped leases, typed pipelines/transactions, WATCH workflows,
-nine blocking list/sorted-set commands and connection-relative controls. Scans/Streams,
-subscriptions, scripting, topologies and broader runtime/provider certification follow.
+nine blocking list/sorted-set commands and connection-relative controls. Cursor scans
+and Redis Streams add typed commands, scoped readers and consumer recovery/processing.
+Subscriptions, scripting, topologies and broader runtime/provider certification follow.
 
 ## Development
 

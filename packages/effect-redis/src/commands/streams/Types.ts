@@ -17,6 +17,7 @@ export interface GroupEntry {
 
 export interface ClaimedGroupEntry extends GroupEntry {
   readonly idleMillis: bigint;
+  /** CLAIM reports previous deliveries; a newly delivered entry reports zero. */
   readonly deliveries: bigint;
 }
 
@@ -29,6 +30,7 @@ export interface PendingEntry {
   readonly id: StreamId;
   readonly consumer: Uint8Array;
   readonly idleMillis: bigint;
+  /** XPENDING's delivery counter, preserved independently of CLAIM's previous-delivery metadata. */
   readonly deliveries: bigint;
 }
 

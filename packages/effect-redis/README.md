@@ -273,8 +273,9 @@ const claims = streams.claim("jobs", "workers", "worker-2", 60_000);
 `read` resolves $ once and advances concrete per-stream IDs. `readGroup` requests new
 entries; `pending` reads this consumer's history; `claim` emits complete recovery pages,
 including empty continuation pages and deletion evidence. Readers hold dedicated
-blocking capacity, buffer one entry locally, and default to COUNT 64 and a five-second
-server wait. Explicit count/cumulative-size options retain server availability rules.
+blocking capacity, use a one-entry handoff queue, and default to COUNT 64 and a
+five-second server wait. A decoded server batch can also remain in memory. Explicit count/cumulative-size options retain server availability rules; MAXSIZE can
+still return one oversized entry, independently of the client protocol byte limits.
 Connection failure terminates the reader; resumption/recovery is explicit.
 
 `process(group, messages, handle, options)` acknowledges after the application Effect

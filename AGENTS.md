@@ -12,7 +12,9 @@ explicit payload/key codecs and a PING/GET/SET/INCR/ZSCORE slice. Phase 06 adds
 conformance. Phase 07 adds native leases, pipelines/transactions, WATCH, blocking
 operations and connection-relative controls with controlled/public-type tests and
 primary Redis/Valkey conformance. Detailed verification is tracked privately.
-Scans/Streams, subscriptions, scripting and topology remain pending.
+Phase 08 adds typed scans/Streams, scoped readers, pending/claim recovery, processing
+policies and explicit payload envelopes; final gates are tracked privately.
+Subscriptions, scripting and topology remain pending.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -403,6 +405,30 @@ Implemented native-session policy:
 - Session conformance lives in test/e2e/sessions; controlled lifecycle/fault cases in
   test/integration/sessions and type contracts in test/types. Replication/AOF fixtures
   own their Testcontainers network and both servers; no implicit image pulls/reuse.
+
+Implemented scan/stream policy:
+
+- Scan pages retain opaque decimal cursors; empty nonterminal pages and duplicates
+  are valid. Lazy helpers do not imply snapshots or deduplication. ARSCAN is an
+  ordered index range in either direction; UINT64_MAX is a reserved insertion cursor.
+- Stream IDs stay exact; fields remain ordered binary pairs. Named result variants
+  bind to prepared flags. Preserve legacy claim null entries without fabricated IDs,
+  optional deleted-ID evidence and signed consumer timing sentinels. CLAIM delivery
+  metadata counts previous deliveries; XPENDING counters have their own semantics.
+- `RedisStreams.layer` captures Redis and RedisSessions. Continuous readers use scoped
+  blocking leases and a one-entry handoff queue plus a decoded batch. Join producer
+  cleanup so defects escape consumer termination. Resolve $ once; failures terminate
+  the reader without automatic replay/reconnect. Validate recovery cursor progress.
+- Processing uses the separate ordinary executor for acknowledgments. `consume` finishes
+  own pending processing before new deliveries; explicit claim pages retain deletion
+  evidence. Preserve exact handler/policy service requirements and typed failures.
+- Acknowledge only after handler success or an explicit failure-policy decision.
+  Tombstones, failed decoding and acknowledgment loss cannot trigger hidden ack/retry.
+  Failure policies have bounded attempts and explicit Retry/LeavePending/Acknowledge
+  outcomes. Dead-letter effects and XACK have no implicit atomicity or exactly-once claim.
+- Stream payload fields are explicit codec envelopes. Snapshot wire options before
+  user codec Effects; reject missing/duplicate/tombstoned fields without losing raw data.
+  Keep all detailed coverage/version records and progress under ignored research.
 
 ### Streams, subscriptions and recovery
 
