@@ -29,6 +29,7 @@ export const Routing = Schema.Union([
     _tag: Schema.Literal("Keys"),
     keys: Schema.NonEmptyArray(
       Schema.Struct({
+        // Index zero is the command token, never a routable key.
         index: Schema.Int.check(Schema.isGreaterThan(0)),
         access: Schema.Literals(["read", "write", "read-write"]),
       }),

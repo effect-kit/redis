@@ -19,16 +19,22 @@ export const setMetadata = metadata(
     "IFEQ requires Redis 8.4+ or Valkey 8.1+; IFNE/IFDEQ/IFDNE require Redis 8.4+ and are absent in Valkey 9.1.2",
   ],
 );
+
 type AnySetResult = void | boolean | Option.Option<Uint8Array>;
+
 const replyDecoder =
   (options: SetOptions): ReplyDecoder<AnySetResult> =>
   (reply) => {
+    // GET returns the previous bytes even when a condition prevents the write.
     if (options.get === true) return optional(blob)(reply);
+
     const value = undecorate(reply);
+
     if (value._tag === "Null" && value.kind !== "array")
       return options.condition === undefined
         ? Effect.fail(mismatch("set-result", reply))
         : Effect.succeed(false);
+
     return status("OK")(reply).pipe(
       Effect.map(() => (options.condition === undefined ? undefined : true)),
     );
@@ -49,17 +55,23 @@ export function set(
       const parsed = yield* decodeSetOptions(options ?? {}).pipe(
         Effect.mapError(() => new CommandInputError({ delivery: "unsent", reason: "options" })),
       );
+
       const args: RedisArgument[] = [];
       const condition = parsed.condition;
+
       if (typeof condition === "string") args.push(condition);
       else if (condition !== undefined)
         args.push(condition.type, "value" in condition ? condition.value : condition.digest);
+
       if (parsed.get === true) args.push("GET");
+
       if (parsed.expiry !== undefined) {
         args.push(parsed.expiry.type);
         if (parsed.expiry.type !== "KEEPTTL") args.push(parsed.expiry.value.toString());
       }
+
       const decode = replyDecoder(parsed);
+
       return yield* defineCommand({
         metadata: setMetadata,
         tokens: ["SET", key, value, ...args],

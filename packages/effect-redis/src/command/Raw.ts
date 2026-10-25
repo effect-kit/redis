@@ -8,6 +8,7 @@ export interface RawContract {
   readonly execution: CommandMetadata["execution"];
   readonly routing: Routing;
 }
+
 /** Explicit single-reply intent; unknown commands remain possible without a brand allowlist. */
 export const raw = (tokens: RedisCommand, contract: RawContract) =>
   defineCommand({

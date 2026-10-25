@@ -20,9 +20,11 @@ it.effect(
         clientName: "fixture-client",
         database: 2,
       });
+
       const opening = yield* Effect.forkChild(
         makeConnection(config).pipe(Effect.provide(fixture.layer)),
       );
+
       yield* sent(fixture, ["AUTH", "fixture", "synthetic"], "+OK\r\n");
       expect(opening.pollUnsafe()).toBeUndefined();
       yield* sent(fixture, ["HELLO", "3"], hello);
@@ -31,7 +33,9 @@ it.effect(
       expect(opening.pollUnsafe()).toBeUndefined();
       expect(select.bytes.length).toBeGreaterThan(0);
       yield* fixture.receive(bytes("+OK\r\n"));
+
       const connection = yield* Fiber.join(opening);
+
       expect(yield* connection.snapshot).toMatchObject({
         state: "ready",
         protocol: "resp3",
@@ -47,9 +51,11 @@ it.effect.each([
   Effect.gen(function* () {
     const fixture = yield* makeControlledTransport();
     const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
+
     const opening = yield* Effect.forkChild(
       makeConnection(config).pipe(Effect.provide(fixture.layer)),
     );
+
     yield* sent(fixture, ["HELLO", "3"], reply);
     expect(yield* (yield* Fiber.join(opening)).snapshot).toMatchObject({
       state: "ready",
@@ -68,11 +74,15 @@ it.effect.each([
   Effect.gen(function* () {
     const fixture = yield* makeControlledTransport();
     const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
+
     const opening = yield* Effect.forkChild(
       Effect.result(makeConnection(config).pipe(Effect.provide(fixture.layer))),
     );
+
     yield* sent(fixture, ["HELLO", "3"], reply);
+
     const result = yield* Fiber.join(opening);
+
     expect(Result.isFailure(result) && result.failure).toMatchObject({
       _tag: "HandshakeError",
       stage: "hello",
@@ -91,6 +101,7 @@ it.effect("HANDSHAKE-04: strict RESP3 rejects unsupported; auth failure never se
         protocol: "resp3",
         ...(auth ? { credentials: { password: "synthetic" } } : {}),
       });
+
       const opening = yield* Effect.forkChild(
         Effect.result(makeConnection(config).pipe(Effect.provide(fixture.layer))),
       );
@@ -116,12 +127,17 @@ it.effect("HANDSHAKE-05: stalled bootstrap times out and closes the transport", 
       endpoint: { host: "localhost" },
       connectTimeoutMillis: 100,
     });
+
     const opening = yield* Effect.forkChild(
       Effect.result(makeConnection(config).pipe(Effect.provide(fixture.layer))),
     );
+
     yield* sent(fixture, ["HELLO", "3"]);
+
     yield* TestClock.adjust(100);
+
     const result = yield* Fiber.join(opening);
+
     expect(Result.isFailure(result) && result.failure).toMatchObject({
       _tag: "HandshakeError",
       stage: "timeout",
@@ -133,6 +149,7 @@ it.effect("HANDSHAKE-05: stalled bootstrap times out and closes the transport", 
 it.effect("HANDSHAKE-06: malformed negotiation is a protocol failure, never fallback", () =>
   Effect.gen(function* () {
     const fixture = yield* makeControlledTransport();
+
     const opening = yield* Effect.forkChild(
       Effect.result(
         makeConnection(yield* decodeRedisConfig({ endpoint: { host: "localhost" } })).pipe(
@@ -140,8 +157,11 @@ it.effect("HANDSHAKE-06: malformed negotiation is a protocol failure, never fall
         ),
       ),
     );
+
     yield* sent(fixture, ["HELLO", "3"], ":not-an-integer\r\n");
+
     const result = yield* Fiber.join(opening);
+
     expect(Result.isFailure(result) && result.failure).toMatchObject({
       _tag: "ProtocolError",
       stage: "decode",
@@ -154,10 +174,13 @@ it.effect("HANDSHAKE-07: an Effect credential source authenticates before negoti
     const fixture = yield* makeControlledTransport();
     const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
     const credentials = Effect.succeed({ password: Redacted.make("synthetic") });
+
     const opening = yield* Effect.forkChild(
       makeConnection(config, { credentials }).pipe(Effect.provide(fixture.layer)),
     );
+
     yield* sent(fixture, ["AUTH", "synthetic"], "+OK\r\n");
+
     yield* sent(fixture, ["HELLO", "3"], hello);
     expect(yield* (yield* Fiber.join(opening)).snapshot).toMatchObject({ protocol: "resp3" });
   }),
@@ -167,9 +190,11 @@ it.effect("HANDSHAKE-13: canceling acquisition during negotiation awaits physica
   Effect.gen(function* () {
     const fixture = yield* makeControlledTransport();
     const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
+
     const opening = yield* Effect.forkChild(
       makeConnection(config).pipe(Effect.provide(fixture.layer)),
     );
+
     yield* sent(fixture, ["HELLO", "3"]);
     yield* Fiber.interrupt(opening);
     expect((yield* fixture.observations).closed).toBe(1);

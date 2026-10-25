@@ -6,10 +6,12 @@ import { commandFixture, respond } from "#test/support/commands/Fixture";
 import { DecodeLabel, EncodeLabel, labelSchema } from "#test/support/commands/SchemaServices";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
+
 const User = Schema.Struct({
   name: Schema.String,
   age: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
 });
+
 it.effect("COMMAND-15: JSON keys encode explicitly and validate stored payloads", () =>
   Effect.gen(function* () {
     const { redis, fixture } = yield* commandFixture();
@@ -20,6 +22,7 @@ it.effect("COMMAND-15: JSON keys encode explicitly and validate stored payloads"
       ["SET", "user:1", bytes('{"name":"Ada","age":37}')],
       "+OK\r\n",
     );
+
     const payload = '{"name":"Ada","age":37}';
     expect(
       yield* respond(
@@ -34,34 +37,42 @@ it.effect("COMMAND-15: JSON keys encode explicitly and validate stored payloads"
     );
   }),
 );
+
 it.effect("COMMAND-16: invalid application values fail encoding before a socket write", () =>
   Effect.gen(function* () {
     const { redis, connection } = yield* commandFixture();
     const key = RedisKey.json("user:1", User);
+
     const failure = yield* Effect.flip(redis.setKey(key, { name: "private-name", age: -1 }));
+
     expect(failure).toMatchObject({ _tag: "PayloadError", stage: "encode" });
     expect(JSON.stringify(failure)).not.toContain("private-name");
     expect((yield* connection.snapshot).admitted).toBe(0);
   }),
 );
+
 it.effect.each(['{"name":"private-name","age":-1}', "private-invalid-json", "null"])(
   "COMMAND-17: stored payload failures are redacted and leave the connection usable %#",
   (payload) =>
     Effect.gen(function* () {
       const { redis, fixture, connection } = yield* commandFixture();
       const key = RedisKey.json("user:1", User);
+
       const failure = yield* respond(
         fixture,
         Effect.flip(redis.getKey(key)),
         ["GET", "user:1"],
         `$${bytes(payload).length}\r\n${payload}\r\n`,
       );
+
       expect(failure).toMatchObject({ _tag: "PayloadError", stage: "decode" });
       expect(JSON.stringify(failure)).not.toContain("private-");
+
       yield* respond(fixture, redis.ping(), ["PING"], "+PONG\r\n");
       expect((yield* connection.snapshot).unknownOutcomes).toBe(0);
     }),
 );
+
 it.effect("COMMAND-18: text codecs preserve BOM and reject malformed bytes", () =>
   Effect.gen(function* () {
     const codec = PayloadCodec.text;
@@ -70,11 +81,13 @@ it.effect("COMMAND-18: text codecs preserve BOM and reject malformed bytes", () 
       _tag: "PayloadError",
       stage: "decode",
     });
+
     const number = PayloadCodec.schemaText(Schema.NumberFromString);
     expect(yield* number.encode(42)).toEqual(bytes("42"));
     expect(yield* number.decode(bytes("42"))).toBe(42);
   }),
 );
+
 it.effect(
   "COMMAND-19: schema codecs preserve independent decoding and encoding service requirements",
   () =>
@@ -88,6 +101,7 @@ it.effect(
           .pipe(Effect.provideService(DecodeLabel, { prefix: "decoded:" }));
         expect(decoded).toBe("decoded:encoded:value");
       }
+
       const { redis, fixture } = yield* commandFixture();
       const key = RedisKey.schemaText("label", labelSchema);
       yield* respond(
@@ -106,6 +120,7 @@ it.effect(
       ).toEqual(Option.some("decoded:old"));
     }),
 );
+
 it.effect(
   "COMMAND-20: typed-key writes reject GET at runtime and preserve conditional results",
   () =>

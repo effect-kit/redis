@@ -12,6 +12,7 @@ export const tlsServer = Effect.fnUntraced(function* (
   const names: Array<string | false | null> = [];
   const failures: Array<Error> = [];
   const authorized: Array<boolean> = [];
+
   const server = createServer(
     {
       cert: identity.serverCertificate,
@@ -24,13 +25,16 @@ export const tlsServer = Effect.fnUntraced(function* (
       socket.on("error", (error) => {
         if (failures.length < 16) failures.push(error);
       });
+
       names.push(socket.servername);
       authorized.push(socket.authorized);
       socket.on("data", (bytes) => socket.write(bytes));
     },
   );
+
   server.on("tlsClientError", (error) => {
     if (failures.length < 16) failures.push(error);
   });
+
   return { ...(yield* listen(server)), names, failures, authorized };
 });

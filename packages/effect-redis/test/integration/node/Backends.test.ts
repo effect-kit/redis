@@ -14,6 +14,7 @@ import { selectedEngine } from "#tools/FixtureTargets";
 const targets = serverTargets.filter(
   (target) => selectedEngine === "all" || target.product === selectedEngine,
 );
+
 it.live.each(targets)(
   "SOCKET-21: real $fixture pinned build exchanges PING and binary ECHO",
   (target) =>
@@ -22,10 +23,12 @@ it.live.each(targets)(
       const connection = yield* connect(
         yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: server.port } }),
       );
+
       expect(yield* exchange(connection, ["PING"])).toEqual({
         _tag: "SimpleString",
         value: new TextEncoder().encode("PONG"),
       });
+
       if (target.moduleList === "unsupported") {
         const reply = yield* exchange(connection, ["MODULE", "LIST"]);
         expect(reply._tag).toBe("SimpleError");
@@ -51,15 +54,19 @@ it.live.each(targets)(
           }
         expect(observed).toEqual(target.modules);
       }
+
       const payload = new Uint8Array(200_000);
       for (let index = 0; index < payload.length; index++) payload[index] = index % 256;
+
       expect(yield* exchange(connection, ["ECHO", payload])).toEqual({
         _tag: "BlobString",
         value: payload,
       });
+
       yield* ownedServerSmoke(connection);
       expect(server.build).toContain(target.version);
       expect(server.configurationDigest).toMatch(/^[a-f0-9]{64}$/);
+
       yield* recordFixture(target.fixture, {
         fixture: target.fixture,
         version: target.version,
@@ -101,6 +108,7 @@ it.live.each(targets.filter((target) => target.fixture === "redis" || target.fix
           },
         }),
       );
+
       expect(yield* exchange(connection, ["PING"])).toEqual({
         _tag: "SimpleString",
         value: new TextEncoder().encode("PONG"),
@@ -113,6 +121,7 @@ it.live.each(targets.filter((target) => target.fixture === "redis" || target.fix
   (target) =>
     Effect.gen(function* () {
       const result = yield* unixRuntimeSmoke(target);
+
       expect(result).toEqual({ node: "24.22.0", transport: "unix", exchanges: 2 });
     }),
 );

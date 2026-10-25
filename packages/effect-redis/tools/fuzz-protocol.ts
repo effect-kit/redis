@@ -11,6 +11,7 @@ const result = spawnSync(
     encoding: "utf8",
   },
 );
+
 if (result.status !== 0 || result.error !== undefined) {
   process.stderr.write(
     result.stderr || String(result.error ?? `Fuzz worker exited ${result.status}`),

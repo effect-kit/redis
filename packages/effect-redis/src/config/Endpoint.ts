@@ -32,18 +32,21 @@ const TcpEndpoint = Schema.Struct({
   ),
   tls: Schema.optionalKey(TlsOptions),
 });
+
 const UnixEndpoint = Schema.Struct({
   path: Schema.NonEmptyString.check(
     Schema.isPattern(/^\//),
     Schema.makeFilter((path) => !path.includes("\0")),
   ),
 });
+
 const UrlEndpoint = Schema.Struct({
   url: Schema.String.check(Schema.makeFilter((url) => !/\s/.test(url) && !url.includes("\0"))),
   tls: Schema.optionalKey(TlsOptions),
 });
 
 export const EndpointInput = Schema.Union([TcpEndpoint, UnixEndpoint, UrlEndpoint]);
+
 export type Endpoint =
   | {
       readonly _tag: "Tcp";
@@ -67,13 +70,16 @@ const RedisUrl = Schema.URLFromString.check(
 export const normalizeEndpoint = Effect.fnUntraced(function* (input: typeof EndpointInput.Type) {
   if ("path" in input) return { endpoint: { _tag: "Unix", path: input.path } as const };
   if ("host" in input) return { endpoint: { _tag: "Tcp", ...input } as const };
+
   const url = yield* decode(RedisUrl, "endpoint.url", input.url);
+
   if (url.protocol === "redis:" && input.tls !== undefined) {
     return yield* new RedisConfigError({
       field: "endpoint.tls",
       reason: "Use rediss: for TLS URLs",
     });
   }
+
   const credentials =
     url.username !== "" || url.password !== ""
       ? yield* Effect.try({
@@ -87,17 +93,21 @@ export const normalizeEndpoint = Effect.fnUntraced(function* (input: typeof Endp
             new RedisConfigError({ field: "endpoint.url", reason: "Invalid credential encoding" }),
         })
       : undefined;
+
   const database =
     url.pathname.length > 1
       ? yield* decode(NonNegativeInteger, "endpoint.url.database", Number(url.pathname.slice(1)))
       : undefined;
+
   const endpoint: Endpoint = {
     _tag: "Tcp",
     host: url.hostname.replace(/^\[|\]$/g, ""),
     port: url.port === "" ? 6379 : Number(url.port),
     ...(url.protocol === "rediss:" ? { tls: input.tls ?? { rejectUnauthorized: true } } : {}),
   };
+
   if (endpoint.port === 0)
     return yield* new RedisConfigError({ field: "endpoint.url", reason: "Port must be positive" });
+
   return { endpoint, credentials, database };
 });

@@ -25,6 +25,7 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
 ) {
   const directory = yield* temporaryDirectory;
   const script = program === "bytes" ? "unix-smoke.ts" : "connection-unix-smoke.ts";
+
   yield* Effect.tryPromise({
     try: async () => {
       await mkdir(join(directory, "tools"));
@@ -32,6 +33,7 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
       await cp(fileURLToPath(new URL("../../../dist", import.meta.url)), join(directory, "dist"), {
         recursive: true,
       });
+
       const effect = new URL("../../../node_modules/effect/", import.meta.url);
       await cp(
         fileURLToPath(new URL("dist", effect)),
@@ -50,8 +52,10 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
     },
     catch: (cause) => new FixtureError({ stage: "unix-runtime-copy", cause: Redacted.make(cause) }),
   });
+
   const volume = yield* sharedVolume;
   yield* (yield* allocateServer(target, { unixVolume: volume })).start;
+
   const container = new FixtureContainer(imageReference(runtimeImage))
     .withNetworkMode("none")
     .withBindMounts([{ source: directory, target: "/client", mode: "ro" }])
@@ -59,10 +63,12 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
     .withCommand(["node", `/client/tools/${script}`, "/socket/redis.sock"])
     .withWaitStrategy(Wait.forOneShotStartup())
     .withStartupTimeout(15_000);
+
   const started = yield* scopedContainer(container);
   const response = yield* containerRequest("unix-runtime-output", async () => {
     const stream = await started.logs();
     let output = "";
+
     for await (const chunk of stream) {
       output += String(chunk);
       if (output.length > 4096) {
@@ -70,12 +76,15 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
         throw new Error("Runtime output limit");
       }
     }
+
     return output;
   });
+
   const decoded = yield* Effect.try({
     try: (): unknown => JSON.parse(response),
     catch: () => new FixtureError({ stage: "unix-runtime-json" }),
   });
+
   return yield* Schema.decodeUnknownEffect(
     Schema.Struct({
       node: Schema.NonEmptyString,

@@ -15,14 +15,20 @@ it.live("SOCKET-01: TCP Layer exchanges owned binary chunks and closes idempoten
     const connection = yield* transport.open(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } }),
     );
+
     const bytes = new Uint8Array([0, 255, 13, 10, 128]);
     yield* connection.write(bytes);
     const reply = yield* connection.read;
+
     expect(reply).toEqual(bytes);
     expect(reply?.constructor).toBe(Uint8Array);
+
     yield* connection.close;
+
     yield* connection.close;
+
     const result = yield* Effect.result(connection.read);
+
     expect(Result.isFailure(result) && result.failure.reason).toBe("closed");
   }).pipe(Effect.provide(layer)),
 );
@@ -49,7 +55,9 @@ it.live("SOCKET-03: drains bytes before stable EOF and rejects writes after half
     expect(yield* connection.read).toEqual(new Uint8Array([1, 2, 3]));
     expect(yield* connection.read).toBeUndefined();
     expect(yield* connection.read).toBeUndefined();
+
     const result = yield* Effect.result(connection.write(new Uint8Array([4])));
+
     expect(Result.isFailure(result) && result.failure.reason).toBe("closed");
   }),
 );
@@ -58,9 +66,11 @@ it.live("SOCKET-04: refused acquisition is a redacted typed open failure", () =>
   Effect.gen(function* () {
     const peer = yield* loopback(() => {});
     yield* peer.close;
+
     const result = yield* Effect.result(
       connect(yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } })),
     );
+
     expect(Result.isFailure(result)).toBe(true);
     if (Result.isFailure(result)) {
       expect(result.failure.stage).toBe("open");
@@ -76,6 +86,7 @@ it.live("SOCKET-05: interrupting a pending reader leaves the socket usable", () 
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } }),
     );
+
     const reader = yield* Effect.forkChild(connection.read);
     yield* Effect.yieldNow;
     yield* Fiber.interrupt(reader);
@@ -90,12 +101,17 @@ it.live("SOCKET-06: close wakes a pending reader and future operations", () =>
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } }),
     );
+
     const reader = yield* Effect.forkChild(Effect.result(connection.read));
     yield* Effect.yieldNow;
+
     yield* connection.close;
+
     const result = yield* Fiber.join(reader);
+
     expect(Result.isFailure(result) && result.failure.stage).toBe("read");
     const write = yield* Effect.result(connection.write(new Uint8Array([1])));
+
     expect(Result.isFailure(write) && write.failure.reason).toBe("closed");
   }),
 );
@@ -106,6 +122,7 @@ it.live(
     Effect.gen(function* () {
       const peer = yield* loopback((socket) => socket.on("data", (bytes) => socket.write(bytes)));
       const config = yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } });
+
       for (let index = 0; index < 12; index++) {
         yield* Effect.scoped(
           Effect.gen(function* () {
@@ -115,6 +132,7 @@ it.live(
           }),
         );
       }
+
       yield* peer.close;
       expect(peer.sockets.size).toBe(0);
       expect(peer.counts()).toEqual({ accepted: 12, closed: 12 });
@@ -130,7 +148,9 @@ it.live("SOCKET-08: oversized writes fail before sending and do not poison the s
         limits: { maxInFlightBytes: 8 },
       }),
     );
+
     const result = yield* Effect.result(connection.write(new Uint8Array(9)));
+
     expect(Result.isFailure(result) && result.failure.reason).toBe("limit");
     yield* connection.write(new Uint8Array([7]));
     expect(yield* connection.read).toEqual(new Uint8Array([7]));
@@ -143,9 +163,12 @@ it.live("SOCKET-09: concurrent readers fail explicitly without stealing the firs
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } }),
     );
+
     const pending = yield* Effect.forkChild(connection.read);
     yield* Effect.yieldNow;
+
     const second = yield* Effect.result(connection.read);
+
     expect(Result.isFailure(second) && second.failure.reason).toBe("unavailable");
     yield* connection.write(new Uint8Array([11]));
     expect(yield* Fiber.join(pending)).toEqual(new Uint8Array([11]));
@@ -158,6 +181,7 @@ it.live("SOCKET-10: native write backpressure resumes after a stalled peer start
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } }),
     );
+
     const socket = yield* peer.first;
     const payload = new Uint8Array(16 * 1024 * 1024).fill(37);
     const writer = yield* Effect.forkChild(connection.write(payload));
@@ -165,6 +189,7 @@ it.live("SOCKET-10: native write backpressure resumes after a stalled peer start
       socket.once("readable", () => resume(Effect.void));
     });
     expect(writer.pollUnsafe()).toBeUndefined();
+
     const received = yield* Effect.forkChild(
       Effect.callback<number>((resume) => {
         let count = 0;
@@ -175,6 +200,7 @@ it.live("SOCKET-10: native write backpressure resumes after a stalled peer start
         socket.resume();
       }),
     );
+
     yield* Fiber.join(writer);
     expect(yield* Fiber.join(received)).toBe(payload.length);
   }),
@@ -186,6 +212,7 @@ it.live("SOCKET-11: canceling a possibly partial write retires the physical sock
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } }),
     );
+
     const socket = yield* peer.first;
     const writer = yield* Effect.forkChild(connection.write(new Uint8Array(16 * 1024 * 1024)));
     yield* Effect.callback<void>((resume) => {
@@ -193,7 +220,9 @@ it.live("SOCKET-11: canceling a possibly partial write retires the physical sock
     });
     expect(writer.pollUnsafe()).toBeUndefined();
     yield* Fiber.interrupt(writer);
+
     const result = yield* Effect.result(connection.write(new Uint8Array([1])));
+
     expect(Result.isFailure(result) && result.failure.reason).toBe("closed");
   }),
 );
@@ -204,7 +233,9 @@ it.live("SOCKET-12: peer reset wakes a blocked writer with a typed failure", () 
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } }),
     );
+
     const result = yield* Effect.result(connection.write(new Uint8Array(16 * 1024 * 1024)));
+
     expect(Result.isFailure(result)).toBe(true);
     if (Result.isFailure(result)) expect(result.failure.stage).toBe("write");
   }),
@@ -216,10 +247,13 @@ it.live("SOCKET-30: remote reset also wakes a suspended reader", () =>
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: peer.port } }),
     );
+
     const reader = yield* Effect.forkChild(Effect.result(connection.read));
     yield* Effect.yieldNow;
     yield* connection.write(new Uint8Array([1])).pipe(Effect.result);
+
     const result = yield* Fiber.join(reader);
+
     expect(Result.isFailure(result) && result.failure.stage).toBe("read");
     if (Result.isFailure(result)) expect(["io", "closed"]).toContain(result.failure.reason);
   }),

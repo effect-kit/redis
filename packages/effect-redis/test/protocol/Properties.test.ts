@@ -13,18 +13,22 @@ const Binary = Schema.Array(Schema.Int.check(Schema.isBetween({ minimum: 0, maxi
   Schema.isMaxLength(40),
 );
 const Text = Schema.String.check(Schema.isMaxLength(32));
+
 const Partitions = Schema.Array(
   Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 19 })),
 ).check(Schema.isMaxLength(20));
+
 const partition = (wire: Uint8Array, sizes: ReadonlyArray<number>): Array<Uint8Array> => {
   const chunks: Array<Uint8Array> = [];
   let offset = 0;
   let index = 0;
+
   while (offset < wire.length) {
     const width = sizes[index++ % sizes.length] ?? 7;
     chunks.push(wire.subarray(offset, offset + width));
     offset += width;
   }
+
   return chunks;
 };
 
@@ -34,8 +38,10 @@ it.prop(
   ([text, binary, splits]) => {
     const payload = Uint8Array.from(binary);
     const wire = Result.getOrThrow(encodeCommand(["ECHO", text, payload]));
+    // Fixed token framing is counted separately from the UTF-8 and binary payloads.
     const headerLength =
       4 + 10 + bytes(text).length.toString().length + 5 + payload.length.toString().length + 5;
+
     expect(wire.length).toBe(headerLength + bytes(text).length + payload.length);
     expect(decodeChunks(partition(wire, splits))).toEqual([
       {
@@ -61,6 +67,7 @@ it.prop(
   ],
   ([selector, depth, binary, splits]) => {
     const value = generatedValue(selector, depth, Uint8Array.from(binary));
+
     for (const streamed of [false, true]) {
       expect(decodeChunks(partition(wireValue(value, streamed), splits))).toEqual([value]);
     }
@@ -82,8 +89,10 @@ it.prop(
         maxNestingDepth: 8,
       }),
     );
+
     Result.getOrThrow(decoder.feed(wire));
     decoder.end();
+
     for (let count = 0; count <= wire.length; count++) {
       const result = decoder.next();
       if (Result.isFailure(result)) {
@@ -96,6 +105,7 @@ it.prop(
         return;
       }
     }
+
     throw new Error("Decoder emitted more values than input bytes");
   },
   { arbitrary: { runs: 500, size: 40, seed: "resp-malformed-02" } },

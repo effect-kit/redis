@@ -53,14 +53,17 @@ class Decoder implements RespDecoder {
 
   feed(bytes: Uint8Array): Result.Result<void, ProtocolError> {
     if (this.failure !== undefined) return Result.fail(this.failure);
+
     if (!Predicate.isUint8Array(bytes))
       return this.retire(
         new ProtocolError({ stage: "decode", kind: "InvalidArguments", offset: this.queue.offset }),
       );
+
     if (this.ended)
       return this.retire(
         new ProtocolError({ stage: "decode", kind: "InvalidState", offset: this.queue.offset }),
       );
+
     if (bytes.length > this.limits.maxBufferedBytes - this.bufferedBytes) {
       return this.retire(
         new ProtocolError({
@@ -72,6 +75,7 @@ class Decoder implements RespDecoder {
         }),
       );
     }
+
     this.queue.append(bytes);
     return Result.succeed(undefined);
   }
@@ -82,6 +86,7 @@ class Decoder implements RespDecoder {
 
   next(): Result.Result<RespValue | undefined, ProtocolError> {
     if (this.failure !== undefined) return Result.fail(this.failure);
+
     try {
       return Result.succeed(this.parse());
     } catch (error) {
@@ -98,6 +103,7 @@ class Decoder implements RespDecoder {
     this.line = undefined;
     this.marker = undefined;
     this.frameStart = this.queue.offset;
+
     return Result.fail(error);
   }
 
@@ -108,6 +114,7 @@ class Decoder implements RespDecoder {
         const remaining = this.blob.remaining;
         blob.remaining = remaining - this.queue.copyTo(blob.bytes, remaining);
         if (blob.remaining > 0) return this.incomplete();
+
         while (blob.terminator < 2) {
           const byte = this.queue.readByte();
           if (byte === undefined) return this.incomplete();
@@ -115,6 +122,7 @@ class Decoder implements RespDecoder {
             failProtocol("InvalidTerminator", this.queue.offset - 1);
           blob.terminator++;
         }
+
         blob.remaining = undefined;
         blob.terminator = 0;
         if (!blob.streamed) {
@@ -124,6 +132,7 @@ class Decoder implements RespDecoder {
         }
         continue;
       }
+
       if (this.marker === undefined) {
         const marker = this.queue.readByte();
         if (marker === undefined) return this.incomplete();
@@ -141,13 +150,17 @@ class Decoder implements RespDecoder {
               this.limits.maxAggregateEntries,
             );
         }
+
         this.marker = marker;
         this.line = new ByteBuilder(Math.min(256, this.limits.maxHeaderBytes));
         this.carriageReturn = false;
       }
+
       const line = this.line;
       if (line === undefined) throw new Error("Header ownership invariant");
+
       let terminated = false;
+
       while (this.queue.size > 0) {
         const byte = this.queue.readByte();
         if (byte === undefined) throw new Error("Header queue invariant");
@@ -156,6 +169,7 @@ class Decoder implements RespDecoder {
           terminated = true;
           break;
         }
+
         if (byte === 10) failProtocol("InvalidTerminator", this.queue.offset - 1);
         if (byte === 13) this.carriageReturn = true;
         else {
@@ -169,11 +183,14 @@ class Decoder implements RespDecoder {
           line.push(byte);
         }
       }
+
       if (!terminated) return this.incomplete();
+
       const marker = this.marker;
       const bytes = line.finish();
       this.marker = undefined;
       this.line = undefined;
+
       const value = this.header(marker, bytes);
       if (value !== undefined) {
         const completed = this.accept(value);
@@ -188,11 +205,14 @@ class Decoder implements RespDecoder {
       (this.marker !== undefined || this.blob !== undefined || this.frames.length > 0)
     )
       failProtocol("UnexpectedEnd", this.queue.offset);
+
     return undefined;
   }
 
   private header(marker: number, bytes: Uint8Array): RespValue | undefined {
     const text = headerText(bytes);
+
+    // Dot closes a streamed aggregate; semicolon introduces a streamed blob chunk.
     if (marker === 46) {
       const frame = this.frames.at(-1);
       if (text !== "" || frame === undefined || frame.expected !== undefined)
@@ -200,6 +220,7 @@ class Decoder implements RespDecoder {
       this.frames.pop();
       return completeAggregate(frame);
     }
+
     if (marker === 59) {
       const blob = this.blob;
       if (blob === undefined) return failProtocol("InvalidType", this.headerOffset);
@@ -213,6 +234,7 @@ class Decoder implements RespDecoder {
       blob.remaining = count;
       return undefined;
     }
+
     if (marker === 36 || marker === 33 || marker === 61) {
       if (marker === 36 && text === "-1") return { _tag: "Null", kind: "bulk" };
       const streamed = marker === 36 && text === "?";
@@ -230,8 +252,10 @@ class Decoder implements RespDecoder {
       };
       return undefined;
     }
+
     if (marker === 42 || marker === 37 || marker === 126 || marker === 62 || marker === 124)
       return this.aggregate(marker, bytes, text);
+
     return scalar(marker, bytes, this.headerOffset);
   }
 
@@ -244,6 +268,8 @@ class Decoder implements RespDecoder {
         "maxNestingDepth",
         this.limits.maxNestingDepth,
       );
+
+    // Pushes can carry attributes, but cannot occupy an ordinary aggregate reply slot.
     if (
       marker === 62 &&
       this.frames.some(
@@ -251,6 +277,7 @@ class Decoder implements RespDecoder {
       )
     )
       return failProtocol("InvalidPush", this.headerOffset);
+
     const streamed = text === "?" && (marker === 42 || marker === 37 || marker === 126);
     const count = streamed
       ? undefined
@@ -272,6 +299,7 @@ class Decoder implements RespDecoder {
         "maxAggregateEntries",
         this.limits.maxAggregateEntries,
       );
+
     const expected = count === undefined ? undefined : count * multiplier + extra;
     const frame: AggregateFrame = {
       tag:
@@ -289,6 +317,7 @@ class Decoder implements RespDecoder {
       values: [],
       offset: this.headerOffset,
     };
+
     if (expected === 0) return completeAggregate(frame);
     this.frames.push(frame);
     return undefined;
@@ -297,15 +326,18 @@ class Decoder implements RespDecoder {
   private finishBlob(blob: BlobFrame): RespValue {
     this.blob = undefined;
     const bytes = blob.bytes.finish();
+
     if (blob.tag === "VerbatimString") {
       if (bytes[3] !== 58) return failProtocol("InvalidVerbatim", this.headerOffset);
       return { _tag: "VerbatimString", format: bytes.slice(0, 3), value: bytes.slice(4) };
     }
+
     return { _tag: blob.tag, value: bytes };
   }
 
   private accept(incoming: RespValue): RespValue | undefined {
     let value = incoming;
+
     while (true) {
       const frame = this.frames.at(-1);
       if (frame === undefined) {
@@ -313,8 +345,10 @@ class Decoder implements RespDecoder {
         this.elements = 0;
         return value;
       }
+
       frame.values.push(value);
       if (frame.expected === undefined || frame.values.length < frame.expected) return undefined;
+
       this.frames.pop();
       value = completeAggregate(frame);
     }

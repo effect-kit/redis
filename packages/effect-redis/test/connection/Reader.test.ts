@@ -15,6 +15,7 @@ it.effect(
     Effect.gen(function* () {
       const fixture = yield* makeControlledTransport();
       const service = yield* Transport.pipe(Effect.provide(fixture.layer));
+      // Delay local write completion while allowing its reply to reach the reader.
       const gate = yield* Deferred.make<void>();
       const config = yield* decodeRedisConfig({
         endpoint: { host: "localhost" },
@@ -31,10 +32,12 @@ it.effect(
             ),
         }),
       );
+
       const request = yield* Effect.forkChild(connection.executeOrdinary(["PING"]));
       yield* sent(fixture, ["PING"], "+PONG\r\n");
       expect(yield* Fiber.join(request)).toEqual({ _tag: "SimpleString", value: bytes("PONG") });
       expect(yield* connection.snapshot).toMatchObject({ inFlightCommands: 1 });
+
       yield* Deferred.succeed(gate, undefined);
       yield* connection.close;
       expect(yield* connection.snapshot).toMatchObject({ inFlightCommands: 0, inFlightBytes: 0 });
@@ -52,6 +55,7 @@ it.effect(
         bytes("|1\r\n+source\r\n+test\r\n>2\r\n+notice\r\n:7\r\n|1\r\n+ttl\r\n:9\r\n+PONG\r\n"),
       );
       expect((yield* Fiber.join(a))._tag).toBe("Attribute");
+
       const push = yield* connection.takePush;
       expect(push.generation).toBe(1);
       expect(push.value._tag).toBe("Attribute");
@@ -65,16 +69,21 @@ it.effect.each([{ maxPushMessages: 1 }, { maxPushBytes: 8 }])(
   (options) =>
     Effect.gen(function* () {
       const { fixture, connection } = yield* controlled({}, options);
+
       const request = yield* Effect.forkChild(Effect.result(connection.executeOrdinary(["PING"])));
       yield* sent(fixture, ["PING"]);
       yield* fixture.receive(bytes(">1\r\n+first\r\n>1\r\n+second\r\n+PONG\r\n"));
+
       const result = yield* Fiber.join(request);
+
       expect(Result.isFailure(result) && result.failure).toMatchObject({
         _tag: "ConnectionError",
         reason: "push-overflow",
         delivery: "possibly-written",
       });
+
       const push = yield* Effect.result(connection.takePush);
+
       expect(Result.isFailure(push) && push.failure.reason).toBe("push-overflow");
     }),
 );
@@ -84,11 +93,14 @@ it.effect.each([":invalid\r\n", "$3\r\na"])(
   (reply) =>
     Effect.gen(function* () {
       const { fixture, connection } = yield* controlled();
+
       const request = yield* Effect.forkChild(Effect.result(connection.executeOrdinary(["PING"])));
       yield* sent(fixture, ["PING"]);
       yield* fixture.receive(bytes(reply));
       yield* fixture.end;
+
       const result = yield* Fiber.join(request);
+
       expect(Result.isFailure(result) && result.failure).toMatchObject({
         _tag: "ConnectionError",
         reason: "protocol",
@@ -102,13 +114,16 @@ it.effect("LIMIT-16: a coalesced transport chunk is partitioned to parser capaci
     const { fixture, connection } = yield* controlled({
       limits: { maxBufferedBytes: 32, maxBlobBytes: 16, maxHeaderBytes: 8 },
     });
+
     const fibers = [];
     for (let index = 0; index < 20; index++) {
       fibers.push(yield* Effect.forkChild(connection.executeOrdinary(["PING"])));
       yield* sent(fixture, ["PING"]);
     }
+
     yield* fixture.receive(bytes("+PONG\r\n".repeat(20)));
     const replies = yield* Effect.forEach(fibers, Fiber.join);
+
     expect(replies).toHaveLength(20);
     expect((yield* connection.snapshot).replies).toBe(20);
   }),
@@ -140,13 +155,16 @@ it.effect(
             ),
         }),
       );
+
       const known = yield* Effect.forkChild(connection.executeOrdinary(["PING"]));
       yield* sent(fixture, ["PING"], "+PONG\r\n");
       expect(yield* Fiber.join(known)).toEqual({ _tag: "SimpleString", value: bytes("PONG") });
+
       const queued = yield* Effect.forkChild(Effect.result(connection.executeOrdinary(["PING"])));
       yield* waitForSnapshot(connection, (snapshot) => snapshot.queuedCommands === 1);
       yield* Deferred.succeed(fail, undefined);
       const outcome = yield* Fiber.join(queued);
+
       expect(Result.isFailure(outcome) && outcome.failure).toMatchObject({
         _tag: "ConnectionError",
         delivery: "unsent",
@@ -178,9 +196,11 @@ it.effect("OWNERSHIP-14: a stalled write callback after a known reply still has 
           ),
       }),
     );
+
     const known = yield* Effect.forkChild(connection.executeOrdinary(["PING"]));
     yield* sent(fixture, ["PING"], "+PONG\r\n");
     expect(yield* Fiber.join(known)).toEqual({ _tag: "SimpleString", value: bytes("PONG") });
+
     const queued = yield* Effect.forkChild(Effect.result(connection.executeOrdinary(["PING"])));
     yield* waitForSnapshot(connection, (snapshot) => snapshot.queuedCommands === 1);
     yield* TestClock.adjust(100);
@@ -189,6 +209,7 @@ it.effect("OWNERSHIP-14: a stalled write callback after a known reply still has 
       _tag: "ConnectionError",
       delivery: "unsent",
     });
+
     yield* connection.abort;
     expect(yield* connection.snapshot).toMatchObject({
       inFlightBytes: 0,

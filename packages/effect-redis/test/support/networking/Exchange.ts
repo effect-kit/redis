@@ -11,16 +11,20 @@ export const exchange = Effect.fnUntraced(function* (
   command: RedisCommand,
 ) {
   const decoder = yield* Effect.fromResult(makeRespDecoder());
+
   yield* connection.write(yield* Effect.fromResult(encodeCommand(command)));
+
   while (true) {
     const reply = yield* Effect.fromResult(decoder.next());
     if (reply !== undefined) return reply;
+
     const bytes = yield* connection.read;
     if (bytes === undefined) {
       decoder.end();
       yield* Effect.fromResult(decoder.next());
       return yield* Effect.fail(new Error("Peer closed without a reply"));
     }
+
     yield* Effect.fromResult(decoder.feed(bytes));
   }
 });

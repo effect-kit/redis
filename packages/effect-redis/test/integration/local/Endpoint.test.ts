@@ -13,6 +13,7 @@ it.live("explicit existing endpoint: connection-only AUTH and read-only PING/bin
   Effect.gen(function* () {
     const url = process.env.EFFECT_REDIS_TEST_URL;
     if (url === undefined) return yield* new FixtureError({ stage: "endpoint-url-required" });
+
     const caPath = process.env.EFFECT_REDIS_TEST_CA;
     const ca =
       caPath === undefined
@@ -22,10 +23,12 @@ it.live("explicit existing endpoint: connection-only AUTH and read-only PING/bin
             catch: (cause) =>
               new FixtureError({ stage: "endpoint-ca", cause: Redacted.make(cause) }),
           });
+
     const config = yield* decodeRedisConfig({
       endpoint: { url, ...(ca === undefined ? {} : { tls: { ca } }) },
     });
     const connection = yield* connect(config);
+
     if (config.credentials !== undefined) {
       const { username, password } = config.credentials;
       const reply = yield* exchange(connection, [
@@ -33,11 +36,13 @@ it.live("explicit existing endpoint: connection-only AUTH and read-only PING/bin
         ...(username === undefined ? [] : [Redacted.value(username)]),
         Redacted.value(password),
       ]);
+
       // Never include a provider's reply or credentials in assertion output.
       expect(reply._tag === "SimpleString" && new TextDecoder().decode(reply.value) === "OK").toBe(
         true,
       );
     }
+
     yield* readOnlySmoke(connection);
   }),
 );

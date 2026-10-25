@@ -22,8 +22,11 @@ it.each([
 it("WIRE-07: binary argument ownership and embedded terminators", () => {
   const binary = new Uint8Array([255, 0, 13, 10]);
   const frame = Result.getOrThrow(encodeCommand(["ECHO", binary]));
+
   expect(frame).toEqual(joinBytes(bytes("*2\r\n$4\r\nECHO\r\n$4\r\n"), binary, bytes("\r\n")));
+
   binary.fill(0);
+
   expect(decodeChunks([frame])).toEqual([
     {
       _tag: "Array",

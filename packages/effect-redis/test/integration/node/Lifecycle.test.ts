@@ -12,6 +12,7 @@ it.live("SOCKET-31: finalization removes owned native listeners and ignores stal
     const socket = createConnection({ host: "127.0.0.1", port: peer.port });
     const events = ["connect", "readable", "error", "close"];
     const original = new Map(events.map((event) => [event, new Set(socket.listeners(event))]));
+
     const physical = yield* Effect.acquireRelease(
       Effect.sync(() => {
         const connection = makeConnection(socket, "connect", 65536);
@@ -25,15 +26,19 @@ it.live("SOCKET-31: finalization removes owned native listeners and ignores stal
       }),
       (connection) => connection.close,
     );
+
     yield* physical.ready;
     yield* physical.close;
+
     for (const event of events) {
       for (const listener of physical.owned.get(event) ?? [])
         expect(socket.listeners(event)).not.toContain(listener);
     }
+
     socket.emit("connect");
     socket.emit("readable");
     const result = yield* Effect.result(physical.connection.read);
+
     expect(Result.isFailure(result) && result.failure.reason).toBe("closed");
   }),
 );
@@ -49,6 +54,7 @@ it.live(
         Effect.sync(() => makeConnection(socket, "connect", 65536)),
         (connection) => connection.close,
       );
+
       yield* physical.ready;
       yield* Effect.callback<void>((resume) => {
         if (socket.readableLength > 0) {
@@ -61,8 +67,10 @@ it.live(
           socket.off("readable", readable);
         });
       });
+
       expect(socket.readableFlowing).toBe(false);
       expect(socket.readableLength).toBeLessThanOrEqual(socket.readableHighWaterMark + 65536);
+
       let received = 0;
       while (true) {
         const bytes = yield* physical.connection.read;
@@ -72,6 +80,7 @@ it.live(
         expect(bytes.every((byte) => byte === 17)).toBe(true);
         received += bytes.length;
       }
+
       expect(received).toBe(payload.length);
     }),
 );

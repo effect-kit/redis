@@ -8,8 +8,10 @@ import type { RedisConfig } from "#/RedisConfig";
 export interface TransportConnection {
   /** undefined is clean EOF; chunks are nonempty and owned by the receiver. */
   readonly read: Effect.Effect<Uint8Array | undefined, TransportError>;
+
   /** Completes after accepting all bytes with backpressure. Failure can follow a partial write. */
   readonly write: (bytes: Uint8Array) => Effect.Effect<void, TransportError>;
+
   /** Idempotent close wakes pending operations; acquisition also registers scoped cleanup. */
   readonly close: Effect.Effect<void, TransportError>;
 }

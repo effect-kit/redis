@@ -8,7 +8,9 @@ export const array =
   <A, E, R>(decode: ReplyDecoder<A, E, R>): ReplyDecoder<ReadonlyArray<A>, E, R> =>
   (reply) => {
     const value = undecorate(reply);
+
     if (value._tag !== "Array") return Effect.fail(mismatch("array", reply));
+
     return Effect.forEach(value.values, (entry, index) =>
       decode(entry).pipe(
         Effect.mapError((error) =>

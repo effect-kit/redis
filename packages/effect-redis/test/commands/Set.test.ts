@@ -41,6 +41,7 @@ it.effect.each([
   ([options, expected]) =>
     Effect.gen(function* () {
       const prepared = yield* set("key", "value", options).prepare;
+
       expect(prepared.tokens).toEqual(expected);
       expect(prepared.routing).toEqual({
         _tag: "Keys",
@@ -48,6 +49,7 @@ it.effect.each([
       });
     }),
 );
+
 it.effect.each([
   { get: "yes" },
   { condition: "NX XX" },
@@ -64,7 +66,9 @@ it.effect.each([
 ])("COMMAND-07: malformed/conflicting options fail before admission %#", (options) =>
   Effect.gen(function* () {
     const { redis, connection } = yield* commandFixture();
+
     const failure = yield* Effect.flip(redis.set("key", "value", options as unknown as SetOptions));
+
     expect(failure).toMatchObject({
       _tag: "CommandInputError",
       delivery: "unsent",
@@ -74,9 +78,11 @@ it.effect.each([
     expect((yield* connection.snapshot).admitted).toBe(0);
   }),
 );
+
 it.effect("COMMAND-08: SET results follow validated condition and GET options", () =>
   Effect.gen(function* () {
     const { redis, fixture } = yield* commandFixture();
+
     expect(
       yield* respond(fixture, redis.set("k", "v"), ["SET", "k", "v"], "+OK\r\n"),
     ).toBeUndefined();
@@ -112,10 +118,12 @@ it.effect("COMMAND-08: SET results follow validated condition and GET options", 
         "_\r\n",
       ),
     ).toEqual(Option.none());
+
     const invalid = yield* set("k", "v").prepare;
     expect(yield* Effect.flip(invalid.decode({ _tag: "Null", kind: "bulk" }))).toMatchObject({
       expected: "set-result",
     });
+
     const old = yield* set("k", "v", { get: true }).prepare;
     expect(
       yield* Effect.flip(
@@ -124,6 +132,7 @@ it.effect("COMMAND-08: SET results follow validated condition and GET options", 
     ).toMatchObject({ expected: "blob" });
   }),
 );
+
 it.effect("COMMAND-07: Duration expiry rejects precision loss, zero and infinity", () =>
   Effect.gen(function* () {
     expect(yield* expiryAfter(Duration.seconds(2))).toEqual({ type: "PX", value: 2000 });
@@ -131,6 +140,7 @@ it.effect("COMMAND-07: Duration expiry rejects precision loss, zero and infinity
       type: "PX",
       value: Number.MAX_SAFE_INTEGER,
     });
+
     for (const duration of [
       Duration.zero,
       Duration.infinity,

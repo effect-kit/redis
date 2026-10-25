@@ -61,6 +61,7 @@ it.each([
 
 it("LIMIT-09: errors retain safe positions without payloads", () => {
   const error = malformed(bytes("+OK\r\n$secret-password\r\n"));
+
   expect(error.offset).toBe(5);
   expect(error.kind).toBe("InvalidLength");
   expect(`${error}\n${JSON.stringify(error)}`).not.toContain("secret-password");

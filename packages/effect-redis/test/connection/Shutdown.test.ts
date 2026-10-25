@@ -7,21 +7,26 @@ import { controlled, sent, waitForSnapshot } from "#test/support/connection/Cont
 it.effect("OWNERSHIP-07: graceful close drains admitted work and rejects fresh admission", () =>
   Effect.gen(function* () {
     const { fixture, connection } = yield* controlled();
+
     const request = yield* Effect.forkChild(connection.executeOrdinary(["PING"]));
     yield* sent(fixture, ["PING"]);
+
     const closing = yield* Effect.forkChild(connection.close);
     yield* waitForSnapshot(connection, (snapshot) => snapshot.state === "draining");
+
     const fresh = yield* Effect.result(connection.executeOrdinary(["PING"]));
     expect(Result.isFailure(fresh) && fresh.failure).toMatchObject({
       _tag: "ConnectionError",
       reason: "closed",
       delivery: "unsent",
     });
+
     yield* fixture.receive(new TextEncoder().encode("+PONG\r\n"));
     yield* Fiber.join(request);
     yield* Fiber.join(closing);
     yield* connection.close;
     yield* connection.abort;
+
     expect(yield* connection.snapshot).toMatchObject({
       state: "closed",
       queuedCommands: 0,
@@ -34,13 +39,17 @@ it.effect("OWNERSHIP-07: graceful close drains admitted work and rejects fresh a
 it.effect("OWNERSHIP-08: graceful deadline aborts stalled work and wakes every caller", () =>
   Effect.gen(function* () {
     const { fixture, connection } = yield* controlled({}, { shutdownTimeoutMillis: 100 });
+
     const request = yield* Effect.forkChild(Effect.result(connection.executeOrdinary(["PING"])));
     yield* sent(fixture, ["PING"]);
+
     const closing = yield* Effect.forkChild(Effect.result(connection.close));
     yield* waitForSnapshot(connection, (snapshot) => snapshot.state === "draining");
     yield* TestClock.adjust(100);
+
     const close = yield* Fiber.join(closing);
     expect(Result.isFailure(close) && close.failure.reason).toBe("shutdown-timeout");
+
     const reply = yield* Fiber.join(request);
     expect(Result.isFailure(reply) && reply.failure).toMatchObject({
       _tag: "ConnectionError",
@@ -53,8 +62,10 @@ it.effect("OWNERSHIP-08: graceful deadline aborts stalled work and wakes every c
 it.effect("OWNERSHIP-09: interruption while draining still awaits cleanup", () =>
   Effect.gen(function* () {
     const { fixture, connection } = yield* controlled();
+
     const request = yield* Effect.forkChild(Effect.result(connection.executeOrdinary(["PING"])));
     yield* sent(fixture, ["PING"]);
+
     const closing = yield* Effect.forkChild(connection.close);
     yield* waitForSnapshot(connection, (snapshot) => snapshot.state === "draining");
     yield* Fiber.interrupt(closing);
@@ -73,6 +84,7 @@ it.effect(
             const { fixture, connection } = yield* controlled({
               limits: { maxInFlightCommands: 1 },
             });
+
             const written = yield* Effect.forkChild(
               Effect.result(connection.executeOrdinary(["PING"])),
             );
@@ -81,6 +93,7 @@ it.effect(
               Effect.result(connection.executeOrdinary(["PING"])),
             );
             yield* waitForSnapshot(connection, (snapshot) => snapshot.queuedCommands === 1);
+
             yield* connection.abort;
             expect(Result.isFailure(yield* Fiber.join(written))).toBe(true);
             expect(Result.isFailure(yield* Fiber.join(queued))).toBe(true);
@@ -91,9 +104,11 @@ it.effect(
               inFlightBytes: 0,
               retiredGenerations: 1,
             });
+
             return fixture;
           }),
         );
+
         expect((yield* state.observations).closed).toBe(1);
       }
     }),

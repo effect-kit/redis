@@ -12,17 +12,21 @@ export const scoreToken: ReplyDecoder<string> = (reply) => {
       : value._tag === "BlobString"
         ? new TextDecoder().decode(value.value)
         : undefined;
+
   if (
     token === undefined ||
     !/^(?:[+-]?inf|[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?)$/.test(token)
   )
     return Effect.fail(mismatch("score", reply));
+
   const number =
     token === "inf" || token === "+inf" ? Infinity : token === "-inf" ? -Infinity : Number(token);
   if (!Number.isFinite(number) && !/^[+-]?inf$/.test(token))
     return Effect.fail(mismatch("score", reply));
+
   return Effect.succeed(token);
 };
+
 export const score: ReplyDecoder<number> = (reply) =>
   scoreToken(reply).pipe(
     Effect.map((token) =>

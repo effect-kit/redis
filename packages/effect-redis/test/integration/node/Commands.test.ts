@@ -25,10 +25,13 @@ const targets = serverTargets.filter(
     ["redis", "valkey"].includes(target.product) &&
     (selectedEngine === "all" || target.product === selectedEngine),
 );
+
 const cases = targets.flatMap((target) =>
   ["resp2", "resp3"].map((protocol) => ({ target, protocol })),
 );
+
 const bytes = (text: string) => new TextEncoder().encode(text);
+
 it.live.each(cases)(
   "COMMAND-24: $target.fixture $protocol typed service agrees with independent server state",
   ({ target, protocol }) =>
@@ -43,12 +46,15 @@ it.live.each(cases)(
         Layer.provide(layer),
       );
       const prefix = `effect-redis:test:${randomUUID()}`;
+
       yield* Effect.gen(function* () {
         const redis = yield* Redis;
+
         yield* redis.ping();
         expect(yield* redis.get(`${prefix}:missing`)).toEqual(Option.none());
         yield* redis.set(`${prefix}:empty`, "");
         expect(yield* redis.get(`${prefix}:empty`)).toEqual(Option.some(""));
+
         const binaryKey = new Uint8Array([...bytes(prefix), 0, 255]);
         const binaryValue = new Uint8Array([0, 255, 128, 13, 10]);
         yield* redis.set(binaryKey, binaryValue);
@@ -62,12 +68,14 @@ it.live.each(cases)(
           expected: "text",
           delivery: "replied",
         });
+
         yield* exchange(oracle, ["SET", `${prefix}:count`, "9007199254740992"]);
         expect(yield* redis.incr(`${prefix}:count`)).toBe(9007199254740993n);
         expect(yield* exchange(oracle, ["GET", `${prefix}:count`])).toEqual({
           _tag: "BlobString",
           value: bytes("9007199254740993"),
         });
+
         yield* exchange(oracle, ["SET", `${prefix}:max`, "9223372036854775807"]);
         expect(yield* Effect.flip(redis.incr(`${prefix}:max`))).toMatchObject({
           _tag: "ServerError",
@@ -78,10 +86,12 @@ it.live.each(cases)(
           _tag: "BlobString",
           value: bytes("9223372036854775807"),
         });
+
         yield* exchange(oracle, ["ZADD", `${prefix}:scores`, "0.12345678901234568", "member"]);
         expect(yield* redis.zscore(`${prefix}:scores`, "member")).toEqual(
           Option.some(0.12345678901234568),
         );
+
         const rawScore = yield* exchange(oracle, ["ZSCORE", `${prefix}:scores`, "member"]);
         if (rawScore._tag !== "BlobString") return yield* Effect.die("Expected RESP2 score blob");
         expect(yield* redis.zscoreToken(`${prefix}:scores`, "member")).toEqual(
@@ -92,6 +102,7 @@ it.live.each(cases)(
           _tag: "ServerError",
           code: "WRONGTYPE",
         });
+
         const key = RedisKey.json(
           `${prefix}:user`,
           Schema.Struct({ name: Schema.String, count: Schema.Int }),
@@ -102,11 +113,13 @@ it.live.each(cases)(
           _tag: "BlobString",
           value: bytes('{"name":"fixture","count":3}'),
         });
+
         yield* exchange(oracle, ["SET", key.name, "invalid-json"]);
         expect(yield* Effect.flip(redis.getKey(key))).toMatchObject({
           _tag: "PayloadError",
           stage: "decode",
         });
+
         const echo = defineCommand({
           metadata: { ...pingMetadata, name: "ECHO" },
           tokens: ["ECHO", "value"],
@@ -118,6 +131,7 @@ it.live.each(cases)(
           expected: "integer",
           delivery: "replied",
         });
+
         const raw = yield* redis.raw(["EFFECT_REDIS_UNKNOWN_FIXTURE"], {
           execution: "ordinary",
           routing: { _tag: "Keyless" },
@@ -128,6 +142,7 @@ it.live.each(cases)(
         );
         yield* redis.ping();
       }).pipe(Effect.provide(live));
+
       yield* recordFixture(`${target.fixture}-typed-${protocol}`, {
         fixture: target.fixture,
         version: target.version,

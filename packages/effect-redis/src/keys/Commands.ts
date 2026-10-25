@@ -17,6 +17,7 @@ export const getKey = <A, RD, RE>(
   fromPreparation(
     Effect.gen(function* () {
       const prepared = yield* getBytes(key.name).prepare;
+
       return {
         ...prepared,
         decode: (reply) =>
@@ -32,6 +33,7 @@ export const getKey = <A, RD, RE>(
       } satisfies PreparedCommand<Option.Option<A>, PayloadError, RD>;
     }),
   );
+
 export function setKey<A, RD, RE, O extends WriteSetOptions = {}>(
   key: RedisKey<A, RD, RE>,
   value: NoInfer<A>,
@@ -47,11 +49,15 @@ export function setKey<A, RD, RE>(
       const parsed = yield* decodeWriteSetOptions(options ?? {}).pipe(
         Effect.mapError(() => new CommandInputError({ delivery: "unsent", reason: "options" })),
       );
+
+      // Snapshot options before a caller-provided codec can suspend or run application code.
       const bytes = yield* key.codec.encode(value);
+
       return yield* set(key.name, bytes, parsed).prepare;
     }),
   );
 }
+
 export const keyFamily = (executor: RedisExecutor) => ({
   getKey: <A, RD, RE>(key: RedisKey<A, RD, RE>) => executor.execute(getKey(key)),
   setKey: <A, RD, RE, O extends WriteSetOptions = {}>(

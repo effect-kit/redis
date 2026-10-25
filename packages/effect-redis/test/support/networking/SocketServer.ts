@@ -8,14 +8,17 @@ export const listen = Effect.fnUntraced(function* (server: Server, path?: string
   const sockets = new Set<Socket>();
   const errors: Array<Error> = [];
   const first = Deferred.makeUnsafe<Socket>();
+
   let accepted = 0;
   let closed = 0;
   let closing = false;
   let listenerClosed = false;
+
   const stopped = Deferred.makeUnsafe<void, Error>();
   const finishClose = () => {
     if (listenerClosed && sockets.size === 0) Deferred.doneUnsafe(stopped, Effect.void);
   };
+
   const track = (socket: Socket) => {
     accepted++;
     sockets.add(socket);
@@ -29,7 +32,9 @@ export const listen = Effect.fnUntraced(function* (server: Server, path?: string
     });
     Deferred.doneUnsafe(first, Effect.succeed(socket));
   };
+
   server.on("connection", track);
+
   const close = Effect.suspend(() => {
     if (!closing) {
       closing = true;
@@ -44,8 +49,10 @@ export const listen = Effect.fnUntraced(function* (server: Server, path?: string
         finishClose();
       });
     }
+
     return Deferred.await(stopped);
   });
+
   yield* Effect.acquireRelease(Effect.succeed(server), () => close.pipe(Effect.orDie));
   yield* Effect.callback<void, Error>((resume) => {
     const onError = (error: Error) => {
@@ -53,18 +60,22 @@ export const listen = Effect.fnUntraced(function* (server: Server, path?: string
       resume(Effect.fail(error));
     };
     server.once("error", onError);
+
     const onListening = () => {
       server.off("error", onError);
       resume(Effect.void);
     };
+
     if (path === undefined) server.listen({ host: "127.0.0.1", port: 0 }, onListening);
     else server.listen(path, onListening);
     return Effect.sync(() => {
       server.off("error", onError);
     });
   });
+
   const address = server.address();
   const port = address !== null && typeof address !== "string" ? address.port : 0;
+
   return {
     port,
     path,

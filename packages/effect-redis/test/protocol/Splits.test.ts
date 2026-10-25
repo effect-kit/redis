@@ -24,10 +24,13 @@ describe("LIMIT-10: every nonempty truncated prefix", () => {
   it.each(values)("$name", ({ wire }) => {
     for (let cut = 1; cut < wire.length; cut++) {
       const decoder = Result.getOrThrow(makeRespDecoder());
+
       Result.getOrThrow(decoder.feed(wire.subarray(0, cut)));
       expect(Result.getOrThrow(decoder.next())).toBeUndefined();
+
       decoder.end();
       const error = failure(decoder.next());
+
       expect(error.kind).toBe("UnexpectedEnd");
       expect(error.offset).toBe(cut);
       expect(decoder.bufferedBytes).toBe(0);

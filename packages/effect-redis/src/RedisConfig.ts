@@ -36,19 +36,23 @@ export const decodeRedisConfig = Effect.fnUntraced(function* (
 ): Effect.fn.Return<RedisConfig, RedisConfigError> {
   const config = yield* decode(ConfigInput, "config", input);
   const resolved = yield* normalizeEndpoint(config.endpoint);
+
   if (config.credentials !== undefined && resolved.credentials !== undefined) {
     return yield* new RedisConfigError({
       field: "credentials",
       reason: "Choose URL or explicit credentials",
     });
   }
+
   if (config.database !== undefined && resolved.database !== undefined) {
     return yield* new RedisConfigError({
       field: "database",
       reason: "Choose URL or explicit database",
     });
   }
+
   const credentials = config.credentials ?? resolved.credentials;
+
   return {
     endpoint: resolved.endpoint,
     ...(credentials === undefined ? {} : { credentials }),

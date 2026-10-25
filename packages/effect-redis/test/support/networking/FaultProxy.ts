@@ -21,12 +21,14 @@ export const faultProxy = Effect.fnUntraced(function* (
   const firstPausedRequest = Deferred.makeUnsafe<void>();
   const firstReply = Deferred.makeUnsafe<void>();
   const failures: Array<Error> = [];
+
   yield* Effect.addFinalizer(() =>
     Effect.callback<void>((resume) => {
       if (upstreams.size === 0) {
         resume(Effect.void);
         return;
       }
+
       let pending = upstreams.size;
       for (const socket of upstreams) {
         socket.once("close", () => {
@@ -36,10 +38,12 @@ export const faultProxy = Effect.fnUntraced(function* (
       }
     }),
   );
+
   let repliesReleased = !options?.holdReplies;
   let requestsReleased = !options?.pauseRequests;
   const markRequest = () => Deferred.doneUnsafe(firstPausedRequest, Effect.void);
   const markReply = () => Deferred.doneUnsafe(firstReply, Effect.void);
+
   const peer = yield* loopback((client) => {
     const upstream = createConnection({ host: "127.0.0.1", port: targetPort });
     upstreams.add(upstream);
@@ -53,16 +57,19 @@ export const faultProxy = Effect.fnUntraced(function* (
     });
     client.once("close", () => upstream.destroy());
     upstream.once("readable", markReply);
+
     const startRequests = () => {
       client.off("readable", markRequest);
       requests.delete(startRequests);
       client.pipe(upstream);
     };
+
     if (requestsReleased) startRequests();
     else {
       client.once("readable", markRequest);
       requests.add(startRequests);
     }
+
     const startReplies = () => {
       release.delete(startReplies);
       upstream.off("readable", markReply);
@@ -78,6 +85,7 @@ export const faultProxy = Effect.fnUntraced(function* (
       upstream.pipe(split).pipe(client);
       client.once("close", () => split.destroy());
     };
+
     if (repliesReleased) startReplies();
     else release.add(startReplies);
     client.once("close", () => {
@@ -85,6 +93,7 @@ export const faultProxy = Effect.fnUntraced(function* (
       release.delete(startReplies);
     });
   });
+
   return {
     port: peer.port,
     firstReply: Deferred.await(firstReply),

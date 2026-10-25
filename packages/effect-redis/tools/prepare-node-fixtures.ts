@@ -11,8 +11,10 @@ const { values } = parseArgs({
   options: { engine: { type: "string" } },
   strict: true,
 });
+
 const selectedEngine = selectEngine(values.engine ?? process.env.EFFECT_REDIS_TEST_ENGINE);
 const client = await getContainerRuntimeClient();
+
 await Effect.runPromise(
   Effect.forEach(
     currentImages,
@@ -23,6 +25,7 @@ await Effect.runPromise(
           ![selectedEngine, "node", "ryuk"].includes(image.fixture.split("-")[0] ?? "")
         )
           return;
+
         const reference = imageReference(image);
         process.stdout.write(`Pulling ${reference}\n`);
         await client.image.pull(ImageName.fromString(reference));

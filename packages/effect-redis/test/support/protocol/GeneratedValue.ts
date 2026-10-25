@@ -4,6 +4,7 @@ import { bytes, joinBytes } from "#test/support/protocol/Decode";
 export const generatedValue = (selector: number, depth: number, binary: Uint8Array): RespValue => {
   const kind = depth === 0 ? selector % 9 : selector % 14;
   const child = () => generatedValue(selector + 3, depth - 1, binary);
+
   switch (kind) {
     case 0:
       return { _tag: "BlobString", value: binary };
@@ -23,6 +24,7 @@ export const generatedValue = (selector: number, depth: number, binary: Uint8Arr
       return { _tag: "BlobError", value: binary };
     case 8:
       return { _tag: "VerbatimString", format: bytes("txt"), value: binary };
+
     case 9:
       return { _tag: "Array", values: [child(), generatedValue(selector + 5, depth - 1, binary)] };
     case 10:
@@ -49,6 +51,7 @@ export const generatedValue = (selector: number, depth: number, binary: Uint8Arr
 /** Test-only independent wire writer, including the alternate streamed encodings. */
 export const wireValue = (value: RespValue, streamed: boolean): Uint8Array => {
   const child = (nested: RespValue) => wireValue(nested, streamed);
+
   switch (value._tag) {
     case "SimpleString":
       return joinBytes(bytes("+"), value.value, bytes("\r\n"));
@@ -66,6 +69,7 @@ export const wireValue = (value: RespValue, streamed: boolean): Uint8Array => {
       return bytes(
         value.kind === "bulk" ? "$-1\r\n" : value.kind === "array" ? "*-1\r\n" : "_\r\n",
       );
+
     case "BlobString":
       if (streamed)
         return value.value.length === 0
@@ -82,6 +86,7 @@ export const wireValue = (value: RespValue, streamed: boolean): Uint8Array => {
         value.value,
         bytes("\r\n"),
       );
+
     case "Array":
     case "Set":
     case "Push": {
@@ -93,12 +98,14 @@ export const wireValue = (value: RespValue, streamed: boolean): Uint8Array => {
         bytes(stream ? ".\r\n" : ""),
       );
     }
+
     case "Map":
       return joinBytes(
         bytes(`%${streamed ? "?" : value.entries.length}\r\n`),
         ...value.entries.flatMap(([key, entry]) => [child(key), child(entry)]),
         bytes(streamed ? ".\r\n" : ""),
       );
+
     case "Attribute":
       return joinBytes(
         bytes(`|${value.entries.length}\r\n`),

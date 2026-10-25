@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import type * as Core from "#/index";
 import type * as Native from "#/node";
 
+// Test the built entrypoints in the child runtime, not source resolved through aliases.
 const core = (await import(new URL("../dist/index.js", import.meta.url).href)) as typeof Core;
 const native = (await import(new URL("../dist/node.js", import.meta.url).href)) as typeof Native;
 
@@ -11,11 +12,14 @@ const smoke = Effect.scoped(
     const connection = yield* native.connect(
       yield* core.decodeRedisConfig({ endpoint: { path: process.argv[2] } }),
     );
+
     const payload = new Uint8Array([0, 255, 128, 13, 10]);
     const commands: ReadonlyArray<Core.RedisCommand> = [["PING"], ["ECHO", payload]];
+
     for (const command of commands) {
       const decoder = yield* Effect.fromResult(core.makeRespDecoder());
       yield* connection.write(yield* Effect.fromResult(core.encodeCommand(command)));
+
       while (true) {
         const reply = yield* Effect.fromResult(decoder.next());
         if (reply !== undefined) {
@@ -28,12 +32,14 @@ const smoke = Effect.scoped(
             return yield* Effect.fail(new Error("Unexpected Unix smoke reply"));
           break;
         }
+
         const bytes = yield* connection.read;
         if (bytes === undefined)
           return yield* Effect.fail(new Error("Unix peer closed without reply"));
         yield* Effect.fromResult(decoder.feed(bytes));
       }
     }
+
     return { node: process.versions.node, transport: "unix", exchanges: commands.length };
   }),
 );

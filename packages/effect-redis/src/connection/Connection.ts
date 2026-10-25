@@ -33,6 +33,7 @@ import type { RedisConfig } from "#/RedisConfig";
 import { Transport } from "#/transport/Transport";
 
 type AcquisitionError = ConnectionError | HandshakeError | ProtocolError | TransportError;
+
 export interface ConnectionSnapshot {
   readonly state: "ready" | "connecting" | "handshaking" | "failed" | "draining" | "closed";
   readonly generation: number;
@@ -52,6 +53,7 @@ export interface ConnectionSnapshot {
   readonly retiredGenerations: number;
   readonly pushBytes: number;
 }
+
 export interface RedisConnection {
   /** Declares ordinary single-reply semantics. Stateful/blocking commands require later session APIs.
    * Returns lossless RESP, including server error values; never casts or automatically replays. */
@@ -71,21 +73,26 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
 ) {
   const transport = yield* Transport;
   const context = yield* Effect.context<R>();
+
   const { credentials, ...policyInput } = options ?? {};
   const policy = yield* decodePolicy(policyInput);
+
   if (credentials !== undefined && config.credentials !== undefined)
     return yield* new RedisConfigError({
       field: "connection.credentials",
       reason: "Choose fixed credentials or an Effect credential source",
     });
+
   // Keep captured services, but give credential resources the current physical lifetime.
   const identity = (resourceScope: Scope.Scope) =>
     credentials === undefined
       ? Effect.succeed(config.credentials)
       : credentials.pipe(Effect.provideContext(Context.add(context, Scope.Scope, resourceScope)));
+
   const parent = yield* Effect.scope;
   const scope = yield* Scope.fork(parent);
   const admission = new Admission(config.limits);
+
   let current: Generation | undefined;
   let opening: Deferred.Deferred<Generation, AcquisitionError> | undefined;
   let acquisitionDefect: Cause.Cause<never> | undefined;
@@ -96,6 +103,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
   let connectionAttempts = 0;
   let retiredGenerations = 0;
   let protocol: "resp2" | "resp3" | undefined;
+
   const unavailable = () =>
     new ConnectionError({
       reason: stopped || closing ? "closed" : "unavailable",
@@ -105,13 +113,16 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
 
   const acquire = Effect.gen(function* () {
     if (current !== undefined) yield* Deferred.await(current.closed);
+
     for (let attempt = 0; attempt < policy.reconnectAttempts; attempt++) {
       if (closing || stopped) return yield* unavailable();
+
       const resourceScope = yield* Scope.fork(scope);
       const id = ++generation;
       connectionAttempts++;
       protocol = undefined;
       openingPhase = "connecting";
+
       const result = yield* Effect.exit(
         Effect.gen(function* () {
           const physical = yield* transport.open(config);
@@ -128,6 +139,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
               retiredGenerations++;
             },
           );
+
           const negotiated = yield* handshake(
             physical,
             reader,
@@ -136,6 +148,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
             next.push,
             id,
           );
+
           return { next, negotiated };
         }).pipe(
           Scope.provide(resourceScope),
@@ -148,11 +161,13 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
           }),
         ),
       );
+
       if (Exit.isSuccess(result)) {
         if (closing || stopped) {
           yield* Scope.close(resourceScope, Exit.void);
           return yield* unavailable();
         }
+
         current = result.value.next;
         protocol = result.value.negotiated;
         yield* Effect.forkIn(
@@ -172,11 +187,14 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
           scope,
           { startImmediately: true },
         );
+
         yield* current.start;
         return current;
       }
+
       yield* Scope.close(resourceScope, Exit.void);
       if (Cause.hasDies(result.cause)) return yield* Effect.failCause(result.cause);
+
       const error = Cause.findError(result.cause);
       if (Result.isFailure(error)) return yield* Effect.failCause(error.failure);
       if (
@@ -185,17 +203,22 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
         attempt + 1 === policy.reconnectAttempts
       )
         return yield* error.success;
+
       yield* Effect.sleep(Math.min(60_000, policy.reconnectDelayMillis * 2 ** attempt));
     }
+
     return yield* unavailable();
   });
 
   const ensureReady = Effect.uninterruptibleMask((restore) =>
     Effect.gen(function* () {
       if (stopped || (closing && current?.isReady() !== true)) return yield* unavailable();
+
       const fatal = current?.fatal() ?? acquisitionDefect;
       if (fatal !== undefined) return yield* Effect.failCause(fatal);
       if (current?.isReady()) return current;
+
+      // Callers share acquisition; canceling one waiter must not cancel everyone else.
       const completion = opening ?? Deferred.makeUnsafe<Generation, AcquisitionError>();
       if (opening === undefined) {
         opening = completion;
@@ -223,6 +246,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
           scope,
         );
       }
+
       return yield* restore(Deferred.await(completion));
     }),
   );
@@ -234,6 +258,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
       current?.retire("aborted");
       for (const ticket of admission.tickets) admission.fail(ticket, unavailable());
       if (opening !== undefined) Deferred.doneUnsafe(opening, Effect.fail(unavailable()));
+
       yield* Scope.close(scope, Exit.void);
       if (current !== undefined) {
         const completed = yield* Deferred.poll(current.closed);
@@ -241,6 +266,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
       }
     }),
   );
+
   yield* Effect.addFinalizer(() => abort);
 
   const cancel = (ticket: Ticket, counted = true) =>
@@ -250,19 +276,23 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
       ticket.cancel?.();
       admission.release(ticket);
     });
+
   const executeOrdinary = (command: RedisCommand) =>
     Effect.uninterruptibleMask((restore) =>
       Effect.gen(function* () {
         const now = yield* Clock.currentTimeMillis;
         const ticket = yield* Effect.suspend((): Effect.Effect<Ticket, ExecutionError> => {
           if (closing || stopped) return Effect.fail(unavailable());
+
           const modeError = checkOrdinary(command);
           if (modeError !== undefined) return Effect.fail(modeError);
+
           const reserved = admission.reserve(command, now, config.commandTimeoutMillis);
           return reserved instanceof AdmissionError || reserved instanceof ProtocolError
             ? Effect.fail(reserved)
             : Effect.succeed(reserved);
         });
+
         const operation = Effect.gen(function* () {
           const ready = yield* ensureReady.pipe(
             Effect.mapError((error) =>
@@ -276,6 +306,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
                 : error,
             ),
           );
+
           // A failed acquisition never owns a remote reply slot.
           ready.enqueue(ticket);
           return yield* Deferred.await(ticket.result);
@@ -284,6 +315,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
             Exit.isFailure(exit) ? cancel(ticket, Cause.hasInterrupts(exit.cause)) : Effect.void,
           ),
         );
+
         const remaining = config.commandTimeoutMillis - (yield* Clock.currentTimeMillis) + now;
         if (remaining <= 0) {
           admission.timeout(ticket);
@@ -294,6 +326,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
             delivery: "unsent",
           });
         }
+
         return yield* restore(
           operation.pipe(
             Effect.timeoutOrElse({
@@ -317,6 +350,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
   const close = Effect.uninterruptibleMask((restore) =>
     Effect.gen(function* () {
       closing = true;
+
       if (admission.tickets.size !== 0)
         yield* restore(
           Deferred.await(admission.drained).pipe(
@@ -335,6 +369,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
         );
     }).pipe(Effect.ensuring(abort)),
   );
+
   const snapshot: Effect.Effect<ConnectionSnapshot> = Effect.sync(() => ({
     state: stopped
       ? "closed"
@@ -362,13 +397,18 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
     retiredGenerations,
     pushBytes: current?.pushBytes() ?? 0,
   }));
+
   const takePush = Effect.suspend(() => {
     if (stopped) return Effect.fail(unavailable());
+
     const fatal = current?.fatal() ?? acquisitionDefect;
     if (fatal !== undefined) return Effect.failCause(fatal);
+
     return current?.isReady() ? current.takePush : Effect.fail(current?.failure() ?? unavailable());
   });
+
   yield* ensureReady.pipe(Effect.onExit((exit) => (Exit.isFailure(exit) ? abort : Effect.void)));
+
   return { executeOrdinary, takePush, snapshot, close, abort } satisfies RedisConnection;
 });
 

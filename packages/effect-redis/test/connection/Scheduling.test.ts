@@ -9,11 +9,14 @@ it.effect(
   () =>
     Effect.gen(function* () {
       const { fixture, connection } = yield* controlled();
+
       const a = yield* Effect.forkChild(connection.executeOrdinary(["GET", "a"]));
       yield* sent(fixture, ["GET", "a"]);
       const b = yield* Effect.forkChild(connection.executeOrdinary(["GET", "b"]));
       yield* sent(fixture, ["GET", "b"]);
+
       yield* fixture.receive(bytes("-WRONGTYPE synthetic\r\n$1\r\nb\r\n"));
+
       expect(yield* Fiber.join(a)).toEqual({
         _tag: "SimpleError",
         value: bytes("WRONGTYPE synthetic"),
@@ -34,15 +37,19 @@ it.effect(
       const { fixture, connection } = yield* controlled({
         limits: { maxInFlightCommands: 1, maxQueuedCommands: 2 },
       });
+
       const a = yield* Effect.forkChild(connection.executeOrdinary(["GET", "a"]));
       yield* sent(fixture, ["GET", "a"]);
       const b = yield* Effect.forkChild(connection.executeOrdinary(["GET", "b"]));
       const c = yield* Effect.forkChild(connection.executeOrdinary(["GET", "c"]));
       yield* Effect.yieldNow;
       expect(yield* connection.snapshot).toMatchObject({ queuedCommands: 2, inFlightCommands: 1 });
+
       const excess = yield* Effect.result(connection.executeOrdinary(["GET", "d"]));
       expect(Result.isFailure(excess) && excess.failure._tag).toBe("AdmissionError");
+
       yield* Fiber.interrupt(b);
+
       yield* fixture.receive(bytes("$1\r\na\r\n"));
       yield* Fiber.join(a);
       yield* sent(fixture, ["GET", "c"], "$1\r\nc\r\n");
@@ -61,6 +68,7 @@ it.effect(
   () =>
     Effect.gen(function* () {
       const { fixture, connection } = yield* controlled({ limits: { maxInFlightCommands: 1 } });
+
       const a = yield* Effect.forkChild(connection.executeOrdinary(["INCR", "counter"]));
       const attempt = yield* fixture.nextWrite;
       yield* attempt.accept(1);
@@ -69,6 +77,7 @@ it.effect(
       );
       yield* Effect.yieldNow;
       yield* Fiber.interrupt(a);
+
       const outcome = yield* Fiber.join(b);
       expect(Result.isFailure(outcome) && outcome.failure).toMatchObject({
         _tag: "ConnectionError",
@@ -90,13 +99,16 @@ it.effect("ADMISSION-02: a queued deadline remains definitely unsent and release
       commandTimeoutMillis: 100,
       limits: { maxInFlightCommands: 1 },
     });
+
     const a = yield* Effect.forkChild(Effect.result(connection.executeOrdinary(["GET", "a"])));
     yield* sent(fixture, ["GET", "a"]);
     const b = yield* Effect.forkChild(Effect.result(connection.executeOrdinary(["GET", "b"])));
     yield* Effect.yieldNow;
     yield* TestClock.adjust(100);
+
     const first = yield* Fiber.join(a);
     const second = yield* Fiber.join(b);
+
     expect(Result.isFailure(first) && first.failure).toMatchObject({
       _tag: "ConnectionError",
       delivery: "possibly-written",
@@ -112,6 +124,7 @@ it.effect("ADMISSION-02: a queued deadline remains definitely unsent and release
 it.effect("ADMISSION-03: impossible in-flight size and stateful commands fail before write", () =>
   Effect.gen(function* () {
     const { fixture, connection } = yield* controlled({ limits: { maxInFlightBytes: 32 } });
+
     for (const command of [
       ["ECHO", "a".repeat(100)],
       ["MULTI"],
@@ -130,17 +143,20 @@ it.effect("ADMISSION-04: byte capacity and FIFO survive canceled waiters", () =>
     const { fixture, connection } = yield* controlled({
       limits: { maxInFlightBytes: 32, maxQueuedBytes: 60 },
     });
+
     const a = yield* Effect.forkChild(connection.executeOrdinary(["GET", "a"]));
     yield* sent(fixture, ["GET", "a"]);
     const b = yield* Effect.forkChild(connection.executeOrdinary(["GET", "b"]));
     const c = yield* Effect.forkChild(connection.executeOrdinary(["GET", "c"]));
     const d = yield* Effect.forkChild(connection.executeOrdinary(["GET", "d"]));
     yield* waitForSnapshot(connection, (snapshot) => snapshot.queuedCommands === 3);
+
     const full = yield* Effect.result(connection.executeOrdinary(["GET", "e"]));
     expect(Result.isFailure(full) && full.failure).toMatchObject({
       _tag: "AdmissionError",
       reason: "bytes",
     });
+
     yield* Fiber.interrupt(c);
     yield* TestClock.adjust(50);
     yield* fixture.receive(bytes("+a\r\n"));
@@ -157,6 +173,7 @@ it.effect("ADMISSION-04: byte capacity and FIFO survive canceled waiters", () =>
 it.effect("ADMISSION-05: stream option scanning never mistakes group names or keys for BLOCK", () =>
   Effect.gen(function* () {
     const { fixture, connection } = yield* controlled();
+
     for (const command of [
       ["XREAD", "STREAMS", "BLOCK", "0"],
       ["XREADGROUP", "GROUP", "BLOCK", "consumer", "COUNT", "1", "STREAMS", "BLOCK", ">"],
@@ -165,6 +182,7 @@ it.effect("ADMISSION-05: stream option scanning never mistakes group names or ke
       yield* sent(fixture, command, "*-1\r\n");
       expect((yield* Fiber.join(request))._tag).toBe("Null");
     }
+
     const blocked = yield* Effect.result(
       connection.executeOrdinary([
         "XREADGROUP",
@@ -194,11 +212,14 @@ it.effect(
       const request = yield* Effect.forkChild(connection.executeOrdinary(["CUSTOM.CMD", payload]));
       const attempt = yield* fixture.nextWrite;
       const expected = attempt.bytes.slice();
+      // Mutate after admission to prove the socket owns a byte snapshot.
       payload.fill(7);
       yield* attempt.accept(attempt.bytes.length);
+
       yield* fixture.receive(bytes("-ERR custom-fixture-rejection\r\n"));
       expect((yield* Fiber.join(request))._tag).toBe("SimpleError");
       expect((yield* fixture.written)[0]).toEqual(expected);
+
       const next = yield* Effect.forkChild(connection.executeOrdinary(["PING"]));
       yield* sent(fixture, ["PING"], "+PONG\r\n");
       yield* Fiber.join(next);

@@ -12,6 +12,7 @@ const PositiveInt64 = Schema.Union([
     Schema.isLessThanOrEqualToBigInt(9223372036854775807n),
   ),
 ]);
+
 export const SetCondition = Schema.Union([
   Schema.Literals(["NX", "XX"]),
   Schema.Struct({ type: Schema.Literals(["IFEQ", "IFNE"]), value: Argument }),
@@ -21,18 +22,23 @@ export const SetCondition = Schema.Union([
   }),
 ]);
 export type SetCondition = typeof SetCondition.Type;
+
 export const SetExpiry = Schema.Union([
   Schema.Struct({ type: Schema.Literals(["EX", "PX", "EXAT", "PXAT"]), value: PositiveInt64 }),
   Schema.Struct({ type: Schema.Literal("KEEPTTL") }),
 ]);
 export type SetExpiry = typeof SetExpiry.Type;
+
 export const SetOptions = Schema.Struct({
   condition: Schema.optional(SetCondition),
   expiry: Schema.optional(SetExpiry),
   get: Schema.optional(Schema.Boolean),
 });
 export type SetOptions = typeof SetOptions.Type;
+
 export type WriteSetOptions = Omit<SetOptions, "get"> & { readonly get?: never };
+
+// Optional runtime conditions keep both outcomes; literal conditions narrow to boolean.
 export type WriteSetResult<O> = O extends { readonly condition: SetCondition }
   ? boolean
   : "condition" extends keyof O
@@ -40,6 +46,7 @@ export type WriteSetResult<O> = O extends { readonly condition: SetCondition }
       ? void
       : void | boolean
     : void;
+
 export type SetResult<O extends SetOptions> = O extends { readonly get: true }
   ? Option.Option<Uint8Array>
   : "get" extends keyof O
@@ -51,6 +58,7 @@ export type SetResult<O extends SetOptions> = O extends { readonly get: true }
 export const decodeSetOptions = Schema.decodeUnknownEffect(SetOptions, {
   onExcessProperty: "error",
 });
+
 export const decodeWriteSetOptions = Schema.decodeUnknownEffect(
   Schema.Struct({
     condition: SetOptions.fields.condition,
@@ -58,16 +66,20 @@ export const decodeWriteSetOptions = Schema.decodeUnknownEffect(
   }),
   { onExcessProperty: "error" },
 );
+
 /** Expiry uses whole positive milliseconds; sub-millisecond precision is rejected. */
 export const expiryAfter = Effect.fnUntraced(function* (
   duration: Duration.Duration,
 ): Effect.fn.Return<SetExpiry, CommandInputError> {
   if (duration.value._tag === "Nanos" && duration.value.nanos % 1000000n !== 0n)
     return yield* new CommandInputError({ delivery: "unsent", reason: "options" });
+
+  // Divide while exact; converting nanoseconds to number first can round whole milliseconds.
   const value = yield* Schema.decodeUnknownEffect(PositiveInteger)(
     duration.value._tag === "Nanos"
       ? Number(duration.value.nanos / 1000000n)
       : Duration.toMillis(duration),
   ).pipe(Effect.mapError(() => new CommandInputError({ delivery: "unsent", reason: "options" })));
+
   return { type: "PX", value };
 });

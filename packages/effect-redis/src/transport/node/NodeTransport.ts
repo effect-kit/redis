@@ -14,18 +14,21 @@ export const connect = Effect.fnUntraced(function* (config: RedisConfig) {
     Effect.try({
       try: () => {
         const endpoint = config.endpoint;
+
         if (endpoint._tag === "Unix")
           return makeConnection(
             createConnection({ path: endpoint.path }),
             "connect",
             config.limits.maxInFlightBytes,
           );
+
         if (endpoint.tls === undefined)
           return makeConnection(
             createConnection({ host: endpoint.host, port: endpoint.port }),
             "connect",
             config.limits.maxInFlightBytes,
           );
+
         const tls = endpoint.tls;
         const servername =
           tls.serverName ?? (isIP(endpoint.host) === 0 ? endpoint.host : undefined);
@@ -34,6 +37,7 @@ export const connect = Effect.fnUntraced(function* (config: RedisConfig) {
           ...(tls.certificate === undefined ? {} : { cert: Redacted.value(tls.certificate) }),
           ...(tls.privateKey === undefined ? {} : { key: Redacted.value(tls.privateKey) }),
         });
+
         const socket = connectTls({
           host: endpoint.host,
           port: endpoint.port,
@@ -41,6 +45,7 @@ export const connect = Effect.fnUntraced(function* (config: RedisConfig) {
           rejectUnauthorized: tls.rejectUnauthorized,
           secureContext,
         });
+
         return makeConnection(socket, "secureConnect", config.limits.maxInFlightBytes);
       },
       catch: (cause) =>
@@ -48,6 +53,7 @@ export const connect = Effect.fnUntraced(function* (config: RedisConfig) {
     }),
     (connection) => connection.close,
   );
+
   yield* physical.ready.pipe(
     Effect.timeoutOrElse({
       duration: config.connectTimeoutMillis,
@@ -55,6 +61,7 @@ export const connect = Effect.fnUntraced(function* (config: RedisConfig) {
     }),
     Effect.onExit((exit) => (Exit.isFailure(exit) ? physical.close : Effect.void)),
   );
+
   return physical.connection;
 });
 

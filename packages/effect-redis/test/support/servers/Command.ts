@@ -24,6 +24,7 @@ export const command = (file: string, args: ReadonlyArray<string>) =>
         } else resume(Effect.succeed(stdout.trim()));
       },
     );
+
     return Effect.callback<void>((done) => {
       if (child.exitCode !== null || child.signalCode !== null) {
         done(Effect.void);

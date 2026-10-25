@@ -16,7 +16,9 @@ const targets = serverTargets.filter(
     ["redis", "valkey"].includes(target.product) &&
     (selectedEngine === "all" || target.product === selectedEngine),
 );
+
 const bytes = (text: string) => new TextEncoder().encode(text);
+
 it.live.each(targets)(
   "COMMAND-25: $fixture SET options preserve conditional, expiry and version semantics",
   (target) =>
@@ -29,6 +31,7 @@ it.live.each(targets)(
       const redis = makeRedis(makeExecutor(connection));
       const oracle = yield* connect(config);
       const key = `effect-redis:test:${randomUUID()}`;
+
       expect(yield* redis.set(key, "initial", { condition: "NX" })).toBe(true);
       expect(yield* redis.set(key, "wrong", { condition: "NX" })).toBe(false);
       expect(yield* exchange(oracle, ["GET", key])).toEqual({
@@ -40,6 +43,7 @@ it.live.each(targets)(
       expect(yield* redis.set(key, "old-request", { get: true })).toEqual(
         Option.some(bytes("updated")),
       );
+
       const supportsNxGet = target.product === "valkey" || !target.version.startsWith("6.");
       if (supportsNxGet) {
         expect(yield* redis.set(key, "must-not-write", { get: true, condition: "NX" })).toEqual(
@@ -53,11 +57,13 @@ it.live.each(targets)(
         expect(
           yield* Effect.flip(redis.set(key, "must-not-write", { get: true, condition: "NX" })),
         ).toMatchObject({ _tag: "ServerError", code: "ERR" });
+
       const time = yield* exchange(oracle, ["TIME"]);
       if (time._tag !== "Array") return yield* Effect.die("Expected server TIME tuple");
       const [seconds, micros] = time.values;
       if (seconds?._tag !== "BlobString" || micros?._tag !== "BlobString")
         return yield* Effect.die("Expected server TIME byte strings");
+
       // Absolute expiry is measured against the server clock, including inside Docker VMs.
       const now =
         Number(new TextDecoder().decode(seconds.value)) * 1000 +
@@ -68,20 +74,24 @@ it.live.each(targets)(
         { type: "EXAT", value: Math.floor(now / 1000) + 120 },
         { type: "PXAT", value: now + 120000 },
       ];
+
       for (const expiry of expiries) {
         yield* redis.set(key, "ttl", { expiry });
         const ttl = yield* exchange(oracle, ["PTTL", key]);
         if (ttl._tag !== "Integer") return yield* Effect.die("Expected integer PTTL");
         expect(ttl.value).toBeGreaterThan(0n);
         expect(ttl.value).toBeLessThanOrEqual(120000n);
+
         yield* redis.set(key, "keep", { expiry: { type: "KEEPTTL" } });
         const kept = yield* exchange(oracle, ["PTTL", key]);
         if (kept._tag !== "Integer") return yield* Effect.die("Expected integer PTTL");
         expect(kept.value).toBeGreaterThan(0n);
         expect(kept.value).toBeLessThanOrEqual(ttl.value);
       }
+
       yield* redis.set(key, "already-expired", { expiry: { type: "PXAT", value: 1 } });
       expect(yield* redis.get(key)).toEqual(Option.none());
+
       yield* redis.set(key, "compare");
       const supportsIfeq =
         (target.product === "redis" && target.fixture === "redis") ||
@@ -99,10 +109,12 @@ it.live.each(targets)(
             redis.set(key, "wrong", { condition: { type: "IFEQ", value: "compare" } }),
           ),
         ).toMatchObject({ _tag: "ServerError", code: "ERR" });
+
       if (target.fixture === "redis") {
         expect(
           yield* redis.set(key, "new", { condition: { type: "IFNE", value: "mismatch" } }),
         ).toBe(true);
+
         const digest = yield* exchange(oracle, ["DIGEST", key]);
         if (digest._tag !== "BlobString") return yield* Effect.die("Expected digest blob");
         const token = new TextDecoder().decode(digest.value);
@@ -122,6 +134,7 @@ it.live.each(targets)(
           });
         }
       }
+
       yield* redis.ping();
       yield* recordFixture(`${target.fixture}-typed-options`, {
         fixture: target.fixture,

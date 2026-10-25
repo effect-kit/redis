@@ -58,8 +58,10 @@ export const decode = <S extends Schema.Constraint>(schema: S, field: string, in
   Schema.decodeUnknownEffect(schema, { onExcessProperty: "error" })(input).pipe(
     Effect.mapError((error) => {
       const issue = safeIssues(error.issue).issues[0];
+
       // Unexpected keys are untrusted too; only schema-owned path segments may escape.
       const path = issue?.path?.filter((part) => typeof part === "string" && fields.has(part));
+
       return new RedisConfigError({
         field: path?.length ? `${field}.${path.join(".")}` : field,
         reason: "Invalid value or option combination",

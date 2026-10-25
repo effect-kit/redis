@@ -27,6 +27,7 @@ export const containerRequest = <A>(stage: string, request: () => Promise<A>) =>
 export class FixtureContainer extends GenericContainer {
   readonly fixtureName = `effect-redis-${randomUUID()}`;
   diagnostic = "";
+
   constructor(readonly reference: string) {
     super(reference);
     this.withLogConsumer((stream) => {
@@ -37,19 +38,24 @@ export class FixtureContainer extends GenericContainer {
         this.diagnostic = "Container log stream failed";
       });
     });
+
     this.withName(this.fixtureName)
       .withLabels({ "effect-redis.fixture": "true" })
       .withPullPolicy(PullPolicy.neverPull())
       .withUser("0:0");
     this.hostConfig.ReadonlyRootfs = true;
   }
+
   loopbackPort(port: number) {
     this.withExposedPorts(port);
     this.hostConfig.PortBindings = { [`${port}/tcp`]: [{ HostIp: "127.0.0.1", HostPort: "0" }] };
+
     return this;
   }
+
   sharedVolume(volume: string, path: string) {
     this.hostConfig.Binds = [...(this.hostConfig.Binds ?? []), `${volume}:${path}:rw`];
+
     return this;
   }
 }
@@ -74,6 +80,7 @@ export const scopedContainer = Effect.fnUntraced(function* (container: FixtureCo
   const client = yield* containerRequest("container-runtime", getContainerRuntimeClient);
   yield* requireImage(container.reference);
   yield* requireImage(imageReference(reaperImage));
+
   yield* Effect.acquireRelease(Effect.succeed(container.fixtureName), (name) =>
     containerRequest("container-remove", async () => {
       try {
@@ -83,6 +90,7 @@ export const scopedContainer = Effect.fnUntraced(function* (container: FixtureCo
       }
     }).pipe(Effect.orDie),
   );
+
   // Otherwise SDK acquisition could create a container after interruption has run cleanup.
   return yield* containerRequest("container-start", () => container.start()).pipe(
     Effect.uninterruptible,
@@ -112,6 +120,7 @@ export const sharedVolume = Effect.gen(function* () {
   yield* requireImage(imageReference(reaperImage));
   const reaper = yield* containerRequest("container-reaper", () => getReaper(client));
   const name = `effect-redis-${randomUUID()}`;
+
   yield* Effect.acquireRelease(Effect.succeed(name), () =>
     containerRequest("volume-remove", async () => {
       try {
@@ -121,6 +130,7 @@ export const sharedVolume = Effect.gen(function* () {
       }
     }).pipe(Effect.orDie),
   );
+
   yield* containerRequest("volume-create", () =>
     client.container.dockerode.createVolume({
       Name: name,
@@ -130,5 +140,6 @@ export const sharedVolume = Effect.gen(function* () {
       },
     }),
   ).pipe(Effect.uninterruptible);
+
   return name;
 });

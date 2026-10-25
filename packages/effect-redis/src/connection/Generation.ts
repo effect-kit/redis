@@ -29,26 +29,31 @@ export const makeGeneration = Effect.fnUntraced(function* (
     capacity: policy.maxPushMessages,
     strategy: "dropping",
   });
+
   const retired = yield* Deferred.make<void>();
   const closed = yield* Deferred.make<void>();
   const queued: Array<Ticket> = [];
   const pending: Array<Ticket> = [];
   const owned = new Set<Ticket>();
+
   let ready = false;
   let stopped = false;
   let pushBytes = 0;
   let takePending = false;
   let failure: ConnectionError | undefined;
   let fatal: Cause.Cause<never> | undefined;
+
   const signal = () => {
     Queue.offerUnsafe(wake, undefined);
   };
+
   const retire = (
     reason: ConnectionError["reason"],
     cause?: unknown,
     defect?: Cause.Cause<never>,
   ) => {
     if (stopped) return;
+
     fatal = defect;
     stopped = true;
     onRetire();
@@ -60,10 +65,12 @@ export const makeGeneration = Effect.fnUntraced(function* (
       delivery: "unsent",
       ...(cause === undefined ? {} : { cause: Redacted.make(cause) }),
     });
+
     const tickets = [...owned];
     owned.clear();
     queued.length = 0;
     pending.length = 0;
+
     for (const ticket of tickets) {
       const uncertain = !ticket.replied && ticket.phase !== "queued";
       if (uncertain) admission.unknownOutcomes++;
@@ -79,12 +86,14 @@ export const makeGeneration = Effect.fnUntraced(function* (
           }),
         );
     }
+
     Queue.failCauseUnsafe(pushes, defect ?? Cause.fail(failure));
     Queue.shutdownUnsafe(pushes);
     pushBytes = 0;
     Deferred.doneUnsafe(retired, Effect.void);
     signal();
   };
+
   const push = (value: RespValue, wireBytes: number) =>
     Effect.sync(() => {
       // Wire bytes bound payload retention; decoder entry/depth limits also bound object overhead.
@@ -100,14 +109,17 @@ export const makeGeneration = Effect.fnUntraced(function* (
           new ConnectionError({ reason: "push-overflow", generation: id, delivery: "unsent" })
         );
       }
+
       pushBytes += cost;
       return undefined;
     }).pipe(Effect.flatMap((error) => (error === undefined ? Effect.void : Effect.fail(error))));
+
   const watch = <A, E>(effect: Effect.Effect<A, E>) =>
     effect.pipe(
       Effect.onExit((exit) =>
         Effect.sync(() => {
           if (Exit.isSuccess(exit) || stopped) return;
+
           if (Cause.hasDies(exit.cause)) {
             retire(
               "aborted",
@@ -116,11 +128,13 @@ export const makeGeneration = Effect.fnUntraced(function* (
             );
             return;
           }
+
           const error = Cause.findError(exit.cause);
           if (Result.isFailure(error)) {
             retire("aborted", undefined, error.failure);
             return;
           }
+
           const reason =
             error.success instanceof ConnectionError
               ? error.success.reason
@@ -137,28 +151,35 @@ export const makeGeneration = Effect.fnUntraced(function* (
         Cause.hasDies(cause) || Cause.hasInterrupts(cause) ? Effect.failCause(cause) : Effect.void,
       ),
     );
+
   const writer = watch(
     Effect.gen(function* () {
       while (true) {
         if (stopped) return;
+
         const now = yield* Clock.currentTimeMillis;
         const ticket = yield* Effect.sync(() => {
           const candidate = queued[0];
           if (!ready || candidate === undefined || !admission.canWrite(candidate)) return undefined;
+
           queued.shift();
           admission.begin(candidate, now);
+          // Register reply ownership before a fast server can answer the write.
           pending.push(candidate);
           return candidate;
         });
+
         if (ticket === undefined) {
           yield* Queue.take(wake);
           continue;
         }
+
         const frame = ticket.frame;
         if (frame === undefined) {
           if (stopped) return;
           return yield* Effect.die(new Error("Missing owned request frame"));
         }
+
         yield* transport.write(frame).pipe(
           Effect.timeoutOrElse({
             duration: Math.max(1, ticket.deadlineMillis - now),
@@ -174,6 +195,7 @@ export const makeGeneration = Effect.fnUntraced(function* (
             },
           }),
         );
+
         yield* Effect.sync(() => {
           if (ticket.phase === "done") return;
           ticket.phase = "sent";
@@ -186,17 +208,22 @@ export const makeGeneration = Effect.fnUntraced(function* (
       }
     }),
   );
+
   const read = watch(
     Effect.gen(function* () {
       let turns = 0;
+
       while (true) {
         if (stopped) return;
+
         const reply = yield* reader.next;
         if (reply === undefined) {
           retire("closed");
           return;
         }
+
         if (stopped) return;
+
         if (undecorated(reply.value)._tag === "Push") yield* push(reply.value, reply.wireBytes);
         else {
           const ticket = pending.shift();
@@ -208,10 +235,12 @@ export const makeGeneration = Effect.fnUntraced(function* (
           admission.succeed(ticket, reply.value);
           signal();
         }
+
         if (++turns % 64 === 0) yield* Effect.yieldNow;
       }
     }),
   );
+
   const enqueue = (ticket: Ticket) => {
     if (!ready || stopped) {
       admission.fail(
@@ -221,22 +250,27 @@ export const makeGeneration = Effect.fnUntraced(function* (
       );
       return;
     }
+
     ticket.generation = id;
     ticket.cancel = () => {
       if (ticket.phase === "done" || ticket.replied) return;
       if (ticket.phase !== "queued") {
+        // Removing a possibly-written slot would assign its reply to another caller.
         retire("aborted");
         return;
       }
+
       const index = queued.indexOf(ticket);
       if (index !== -1) queued.splice(index, 1);
       owned.delete(ticket);
       signal();
     };
+
     owned.add(ticket);
     queued.push(ticket);
     signal();
   };
+
   const takePush = Effect.uninterruptibleMask((restore) =>
     Effect.gen(function* () {
       if (takePending)
@@ -245,6 +279,7 @@ export const makeGeneration = Effect.fnUntraced(function* (
           delivery: "unsent",
           generation: id,
         });
+
       takePending = true;
       return yield* restore(Queue.take(pushes)).pipe(
         Effect.tap((reply) =>
@@ -261,11 +296,13 @@ export const makeGeneration = Effect.fnUntraced(function* (
       );
     }),
   );
+
   const start = Effect.gen(function* () {
     ready = true;
     yield* Effect.forkIn(read, scope);
     yield* Effect.forkIn(writer, scope);
   });
+
   return {
     id,
     scope,
@@ -282,4 +319,5 @@ export const makeGeneration = Effect.fnUntraced(function* (
     pushBytes: () => pushBytes,
   };
 });
+
 export type Generation = Effect.Success<ReturnType<typeof makeGeneration>>;

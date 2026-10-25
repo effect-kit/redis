@@ -34,6 +34,7 @@ export const allocateServer = Effect.fnUntraced(function* (
 ) {
   const directory = yield* temporaryDirectory;
   const tls = options?.tls;
+
   if (tls !== undefined) {
     yield* Effect.tryPromise({
       try: () =>
@@ -45,6 +46,7 @@ export const allocateServer = Effect.fnUntraced(function* (
       catch: (cause) => new FixtureError({ stage: "tls-copy", cause: Redacted.make(cause) }),
     });
   }
+
   // Redis sees the container network peer; the published host port is loopback-only.
   const profile = serverProfile(target);
   if (
@@ -55,6 +57,7 @@ export const allocateServer = Effect.fnUntraced(function* (
       options?.password !== undefined)
   )
     return yield* new FixtureError({ stage: "unsupported-fixture-mode" });
+
   const configuration =
     profile.configuration ??
     [
@@ -83,10 +86,12 @@ export const allocateServer = Effect.fnUntraced(function* (
       ...(options?.extraConfig ?? []),
       "",
     ].join("\n");
+
   yield* Effect.tryPromise({
     try: () => writeFile(join(directory, "server.conf"), configuration),
     catch: (cause) => new FixtureError({ stage: "server-config", cause: Redacted.make(cause) }),
   });
+
   const container = new FixtureContainer(target.reference)
     .withEntrypoint([profile.executable])
     .withCommand(profile.command)
@@ -97,9 +102,11 @@ export const allocateServer = Effect.fnUntraced(function* (
     .withWaitStrategy(Wait.forAll([]))
     .withStartupTimeout(15_000);
   if (options?.unixVolume !== undefined) container.sharedVolume(options.unixVolume, "/socket");
+
   const started = yield* scopedContainer(container);
   const name = container.fixtureName;
   const port = started.getMappedPort(profile.port);
+
   const start = Effect.gen(function* () {
     yield* probe(port, tls, options?.password).pipe(
       Effect.retry({ schedule: Schedule.spaced(50), times: 60 }),
@@ -108,10 +115,12 @@ export const allocateServer = Effect.fnUntraced(function* (
         orElse: () => Effect.fail(new FixtureError({ stage: "server-readiness" })),
       }),
     );
+
     const version = yield* containerRequest("server-version", () => started.exec(profile.version));
     const build = version.output.trim();
     if (version.exitCode !== 0 || !build.includes(target.version))
       return yield* new FixtureError({ stage: "server-version", diagnostic: build.slice(0, 512) });
+
     return {
       port,
       name,
@@ -129,6 +138,7 @@ export const allocateServer = Effect.fnUntraced(function* (
         .digest("hex"),
     };
   });
+
   return {
     name,
     directory,

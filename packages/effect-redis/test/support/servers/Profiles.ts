@@ -20,6 +20,7 @@ export const serverProfile = (target: ServerTarget) => {
         configuration: "dragonfly:standalone;threads=2;maxmemory=512mb",
         version: ["dragonfly", "--version"],
       };
+
     case "garnet":
       return {
         executable: "/app/GarnetServer",
@@ -28,6 +29,7 @@ export const serverProfile = (target: ServerTarget) => {
         configuration: "garnet:standalone;memory=128m",
         version: ["/app/GarnetServer", "--version"],
       };
+
     case "kvrocks":
       return {
         executable: "kvrocks",
@@ -36,6 +38,7 @@ export const serverProfile = (target: ServerTarget) => {
         configuration: "bind 0.0.0.0\nport 6666\ndir /data\ndaemonize no\nworkers 2\n",
         version: ["kvrocks", "--version"],
       };
+
     default: {
       const executable =
         target.product === "valkey"
@@ -45,6 +48,7 @@ export const serverProfile = (target: ServerTarget) => {
             : target.product === "redict"
               ? "/bin/redict-server"
               : "redis-server";
+
       return {
         executable,
         port: 6379,

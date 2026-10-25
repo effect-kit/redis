@@ -9,6 +9,7 @@ export const recordFixture = (fixture: string, evidence: Readonly<Record<string,
     try: async () => {
       const directory = new URL("../../../test-results/", import.meta.url);
       await mkdir(directory, { recursive: true });
+
       await writeFile(
         new URL(`${fixture}.json`, directory),
         `${JSON.stringify(

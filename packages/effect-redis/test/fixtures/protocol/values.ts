@@ -6,6 +6,7 @@ export interface WireFixture {
   readonly wire: Uint8Array;
   readonly value: RespValue;
 }
+
 const simple = (value: string): RespValue => ({ _tag: "SimpleString", value: bytes(value) });
 const integer = (value: bigint): RespValue => ({ _tag: "Integer", value });
 

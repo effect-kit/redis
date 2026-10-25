@@ -16,6 +16,7 @@ export type RedisError =
   | ServerError
   | ReplyError
   | UnsupportedCommandError;
+
 export interface RedisExecutor {
   readonly execute: <A, E, RD, RE>(
     command: Command<A, E, RD, RE>,
@@ -24,8 +25,11 @@ export interface RedisExecutor {
     command: PreparedCommand<A, E, R>,
   ) => Effect.Effect<A, RedisError | E, R>;
 }
+
+// Only the bounded error code is public; server text can contain echoed keys or values.
 const serverCode = (bytes: Uint8Array) => {
   let code = "";
+
   for (const byte of bytes.subarray(0, 65)) {
     if (byte === 32) return code.length > 0 ? code : "ERR";
     if (
@@ -33,18 +37,24 @@ const serverCode = (bytes: Uint8Array) => {
       code.length === 64
     )
       return "ERR";
+
     code += String.fromCharCode(byte);
   }
+
   return code || "ERR";
 };
+
 export const makeExecutor = (connection: RedisConnection): RedisExecutor => {
   const executePrepared = Effect.fnUntraced(function* <A, E, R>(command: PreparedCommand<A, E, R>) {
     if (command.metadata.execution !== "ordinary")
       return yield* new UnsupportedCommandError({ delivery: "unsent", reason: "execution-mode" });
+
     if (command.routing._tag === "Node")
       return yield* new UnsupportedCommandError({ delivery: "unsent", reason: "explicit-node" });
+
     const reply = yield* connection.executeOrdinary(command.tokens);
     const value = undecorate(reply);
+
     if (
       command.serverErrors === "fail" &&
       (value._tag === "SimpleError" || value._tag === "BlobError")
@@ -54,8 +64,11 @@ export const makeExecutor = (connection: RedisConnection): RedisExecutor => {
         code: serverCode(value.value),
         reply: Redacted.make(reply),
       });
+
+    // A decoder failure follows a known reply, so it must not trigger wire replay.
     return yield* command.decode(reply);
   });
+
   return {
     executePrepared,
     execute: (command) => command.prepare.pipe(Effect.flatMap(executePrepared)),

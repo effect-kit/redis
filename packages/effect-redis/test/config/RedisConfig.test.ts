@@ -10,6 +10,7 @@ describe("CONFIG: connection configuration", () => {
       const config = yield* decodeRedisConfig({
         endpoint: { url: "rediss://alice:p%40ss@[::1]:6380/2" },
       });
+
       expect(config.endpoint).toEqual({
         _tag: "Tcp",
         host: "::1",
@@ -17,10 +18,12 @@ describe("CONFIG: connection configuration", () => {
         tls: { rejectUnauthorized: true },
       });
       expect(config.database).toBe(2);
+
       if (config.credentials === undefined) throw new Error("Expected credentials");
       expect(Redacted.value(config.credentials.password)).toBe("p@ss");
       if (config.credentials.username === undefined) throw new Error("Expected username");
       expect(Redacted.value(config.credentials.username)).toBe("alice");
+
       expect(JSON.stringify(config)).not.toContain("p@ss");
       expect(JSON.stringify(config)).not.toContain("alice");
       expect(JSON.stringify(config)).not.toContain("rediss:");
@@ -34,17 +37,21 @@ describe("CONFIG: connection configuration", () => {
         protocol: "resp2",
         database: 4,
       });
+
       expect(config.endpoint).toEqual({ _tag: "Tcp", host: "localhost", port: 6379 });
       expect(config.database).toBe(4);
       expect(config.protocol).toBe("resp2");
       expect(config.connectTimeoutMillis).toBe(10_000);
       expect(config.limits.maxQueuedCommands).toBe(1024);
+
       const rootPath = yield* decodeRedisConfig({ endpoint: { url: "redis://localhost/" } });
       expect(rootPath.database).toBe(0);
+
       const overridden = yield* decodeRedisConfig({
         endpoint: { path: "/tmp/redis.sock" },
         limits: { maxQueuedCommands: 2 },
       });
+
       expect(overridden.endpoint).toEqual({ _tag: "Unix", path: "/tmp/redis.sock" });
       expect(overridden.limits.maxQueuedCommands).toBe(2);
     }),
@@ -59,6 +66,7 @@ describe("CONFIG: connection configuration", () => {
         },
         credentials: { username: "test-user", password: "test-password" },
       });
+
       if (config.credentials === undefined) throw new Error("Expected credentials");
       expect(Redacted.value(config.credentials.password)).toBe("test-password");
       expect(JSON.stringify(config)).not.toContain("test-");
@@ -94,6 +102,7 @@ describe("CONFIG: connection configuration", () => {
   ])("rejects invalid or mutually exclusive connection options %#", (input) =>
     Effect.gen(function* () {
       const result = yield* Effect.result(decodeRedisConfig(input));
+
       expect(Result.isFailure(result)).toBe(true);
       if (Result.isFailure(result)) expect(result.failure).toBeInstanceOf(RedisConfigError);
     }),
@@ -122,6 +131,7 @@ describe("CONFIG: connection configuration", () => {
             ),
           ).toBe(true);
         }
+
         for (const key of ["connectTimeoutMillis", "commandTimeoutMillis"]) {
           expect(
             Result.isFailure(
@@ -139,6 +149,7 @@ describe("CONFIG: connection configuration", () => {
       const result = yield* Effect.result(
         decodeRedisConfig({ endpoint: { host: "localhost" }, limits: { maxBufferedBytes: 32 } }),
       );
+
       expect(Result.isFailure(result)).toBe(true);
     }),
   );
@@ -153,6 +164,7 @@ describe("CONFIG: connection configuration", () => {
   ])("errors omit rejected inputs and unexpected field names %#", (input) =>
     Effect.gen(function* () {
       const result = yield* Effect.result(decodeRedisConfig(input));
+
       expect(Result.isFailure(result)).toBe(true);
       if (Result.isFailure(result)) {
         const diagnostic = `${result.failure}\n${JSON.stringify(result.failure)}`;

@@ -2,14 +2,17 @@ import { Result } from "effect";
 
 import type * as Codec from "#/index";
 
+// A source alias would bypass declaration/bundling regressions in the built codec.
 const moduleUrl = new URL("../dist/index.js", import.meta.url).href;
 const { makeRespDecoder, ProtocolError }: typeof Codec = await import(moduleUrl);
+
 const seed = 20261025;
 let randomState = seed;
 const random = () => {
   randomState = (randomState * 48271) % 2147483647;
   return randomState;
 };
+
 const encoder = new TextEncoder();
 const corpus = [
   "+OK\r\n",
@@ -21,15 +24,18 @@ const corpus = [
   "*99999999999999999999\r\n",
   "*?\r\n".repeat(24),
 ];
+
 let rejections = 0;
 let emitted = 0;
 const cases = 20_000;
+
 for (let index = 0; index < cases; index++) {
   let input: Uint8Array;
   if (index % 2 === 0) {
     input = encoder.encode(corpus[random() % corpus.length] ?? "");
     if (input.length > 0) input[random() % input.length] = random() % 256;
   } else input = Uint8Array.from({ length: random() % 128 }, () => random() % 256);
+
   const decoder = Result.getOrThrow(
     makeRespDecoder({
       maxHeaderBytes: 32,
@@ -39,6 +45,7 @@ for (let index = 0; index < cases; index++) {
       maxNestingDepth: 16,
     }),
   );
+
   let failed = false;
   const drain = () => {
     for (let step = 0; step <= input.length; step++) {
@@ -55,6 +62,7 @@ for (let index = 0; index < cases; index++) {
     }
     throw new Error(`Unbounded output seed=${seed} case=${index}`);
   };
+
   let offset = 0;
   while (offset < input.length && !failed) {
     const width = 1 + (random() % 11);
@@ -67,6 +75,7 @@ for (let index = 0; index < cases; index++) {
     offset += width;
     drain();
   }
+
   if (!failed) {
     decoder.end();
     drain();
@@ -74,6 +83,7 @@ for (let index = 0; index < cases; index++) {
   if (decoder.bufferedBytes !== 0)
     throw new Error(`Retained input after EOF seed=${seed} case=${index}`);
 }
+
 const coalescedValues = 1_100_000;
 const coalesced = Result.getOrThrow(makeRespDecoder());
 Result.getOrThrow(coalesced.feed(encoder.encode("+x\r\n".repeat(coalescedValues))));
@@ -82,6 +92,7 @@ let count = 0;
 while (Result.getOrThrow(coalesced.next()) !== undefined) count++;
 if (count !== coalescedValues || coalesced.bufferedBytes !== 0)
   throw new Error("Coalesced corpus mismatch");
+
 const fragmentedPayloadBytes = 65_536;
 const fragmented = Result.getOrThrow(makeRespDecoder());
 Result.getOrThrow(fragmented.feed(encoder.encode(`$${fragmentedPayloadBytes}\r\n`)));
@@ -102,6 +113,7 @@ if (
   throw new Error("Fragmented blob mismatch");
 if (Result.getOrThrow(fragmented.next()) !== undefined || fragmented.bufferedBytes !== 0)
   throw new Error("Fragmented EOF mismatch");
+
 process.stdout.write(
   `${JSON.stringify({ seed, cases, rejections, emitted, coalescedValues, fragmentedPayloadBytes })}\n`,
 );

@@ -16,6 +16,7 @@ it.effect("UNKNOWN-02: future work reconnects; queued and written old work is ne
     const first = fixture.fixtures[0];
     const second = fixture.fixtures[1];
     if (first === undefined || second === undefined) return yield* Effect.die("Missing fixture");
+
     const config = yield* decodeRedisConfig({
       endpoint: { host: "localhost" },
       protocol: "resp2",
@@ -24,6 +25,7 @@ it.effect("UNKNOWN-02: future work reconnects; queued and written old work is ne
     const connection = yield* makeConnection(config, { reconnectAttempts: 1 }).pipe(
       Effect.provide(fixture.layer),
     );
+
     const written = yield* Effect.forkChild(
       Effect.result(connection.executeOrdinary(["INCR", "counter"])),
     );
@@ -33,8 +35,10 @@ it.effect("UNKNOWN-02: future work reconnects; queued and written old work is ne
     );
     yield* waitForSnapshot(connection, (snapshot) => snapshot.queuedCommands === 1);
     yield* first.end;
+
     const a = yield* Fiber.join(written);
     const b = yield* Fiber.join(queued);
+
     expect(Result.isFailure(a) && a.failure).toMatchObject({
       _tag: "ConnectionError",
       delivery: "possibly-written",
@@ -45,6 +49,7 @@ it.effect("UNKNOWN-02: future work reconnects; queued and written old work is ne
       delivery: "unsent",
       generation: 1,
     });
+
     const fresh = yield* Effect.forkChild(connection.executeOrdinary(["GET", "counter"]));
     yield* sent(second, ["GET", "counter"], ":1\r\n");
     expect(yield* Fiber.join(fresh)).toEqual({ _tag: "Integer", value: 1n });
@@ -64,6 +69,7 @@ it.effect(
       const [first, second] = fixture.fixtures;
       if (first === undefined || second === undefined) return yield* Effect.die("Missing fixture");
       const calls = yield* Ref.make(0);
+
       const credentials = Ref.updateAndGet(calls, (count) => count + 1).pipe(
         Effect.map((count) => ({ password: Redacted.make(`synthetic-${count}`) })),
       );
@@ -71,11 +77,13 @@ it.effect(
         endpoint: { host: "localhost" },
         protocol: "resp2",
       });
+
       const opening = yield* Effect.forkChild(
         makeConnection(config, { credentials }).pipe(Effect.provide(fixture.layer)),
       );
       yield* sent(first, ["AUTH", "synthetic-1"], "+OK\r\n");
       const connection = yield* Fiber.join(opening);
+
       yield* first.end;
       yield* waitForSnapshot(connection, (snapshot) => snapshot.state === "failed");
       const request = yield* Effect.forkChild(connection.executeOrdinary(["PING"]));
@@ -92,6 +100,7 @@ it.effect("HANDSHAKE-09: transport acquisition retries are finite and clock-cont
     const service = yield* Transport.pipe(Effect.provide(fixture.layer));
     const attempts = yield* Ref.make(0);
     const attempted = yield* Deferred.make<void>();
+
     const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" }, protocol: "resp2" });
     const opening = yield* Effect.forkChild(
       makeConnection(config, { reconnectAttempts: 2, reconnectDelayMillis: 100 }).pipe(
@@ -108,11 +117,13 @@ it.effect("HANDSHAKE-09: transport acquisition retries are finite and clock-cont
         }),
       ),
     );
+
     yield* Deferred.await(attempted);
     expect(opening.pollUnsafe()).toBeUndefined();
     yield* TestClock.adjust(100);
     const connection = yield* Fiber.join(opening);
     expect(yield* connection.snapshot).toMatchObject({ connectionAttempts: 2, generation: 2 });
+
     let permanentAttempts = 0;
     const permanent = yield* Effect.result(
       makeConnection(config).pipe(
@@ -125,6 +136,7 @@ it.effect("HANDSHAKE-09: transport acquisition retries are finite and clock-cont
         }),
       ),
     );
+
     expect(Result.isFailure(permanent) && permanent.failure).toMatchObject({
       _tag: "TransportError",
       reason: "limit",
@@ -136,6 +148,7 @@ it.effect("HANDSHAKE-09: transport acquisition retries are finite and clock-cont
 it.effect("HANDSHAKE-10: credential provider errors never become reconnect loops", () =>
   Effect.gen(function* () {
     const fixture = yield* reconnecting();
+
     const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" }, protocol: "resp2" });
     const result = yield* Effect.result(
       makeConnection(config, {
@@ -163,6 +176,7 @@ it.effect("OWNERSHIP-06: worker defects reach callers and cannot be hidden by re
     const fixture = yield* makeControlledTransport();
     const service = yield* Transport.pipe(Effect.provide(fixture.layer));
     const crash = yield* Deferred.make<void>();
+
     const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" }, protocol: "resp2" });
     const connection = yield* makeConnection(config).pipe(
       Effect.provideService(Transport, {
@@ -177,10 +191,12 @@ it.effect("OWNERSHIP-06: worker defects reach callers and cannot be hidden by re
           ),
       }),
     );
+
     const request = yield* Effect.forkChild(Effect.exit(connection.executeOrdinary(["PING"])));
     yield* sent(fixture, ["PING"]);
     yield* Deferred.succeed(crash, undefined);
     expect(Exit.hasDies(yield* Fiber.join(request))).toBe(true);
+
     const future = yield* Effect.exit(connection.executeOrdinary(["PING"]));
     expect(Exit.isFailure(future) && Cause.hasDies(future.cause)).toBe(true);
     expect((yield* fixture.observations).acquired).toBe(1);
@@ -216,14 +232,17 @@ it.effect(
             }),
         }),
       );
+
       yield* first.end;
       yield* waitForSnapshot(connection, (snapshot) => snapshot.state === "failed");
+
       const canceled = yield* Effect.forkChild(
         connection.executeOrdinary(["INCR", "never-written"]),
       );
       yield* Deferred.await(started);
       yield* Fiber.interrupt(canceled);
       expect(yield* connection.snapshot).toMatchObject({ queuedCommands: 0, inFlightCommands: 0 });
+
       const fresh = yield* Effect.forkChild(connection.executeOrdinary(["PING"]));
       yield* waitForSnapshot(connection, (snapshot) => snapshot.queuedCommands === 1);
       yield* Deferred.succeed(gate, undefined);
@@ -270,6 +289,7 @@ it.effect(
           }),
         ),
       );
+
       expect(Exit.hasDies(scopeExit)).toBe(true);
       expect((yield* fixture.observations).closed).toBe(1);
     }),

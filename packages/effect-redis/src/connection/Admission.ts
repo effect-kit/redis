@@ -11,6 +11,7 @@ import type { RedisCommand } from "#/protocol/encode";
 import type { RespValue } from "#/protocol/RespValue";
 
 export type ExecutionError = AdmissionError | ConnectionError | HandshakeError | ProtocolError;
+
 export interface Ticket {
   readonly result: Deferred.Deferred<RespValue, ExecutionError>;
   readonly bytes: number;
@@ -33,6 +34,7 @@ export class Admission {
   queuedBytes = 0;
   inFlightCommands = 0;
   inFlightBytes = 0;
+
   admitted = 0;
   rejected = 0;
   replies = 0;
@@ -40,6 +42,7 @@ export class Admission {
   timeouts = 0;
   unknownOutcomes = 0;
   queueWaitMillis = 0;
+
   constructor(readonly limits: Limits) {}
 
   reserve(
@@ -51,14 +54,18 @@ export class Admission {
       this.rejected++;
       return new AdmissionError({ reason, delivery: "unsent" });
     };
+
     if (this.queuedCommands >= this.limits.maxQueuedCommands) return reject("count");
+
     const capacity = Math.min(
       this.limits.maxQueuedBytes - this.queuedBytes,
       this.limits.maxInFlightBytes,
     );
     if (capacity === 0) return reject("bytes");
+
     // The encoder measures before allocating; rejected work cannot allocate a full frame outside admission.
     const encoded = encodeCommand(command, { ...this.limits, maxQueuedBytes: capacity });
+
     if (Result.isFailure(encoded)) {
       if (encoded.failure.limit === "maxQueuedBytes")
         return reject(
@@ -66,10 +73,13 @@ export class Admission {
             ? "oversized"
             : "bytes",
         );
+
       return encoded.failure;
     }
+
     const frame = encoded.success;
     if (this.tickets.size === 0) this.drained = Deferred.makeUnsafe();
+
     const ticket: Ticket = {
       result: Deferred.makeUnsafe(),
       bytes: frame.length,
@@ -83,23 +93,28 @@ export class Admission {
       generation: 0,
       cancel: undefined,
     };
+
     this.tickets.add(ticket);
     this.queuedCommands++;
     this.queuedBytes += frame.length;
     this.admitted++;
+
     return ticket;
   }
+
   canWrite(ticket: Ticket) {
     return (
       this.inFlightCommands < this.limits.maxInFlightCommands &&
       ticket.bytes <= this.limits.maxInFlightBytes - this.inFlightBytes
     );
   }
+
   timeout(ticket: Ticket) {
     if (ticket.timedOut) return;
     ticket.timedOut = true;
     this.timeouts++;
   }
+
   begin(ticket: Ticket, now: number) {
     this.queuedCommands--;
     this.queuedBytes -= ticket.bytes;
@@ -109,6 +124,7 @@ export class Admission {
     ticket.phase = "writing";
     ticket.mayHaveBeenWritten = true;
   }
+
   release(ticket: Ticket) {
     if (ticket.phase === "done") return;
     if (ticket.phase === "queued") {
@@ -118,22 +134,28 @@ export class Admission {
       this.inFlightCommands--;
       this.inFlightBytes -= ticket.bytes;
     }
+
     ticket.phase = "done";
     ticket.frame = undefined;
     ticket.cancel = undefined;
     this.tickets.delete(ticket);
     if (this.tickets.size === 0) Deferred.doneUnsafe(this.drained, Effect.void);
   }
+
   succeed(ticket: Ticket, reply: RespValue) {
     ticket.replied = true;
     this.replies++;
+
+    // A reply may beat the write callback; release its bytes only after both complete.
     if (ticket.phase !== "writing") this.release(ticket);
     Deferred.doneUnsafe(ticket.result, Effect.succeed(reply));
   }
+
   fail(ticket: Ticket, error: ExecutionError) {
     this.release(ticket);
     Deferred.doneUnsafe(ticket.result, Effect.fail(error));
   }
+
   die(ticket: Ticket, cause: Cause.Cause<never>) {
     this.release(ticket);
     Deferred.doneUnsafe(ticket.result, Effect.failCause(cause));

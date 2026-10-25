@@ -12,6 +12,7 @@ const valid = {
   routing: { _tag: "Keyless" },
   decode: Reply.status("PONG"),
 } satisfies CommandDefinition<void>;
+
 it.effect.each([
   { ...valid, decode: null },
   { ...valid, serverErrors: "ignore" },
@@ -28,6 +29,7 @@ it.effect.each([
   (definition) =>
     Effect.gen(function* () {
       const { redis, connection } = yield* commandFixture();
+
       expect(
         yield* Effect.flip(
           redis.execute(defineCommand(definition as unknown as CommandDefinition<void>)),
@@ -36,35 +38,45 @@ it.effect.each([
       expect((yield* connection.snapshot).admitted).toBe(0);
     }),
 );
+
 it.effect("COMMAND-22: decoder defects remain defects rather than typed success or retries", () =>
   Effect.gen(function* () {
     const { redis, fixture, connection } = yield* commandFixture();
     const defect = new Error("synthetic decoder defect");
     const command = defineCommand({ ...valid, decode: () => Effect.die(defect) });
+
     const exit = yield* respond(
       fixture,
       Effect.exit(redis.execute(command)),
       ["PING"],
       "+PONG\r\n",
     );
+
     expect(Exit.isFailure(exit)).toBe(true);
+
     yield* respond(fixture, redis.ping(), ["PING"], "+PONG\r\n");
     expect((yield* connection.snapshot).generation).toBe(1);
   }),
 );
+
 it.effect(
   "COMMAND-23: codec requirements execute in the calling fiber and cancellation does not fake rollback",
   () =>
     Effect.gen(function* () {
       const { redis, fixture, connection } = yield* commandFixture();
       const command = defineCommand({ ...valid, decode: () => Effect.never });
+
       const fiber = yield* Effect.forkChild(redis.execute(command));
       const attempt = yield* fixture.nextWrite;
       yield* attempt.accept(attempt.bytes.length);
       yield* fixture.receive(new TextEncoder().encode("+PONG\r\n"));
+
+      // Observe the wire reply before canceling the still-running application decoder.
       while ((yield* connection.snapshot).replies === 0) yield* Effect.yieldNow;
       yield* Fiber.interrupt(fiber);
+
       const result = yield* Effect.result(respond(fixture, redis.ping(), ["PING"], "+PONG\r\n"));
+
       expect(Result.isSuccess(result)).toBe(true);
       expect((yield* connection.snapshot).unknownOutcomes).toBe(0);
     }),

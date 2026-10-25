@@ -25,9 +25,11 @@ it.live("SOCKET-23: fault proxy holds and fragments actual Redis replies", () =>
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: proxy.port } }),
     );
+
     const reply = yield* Effect.forkChild(exchange(connection, ["PING"]));
     yield* proxy.firstReply;
     expect(reply.pollUnsafe()).toBeUndefined();
+
     yield* proxy.releaseReplies;
     expect(yield* Fiber.join(reply)).toEqual({
       _tag: "SimpleString",
@@ -44,11 +46,15 @@ it.live("SOCKET-24: fault proxy cuts an established connection with a held reply
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: proxy.port } }),
     );
+
     yield* connection.write(yield* Effect.fromResult(encodeCommand(["PING"])));
+
     const reply = yield* Effect.forkChild(Effect.result(connection.read));
     yield* proxy.firstReply;
     expect(reply.pollUnsafe()).toBeUndefined();
+
     yield* proxy.cut;
+
     const outcome = yield* Fiber.join(reply);
     if (Result.isSuccess(outcome)) expect(outcome.success).toBeUndefined();
     else {
@@ -73,6 +79,7 @@ it.live("SOCKET-25: failed readiness removes the already-created container and s
         };
       }),
     );
+
     expect(Result.isFailure(failed.result) && failed.result.failure.stage).toBe("server-readiness");
     expect(yield* containerExists(failed.name)).toBe(false);
     expect(existsSync(failed.directory)).toBe(false);
@@ -93,8 +100,10 @@ it.live("SOCKET-26: canceled fixture startup awaits container removal and state 
         }),
       ),
     );
+
     const fixture = yield* Effect.raceFirst(Deferred.await(allocated), Fiber.join(opening));
     yield* Fiber.interrupt(opening);
+
     expect(yield* containerExists(fixture.name)).toBe(false);
     expect(existsSync(fixture.directory)).toBe(false);
   }),
@@ -107,9 +116,11 @@ it.live("SOCKET-34: proxy request pause resumes without dropping buffered bytes"
     const connection = yield* connect(
       yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: proxy.port } }),
     );
+
     const reply = yield* Effect.forkChild(exchange(connection, ["PING"]));
     yield* proxy.firstPausedRequest;
     expect(reply.pollUnsafe()).toBeUndefined();
+
     yield* proxy.resumeRequests;
     expect(yield* Fiber.join(reply)).toEqual({
       _tag: "SimpleString",
@@ -125,7 +136,9 @@ it.live(
       const container = new FixtureContainer(redis.reference).withEntrypoint([
         "/missing-fixture-executable",
       ]);
+
       const result = yield* Effect.scoped(Effect.result(scopedContainer(container)));
+
       expect(Result.isFailure(result) && result.failure.stage).toBe("container-start");
       expect(yield* containerExists(container.fixtureName)).toBe(false);
     }),

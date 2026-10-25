@@ -184,8 +184,8 @@ Local details, when present, live in `research/docs/architecture/foundation.md` 
 `research/docs/architecture/protocol.md`. Before socket integration inspect actual
 codec code/tests: drain results between feeds and partition chunks to remaining
 retained-wire capacity. Codec Results compose through Effect.fromResult; protocol
-errors retire a decoder and later its physical connection generation. Tracked command
-inventory modes are planning seeds, not production routing/replay metadata.
+errors retire a decoder and later its physical connection generation. Private research
+command inventories are planning seeds, not production routing/replay metadata.
 
 These are design decisions, not implemented features. Check installed APIs and
 real-server conformance before making public compatibility promises.

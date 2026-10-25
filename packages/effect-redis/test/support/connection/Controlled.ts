@@ -12,6 +12,7 @@ import { Transport } from "#/transport/Transport";
 import { makeControlledTransport } from "#test/support/transport/ControlledTransport";
 
 export const bytes = (text: string) => new TextEncoder().encode(text);
+
 export const controlled = Effect.fnUntraced(function* (
   input: Record<string, unknown> = {},
   options?: ConnectionOptions,
@@ -22,27 +23,34 @@ export const controlled = Effect.fnUntraced(function* (
     protocol: "resp2",
     ...input,
   });
+
   const connection = yield* makeConnection(config, { reconnectAttempts: 1, ...options }).pipe(
     Effect.provide(fixture.layer),
   );
+
   return { fixture, config, connection };
 });
+
 export const sent = Effect.fnUntraced(function* (
   fixture: Effect.Success<ReturnType<typeof makeControlledTransport>>,
   command: RedisCommand,
   reply?: string,
 ) {
   const attempt = yield* fixture.nextWrite;
+
   expect(attempt.bytes).toEqual(yield* Effect.fromResult(encodeCommand(command)));
   yield* attempt.accept(attempt.bytes.length);
   if (reply !== undefined) yield* fixture.receive(bytes(reply));
+
   return attempt;
 });
+
 export const reconnecting = Effect.fnUntraced(function* () {
   const fixtures = yield* Effect.forEach([0, 1, 2], () => makeControlledTransport());
   const services = yield* Effect.forEach(fixtures, (fixture) =>
     Transport.pipe(Effect.provide(fixture.layer)),
   );
+
   let opens = 0;
   const layer = Layer.succeed(Transport, {
     open: (config) =>
@@ -53,9 +61,11 @@ export const reconnecting = Effect.fnUntraced(function* () {
           : service.open(config);
       }),
   });
+
   return { fixtures, layer, opens: () => opens };
 });
 
+// Use observable scheduler state as a barrier instead of timing-sensitive sleeps.
 export const waitForSnapshot = Effect.fnUntraced(function* (
   connection: RedisConnection,
   predicate: (snapshot: ConnectionSnapshot) => boolean,

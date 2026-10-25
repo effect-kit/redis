@@ -16,6 +16,7 @@ import { selectedEngine, serverTargets } from "#tools/FixtureTargets";
 const targets = serverTargets.filter(
   (target) => selectedEngine === "all" || target.product === selectedEngine,
 );
+
 const bytes = (text: string) => new TextEncoder().encode(text);
 
 it.live.each(targets)(
@@ -28,11 +29,13 @@ it.live.each(targets)(
       });
       const connection = yield* makeConnection(config).pipe(Effect.provide(layer));
       const prefix = `effect-redis:test:${randomUUID()}`;
+
       yield* connection.executeOrdinary(["SET", prefix, "9007199254740992"]);
       expect(yield* connection.executeOrdinary(["INCR", prefix])).toEqual({
         _tag: "Integer",
         value: 9007199254740993n,
       });
+
       const results = yield* Effect.forEach(
         Array.from({ length: 64 }, (_, index) => index),
         (index) =>
@@ -46,17 +49,20 @@ it.live.each(targets)(
           }),
         { concurrency: 32 },
       );
+
       expect(results.every((reply) => reply._tag === "Integer")).toBe(true);
       const integers = results
         .flatMap((reply) => (reply._tag === "Integer" ? [reply.value] : []))
         .toSorted((a, b) => (a < b ? -1 : 1));
       expect(integers).toEqual(Array.from({ length: 64 }, (_, index) => BigInt(index + 1)));
+
       const wrongType = yield* connection.executeOrdinary(["SADD", prefix, "synthetic"]);
       expect(wrongType._tag).toBe("SimpleError");
       expect(yield* connection.executeOrdinary(["PING"])).toEqual({
         _tag: "SimpleString",
         value: bytes("PONG"),
       });
+
       const snapshot = yield* connection.snapshot;
       expect(snapshot).toMatchObject({
         queuedCommands: 0,
@@ -65,6 +71,7 @@ it.live.each(targets)(
         inFlightBytes: 0,
         unknownOutcomes: 0,
       });
+
       yield* connection.close;
       yield* recordFixture(`${target.fixture}-connection`, {
         fixture: target.fixture,
@@ -108,14 +115,17 @@ it.live.each(targets.filter((target) => target.fixture === "redis" || target.fix
         database: 2,
         clientName: "effect-redis-fixture",
       });
+
       yield* Effect.gen(function* () {
         const connection = yield* Connection;
         expect(yield* connection.executeOrdinary(["CLIENT", "GETNAME"])).toEqual({
           _tag: "BlobString",
           value: bytes("effect-redis-fixture"),
         });
+
         const key = `effect-redis:test:${randomUUID()}`;
         yield* connection.executeOrdinary(["SET", key, "db-two"]);
+
         const oracle = yield* connect(yield* decodeRedisConfig({ endpoint }));
         yield* exchange(oracle, ["AUTH", Redacted.value(password)]);
         expect((yield* exchange(oracle, ["GET", key]))._tag).toBe("Null");

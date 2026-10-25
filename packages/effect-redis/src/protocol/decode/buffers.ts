@@ -9,6 +9,7 @@ export class ByteQueue {
   private head = 0;
   private cursor = 0;
   private spare: Block | undefined;
+
   size = 0;
   offset = 0;
   constructor(private readonly blockSize: number) {}
@@ -33,21 +34,26 @@ export class ByteQueue {
   readByte(): number | undefined {
     const block = this.blocks[this.head];
     if (block === undefined) return undefined;
+
     const byte = block.bytes[this.cursor];
     this.consume(1, block);
+
     return byte;
   }
 
   copyTo(builder: ByteBuilder, maximum: number): number {
     let copied = 0;
+
     while (copied < maximum && this.size > 0) {
       const block = this.blocks[this.head];
       if (block === undefined) throw new Error("Byte queue ownership invariant");
+
       const count = Math.min(maximum - copied, block.used - this.cursor);
       builder.append(block.bytes.subarray(this.cursor, this.cursor + count));
       this.consume(count, block);
       copied += count;
     }
+
     return copied;
   }
 
@@ -63,12 +69,16 @@ export class ByteQueue {
     this.size -= count;
     this.offset += count;
     this.cursor += count;
+
     if (this.cursor !== block.used) return;
+
     this.blocks[this.head++] = undefined;
+    // A spare block must not keep the previous payload alive after consumption.
     block.bytes.fill(0, 0, block.used);
     block.used = 0;
     this.spare = block;
     this.cursor = 0;
+
     if (this.size === 0) {
       this.blocks = [];
       this.head = 0;
@@ -82,6 +92,7 @@ export class ByteQueue {
 /** Payload fragments are copied into blocks and joined exactly once at completion. */
 export class ByteBuilder {
   private readonly blocks: Array<Block> = [];
+
   length = 0;
   constructor(private readonly blockSize: number) {}
 
@@ -114,10 +125,12 @@ export class ByteBuilder {
   finish(): Uint8Array {
     const bytes = new Uint8Array(this.length);
     let offset = 0;
+
     for (const block of this.blocks) {
       bytes.set(block.bytes.subarray(0, block.used), offset);
       offset += block.used;
     }
+
     return bytes;
   }
 }
