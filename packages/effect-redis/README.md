@@ -421,10 +421,11 @@ const scriptProgram = Effect.scoped(
 ```
 
 `RedisScripts.layer()` captures `RedisSessions`. A canonical server NOSCRIPT rejection
-permits one coordinated load and one retry on the same leased backend. Managed Lua
+permits one load and one retry on the same physical connection. Load receipts default
+to connection scope. `{ loadScope: "server" }` shares pending loads only when the caller
+can guarantee that every lease targets the same physical server. Managed Lua
 source must reserve Redis's canonical NOSCRIPT errors for server cache rejection.
-Other errors, decoder failures and uncertain writes propagate. In-flight load
-failure/cancellation reaches its waiters. Defaults bound concurrent loads to 64 and
+Other errors, decoder failures and uncertain writes propagate. Shared load failure/cancellation reaches its waiters. Defaults bound concurrent loads to 64 and
 additional binary argument snapshots to 16 MiB per active lease. Immutable strings are
 borrowed; keep queued input unchanged. Each wire operation uses the native deadline.
 Explicitly preload scripts before batches; pipelines/transactions never replay siblings.

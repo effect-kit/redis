@@ -20,6 +20,8 @@ export interface ScriptOptions {
   readonly maxConcurrentLoads?: number;
   /** Additional binary-argument ownership per active lease; immutable strings are borrowed. */
   readonly maxSnapshotBytes?: number;
+  /** Server scope requires every lease to target the same physical server. */
+  readonly loadScope?: "connection" | "server";
 }
 
 const missingScript = (error: ServerError) => {
@@ -44,7 +46,7 @@ export const makeRedisScripts = Effect.fnUntraced(function* (
   sessions: RedisSessionsClient,
   options: ScriptOptions = {},
 ) {
-  const { maxConcurrentLoads, maxSnapshotBytes } = yield* parse(
+  const { maxConcurrentLoads, maxSnapshotBytes, loadScope } = yield* parse(
     Schema.Struct({
       maxConcurrentLoads: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 65536 })).pipe(
         Schema.withDecodingDefaultKey(Effect.succeed(64)),
@@ -52,6 +54,9 @@ export const makeRedisScripts = Effect.fnUntraced(function* (
       maxSnapshotBytes: Schema.Int.check(
         Schema.isBetween({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }),
       ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(16 * 1024 * 1024))),
+      loadScope: Schema.Literals(["connection", "server"]).pipe(
+        Schema.withDecodingDefaultKey(Effect.succeed("connection")),
+      ),
     }),
     options,
   );
@@ -62,13 +67,16 @@ export const makeRedisScripts = Effect.fnUntraced(function* (
     session: RedisSession,
     script: RedisScript<A, E, R>,
   ) {
-    const existing = loads.get(script.sha1);
+    const { generation } = yield* session.snapshot;
+    // An endpoint can route sockets to different servers; cache receipts need explicit affinity.
+    const identity = loadScope === "server" ? script.sha1 : `${generation}:${script.sha1}`;
+    const existing = loads.get(identity);
     if (existing !== undefined) return yield* Deferred.await(existing);
     if (loads.size >= maxConcurrentLoads)
       return yield* new SessionError({ reason: "pool-full", delivery: "unsent" });
 
     const pending = Deferred.makeUnsafe<void, RedisError>();
-    loads.set(script.sha1, pending);
+    loads.set(identity, pending);
 
     // A cancelled loader completes every waiter with the same Cause, then relinquishes ownership.
     return yield* session.scriptLoad(Redacted.value(script.source)).pipe(
@@ -86,7 +94,7 @@ export const makeRedisScripts = Effect.fnUntraced(function* (
       ),
       Effect.onExit((exit) =>
         Effect.sync(() => {
-          loads.delete(script.sha1);
+          loads.delete(identity);
           Deferred.doneUnsafe(pending, exit);
         }),
       ),

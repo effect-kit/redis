@@ -444,7 +444,8 @@ Implemented scripting/administration policy:
   native cryptoLayer belongs behind /node; universal code never imports Node crypto.
   Managed source must not forge Redis's reserved canonical NOSCRIPT response.
 - RedisScripts captures one backend's RedisSessions. Recover only a canonical server
-  cache rejection, with one coordinated load and one retry on the same lease. Decode
+  cache rejection, with one load and one retry on the same lease. Default load receipts
+  are generation-bound; server-scope sharing requires explicit proven node affinity. Decode
   outside recovery. Propagate loader failure/cancellation to its waiters; never retry
   mutation errors, uncertain replies, application decoders or whole batches.
 - Bound additional binary recovery snapshots before copying, after pool admission;

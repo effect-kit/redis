@@ -14,10 +14,34 @@ const script: RedisScript<bigint> = {
 };
 const missing = "-NOSCRIPT No matching script.\r\n";
 
+it.effect(
+  "SCRIPT: default load receipts stay on their physical connection across routed targets",
+  () =>
+    Effect.gen(function* () {
+      const { sessions, primary, secondary } = yield* sessionFixture({ maxSessionConnections: 2 });
+      const scripts = yield* makeRedisScripts(sessions);
+      const first = yield* Effect.forkChild(scripts.execute(script, { keys: [] }));
+      yield* sent(primary, ["EVALSHA", "sha", "0"], missing);
+      const firstLoad = yield* primary.nextWrite;
+      const second = yield* Effect.forkChild(scripts.execute(script, { keys: [] }));
+      yield* sent(secondary, ["EVALSHA", "sha", "0"], missing);
+
+      // The other connection must load its own server without waiting for the first receipt.
+      yield* sent(secondary, ["SCRIPT", "LOAD", "return 1"], "$3\r\nsha\r\n");
+      yield* sent(secondary, ["EVALSHA", "sha", "0"], ":2\r\n");
+      expect(yield* Fiber.join(second)).toBe(2n);
+
+      yield* firstLoad.accept(firstLoad.bytes.length);
+      yield* primary.receive(bytes("$3\r\nsha\r\n"));
+      yield* sent(primary, ["EVALSHA", "sha", "0"], ":1\r\n");
+      expect(yield* Fiber.join(first)).toBe(1n);
+    }),
+);
+
 it.effect("SCRIPT: concurrent same-backend cache misses share one load receipt", () =>
   Effect.gen(function* () {
     const { sessions, primary, secondary } = yield* sessionFixture({ maxSessionConnections: 2 });
-    const scripts = yield* makeRedisScripts(sessions);
+    const scripts = yield* makeRedisScripts(sessions, { loadScope: "server" });
     const first = yield* Effect.forkChild(scripts.execute(script, { keys: [] }));
     yield* sent(primary, ["EVALSHA", "sha", "0"], missing);
     const load = yield* primary.nextWrite;
@@ -64,7 +88,7 @@ it.effect("SCRIPT: distinct load admission is bounded while an existing loader o
 it.effect("SCRIPT: loader cancellation completes waiting misses and cannot leak retry work", () =>
   Effect.gen(function* () {
     const { sessions, primary, secondary } = yield* sessionFixture({ maxSessionConnections: 2 });
-    const scripts = yield* makeRedisScripts(sessions);
+    const scripts = yield* makeRedisScripts(sessions, { loadScope: "server" });
     const first = yield* Effect.forkChild(scripts.execute(script, { keys: [] }));
     yield* sent(primary, ["EVALSHA", "sha", "0"], missing);
     const load = yield* primary.nextWrite;

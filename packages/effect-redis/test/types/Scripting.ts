@@ -1,7 +1,7 @@
 import { Context, Effect } from "effect";
 import type { Crypto } from "effect";
 
-import { Commands, RedisScript, Reply } from "#/index";
+import { Commands, RedisScript, RedisScripts, Reply } from "#/index";
 import type { RedisClient, RedisScriptsClient } from "#/index";
 
 class DecoderContext extends Context.Service<DecoderContext, { readonly label: string }>()(
@@ -36,3 +36,5 @@ Commands.fcall("f", {}, Reply.integer);
 Commands.evalSha("sha", { keys: [], args: [12] }, Reply.integer);
 // @ts-expect-error SCRIPT EXISTS requires at least one digest.
 Commands.scriptExists([]);
+// @ts-expect-error Load sharing requires an explicit reviewed affinity policy.
+RedisScripts.layer({ loadScope: "endpoint" });

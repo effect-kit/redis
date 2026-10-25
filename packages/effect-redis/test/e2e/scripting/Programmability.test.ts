@@ -83,7 +83,7 @@ it.live.each(primaryCases)(
       const parallel = yield* makeRedisSessions(config, { maxSessionConnections: 4 }).pipe(
         Effect.provide(layer),
       );
-      const coordinated = yield* makeRedisScripts(parallel);
+      const coordinated = yield* makeRedisScripts(parallel, { loadScope: "server" });
       const raceKey = `${prefix}:concurrent`;
       const increments = yield* Effect.forEach(
         Array.from({ length: 10 }),
