@@ -16,6 +16,7 @@ export default defineConfig({
       "test/integration/subscriptions/**/*.test.ts",
       "test/integration/scripting/**/*.test.ts",
       "test/integration/admin/**/*.test.ts",
+      "test/integration/diagnostics/**/*.test.ts",
     ],
     passWithNoTests: false,
     testTimeout: 5000,

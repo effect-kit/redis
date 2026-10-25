@@ -24,6 +24,7 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
     subscriptionFiles,
     "test/e2e/scripting/*.test.ts",
     "test/e2e/admin/*.test.ts",
+    "test/e2e/diagnostics/*.test.ts",
   ],
   core: ["test/integration/transport/node/*.test.ts"],
   redis: [
@@ -34,6 +35,7 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
     subscriptionFiles,
     "test/e2e/scripting/*.test.ts",
     "test/e2e/admin/*.test.ts",
+    "test/e2e/diagnostics/*.test.ts",
   ],
   valkey: [
     backend("Transport"),
@@ -45,6 +47,7 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
     subscriptionFiles,
     "test/e2e/scripting/*.test.ts",
     "test/e2e/admin/*.test.ts",
+    "test/e2e/diagnostics/*.test.ts",
   ],
 };
 

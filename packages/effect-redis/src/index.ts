@@ -188,3 +188,15 @@ export type { FunctionListOptions } from "#/commands/scripting/Functions";
 export { RedisAdmin, makeRedisAdmin } from "#/admin/RedisAdmin";
 export type { RedisAdminClient } from "#/admin/RedisAdmin";
 export type { ServerInfo, InfoSection } from "#/commands/admin/Info";
+
+export { RedisMonitor, makeRedisMonitor } from "#/diagnostics/RedisMonitor";
+export type { RedisMonitorClient, MonitorOptions } from "#/diagnostics/RedisMonitor";
+export type { MonitorRecord } from "#/diagnostics/MonitorRecord";
+export { RedisShutdown, makeRedisShutdown } from "#/diagnostics/RedisShutdown";
+export type {
+  RedisShutdownClient,
+  ShutdownOptions,
+  ShutdownClosed,
+  ShutdownConnectionOptions,
+} from "#/diagnostics/RedisShutdown";
+export { DiagnosticError } from "#/errors/DiagnosticError";
