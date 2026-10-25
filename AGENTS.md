@@ -10,7 +10,8 @@ and future-work reconnection. Phase 05 adds the Redis service, typed descriptors
 explicit payload/key codecs and a PING/GET/SET/INCR/ZSCORE slice. Phase 06 adds
 187 ordinary data commands with unit/type/composition tests and primary Redis/Valkey
 conformance. Phase 07 adds native leases, pipelines/transactions, WATCH, blocking
-operations and connection-relative controls; final gates are tracked privately.
+operations and connection-relative controls with controlled/public-type tests and
+primary Redis/Valkey conformance. Detailed verification is tracked privately.
 Scans/Streams, subscriptions, scripting and topology remain pending.
 Never describe planned command or server compatibility as implemented or verified.
 
@@ -134,6 +135,8 @@ Never describe planned command or server compatibility as implemented or verifie
   Testcontainers runtime API for lifecycle/volumes, not Docker CLI subprocesses.
   Backend startup profiles must preserve actual configuration/module differences.
   Missing prerequisites fail; they are not passing skips.
+  Do not rebuild or pack the same checkout while live probes mount its dist/ folder;
+  use separate checkouts for independent artifact verification.
 - `pnpm test:live --engine redis|valkey|dragonfly|keydb|redict|garnet|kvrocks|core`
   selects a live suite. Default `all` runs every engine and socket/fault case.
   `--mode binary --engine redis|valkey --binary /absolute/path` owns a temporary native
@@ -370,6 +373,8 @@ Implemented native-session policy:
 - A lease stays on one physical generation. Sequential session use is required;
   concurrent/nested transaction use fails explicitly. Retained clients fail after
   scope exit. Clean known WATCH/MULTI state or retire uncertain state before reuse.
+  Retire FIFO ownership before closing worker scopes. Physical cleanup defects poison
+  the pool and prevent replacement acquisition; never swallow them to reopen capacity.
 - Prepare whole batches before writes. Preserve readonly Result tuples and codec
   requirements. `BatchError.outcomes` is redacted: Completed has a decoded result,
   Replied retains an undecoded raw reply, Unsent/Unknown preserve indexed evidence.
@@ -377,7 +382,9 @@ Implemented native-session policy:
   an interruptible recovery boundary can discard attached failure evidence in v4.
 - Transactions distinguish Committed results, WATCH Conflict and queue/EXEC rejection.
   QUEUED proves queueing only. Individual EXEC failures do not roll back siblings;
-  uncertain EXEC is never replayed. Cleanup failures propagate and prevent unsafe reuse.
+  definitely unsent EXEC retains queue receipts as not-executed, while possible-write
+  EXEC loss is unknown. Never replay uncertain EXEC. Cleanup failures propagate and
+  prevent unsafe reuse.
 - Blocking builders remain grouped with lists/sorted sets. Scoped blocking leases use
   explicit Duration waits or `"forever"`, an independent reply deadline and bounded
   socket-write deadlines. Server timeout is an absent value; reply loss after a pop
