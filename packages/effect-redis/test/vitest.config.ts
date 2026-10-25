@@ -15,6 +15,7 @@ export default defineConfig({
       "test/integration/streams/**/*.test.ts",
       "test/integration/subscriptions/**/*.test.ts",
       "test/integration/scripting/**/*.test.ts",
+      "test/integration/admin/**/*.test.ts",
     ],
     passWithNoTests: false,
     testTimeout: 5000,

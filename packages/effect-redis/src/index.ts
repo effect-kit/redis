@@ -184,3 +184,7 @@ export { RedisScripts, makeRedisScripts } from "#/scripting/RedisScripts";
 export type { RedisScriptsClient, ScriptOptions } from "#/scripting/RedisScripts";
 export type { ScriptArguments } from "#/commands/scripting/Invocation";
 export type { FunctionListOptions } from "#/commands/scripting/Functions";
+
+export { RedisAdmin, makeRedisAdmin } from "#/admin/RedisAdmin";
+export type { RedisAdminClient } from "#/admin/RedisAdmin";
+export type { ServerInfo, InfoSection } from "#/commands/admin/Info";

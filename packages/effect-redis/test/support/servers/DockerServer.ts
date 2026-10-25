@@ -33,6 +33,8 @@ export const allocateServer = Effect.fnUntraced(function* (
     readonly unixVolume?: string;
     readonly network?: StartedNetwork;
     readonly networkAlias?: string;
+    readonly writableConfiguration?: boolean;
+    readonly aclRules?: string;
   },
 ) {
   const directory = yield* temporaryDirectory;
@@ -57,6 +59,8 @@ export const allocateServer = Effect.fnUntraced(function* (
     (tls !== undefined ||
       options?.unixVolume !== undefined ||
       options?.extraConfig !== undefined ||
+      options?.writableConfiguration !== undefined ||
+      options?.aclRules !== undefined ||
       options?.password !== undefined)
   )
     return yield* new FixtureError({ stage: "unsupported-fixture-mode" });
@@ -87,6 +91,7 @@ export const allocateServer = Effect.fnUntraced(function* (
         ? []
         : [`requirepass ${JSON.stringify(Redacted.value(options.password))}`]),
       ...(options?.extraConfig ?? []),
+      ...(options?.aclRules === undefined ? [] : ["aclfile /fixture/users.acl"]),
       "",
     ].join("\n");
 
@@ -94,12 +99,19 @@ export const allocateServer = Effect.fnUntraced(function* (
     try: () => writeFile(join(directory, "server.conf"), configuration),
     catch: (cause) => new FixtureError({ stage: "server-config", cause: Redacted.make(cause) }),
   });
+  if (options?.aclRules !== undefined)
+    yield* Effect.tryPromise({
+      try: () => writeFile(join(directory, "users.acl"), options.aclRules ?? ""),
+      catch: (cause) => new FixtureError({ stage: "acl-file", cause: Redacted.make(cause) }),
+    });
 
   const container = new FixtureContainer(target.reference)
     .withEntrypoint([profile.executable])
     .withCommand(profile.command)
     .withTmpFs({ "/data": "rw,nosuid,size=256m", "/tmp": "rw,noexec,nosuid,size=16m" })
-    .withBindMounts([{ source: directory, target: "/fixture", mode: "ro" }])
+    .withBindMounts([
+      { source: directory, target: "/fixture", mode: options?.writableConfiguration ? "rw" : "ro" },
+    ])
     .loopbackPort(profile.port)
     // No in-container shell assumptions (Redict is scratch); the independent PING probe owns readiness.
     .withWaitStrategy(Wait.forAll([]))
@@ -139,6 +151,8 @@ export const allocateServer = Effect.fnUntraced(function* (
         .update(
           JSON.stringify({
             configuration,
+            writableConfiguration: options?.writableConfiguration ?? false,
+            aclRules: options?.aclRules,
             executable: profile.executable,
             command: profile.command,
           }),
