@@ -158,7 +158,7 @@ Prepared binary tokens are borrowed until admission; do not mutate them during u
 lossless RESP, including errors. Keyed custom calls declare key argument indexes and
 access roles. `defineCommand` additionally requires a reply decoder and provenance.
 The standalone executor rejects nonordinary modes and explicit-node routing. These
-contracts do not imply implemented sessions, topology routing or provider parity.
+contracts do not bypass session ownership, topology routing or provider capabilities.
 
 The development typecheck includes compile-only public inference and codec service
 contracts. Live ordinary-family conformance covers the seven pinned Redis/Valkey

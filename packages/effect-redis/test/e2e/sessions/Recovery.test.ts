@@ -79,7 +79,7 @@ it.live.each(cases)(
       const key = `effect-redis:pipeline-loss:${randomUUID()}`;
       const { sessions, oracle, proxy, held } = yield* lossyBackend(target, protocol, [
         "INCR",
-        key,
+        `${key}:b`,
       ]);
       const request = yield* Effect.forkChild(
         Effect.flip(
@@ -99,11 +99,11 @@ it.live.each(cases)(
       const failure = yield* Fiber.join(request);
       if (failure._tag !== "BatchError") return yield* Effect.die("Missing pipeline loss evidence");
       expect(Redacted.value(failure.outcomes)).toMatchObject([
-        { _tag: "Unknown", index: 0 },
-        { _tag: "Unsent", index: 1 },
+        { _tag: "Completed", index: 0, result: { success: 1n } },
+        { _tag: "Unknown", index: 1 },
         { _tag: "Unsent", index: 2 },
       ]);
-      expect(yield* exchange(oracle, ["GET", `${key}:b`])).toMatchObject({ _tag: "Null" });
+      expect(yield* exchange(oracle, ["GET", `${key}:c`])).toMatchObject({ _tag: "Null" });
 
       yield* proxy.releaseReplies;
       yield* sessions.withSession((session) => session.ping());
@@ -141,5 +141,32 @@ it.live.each(cases)(
         _tag: "BlobString",
         value: bytes("1"),
       });
+    }),
+);
+
+it.live.each(cases)(
+  "BLOCK-LOSS: $target.fixture $protocol a consumed pop is never replayed",
+  ({ target, protocol }) =>
+    Effect.gen(function* () {
+      const key = `effect-redis:pop-loss:${randomUUID()}`;
+      const { sessions, oracle, proxy, held } = yield* lossyBackend(target, protocol, [
+        "BLPOP",
+        key,
+        "0",
+      ]);
+      yield* exchange(oracle, ["RPUSH", key, "value"]);
+      const request = yield* Effect.forkChild(
+        Effect.flip(sessions.blpop([key], { blockFor: "forever" })),
+      );
+      yield* held;
+      expect(yield* exchange(oracle, ["LLEN", key])).toEqual({ _tag: "Integer", value: 0n });
+      yield* proxy.cut;
+      expect(yield* Fiber.join(request)).toMatchObject({
+        _tag: "ConnectionError",
+        delivery: "possibly-written",
+      });
+      yield* proxy.releaseReplies;
+      yield* sessions.withSession((session) => session.ping());
+      expect(yield* exchange(oracle, ["LLEN", key])).toEqual({ _tag: "Integer", value: 0n });
     }),
 );

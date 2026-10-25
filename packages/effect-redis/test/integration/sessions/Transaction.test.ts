@@ -102,6 +102,41 @@ it.effect("SESSION-TX: lost EXEC reply is unknown and is never replayed", () =>
   }),
 );
 
+it.effect("SESSION-TX: an empty transaction still checks WATCH through EXEC", () =>
+  Effect.gen(function* () {
+    const { sessions, primary } = yield* sessionFixture();
+    const request = yield* Effect.forkChild(
+      sessions.watch(["k"], (session) => session.transaction([])),
+    );
+    yield* sent(primary, ["WATCH", "k"], "+OK\r\n");
+    yield* sent(primary, ["MULTI"], "+OK\r\n");
+    yield* sent(primary, ["EXEC"], "*-1\r\n");
+    expect(yield* Fiber.join(request)).toEqual({ _tag: "Conflict" });
+  }),
+);
+
+it.effect("SESSION-TX: explicit EXECABORT confirms nonexecution and clears transaction state", () =>
+  Effect.gen(function* () {
+    const { sessions, primary, opens } = yield* sessionFixture();
+    const request = yield* Effect.forkChild(
+      Effect.flip(sessions.transaction([Commands.incr("k")])),
+    );
+    yield* sent(primary, ["MULTI"], "+OK\r\n");
+    yield* sent(primary, ["INCR", "k"], "+QUEUED\r\n");
+    yield* sent(primary, ["EXEC"], "-EXECABORT hidden\r\n");
+    expect(yield* Fiber.join(request)).toMatchObject({
+      _tag: "TransactionError",
+      reason: "exec-rejected",
+      execution: "not-executed",
+    });
+
+    const next = yield* Effect.forkChild(sessions.withSession((session) => session.ping()));
+    yield* sent(primary, ["PING"], "+PONG\r\n");
+    yield* Fiber.join(next);
+    expect(opens()).toBe(1);
+  }),
+);
+
 it.effect(
   "SESSION-TX: concurrent session use fails explicitly and escaped clients close with their lease",
   () =>

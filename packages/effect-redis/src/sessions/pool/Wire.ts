@@ -78,6 +78,7 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
     replyTimeoutMillis: number | "forever" = config.commandTimeoutMillis,
     phase: "pipeline" | "transaction-queue" | "single" = "pipeline",
     fenced = false,
+    observeFailure?: (mayHaveBeenWritten: boolean) => void,
   ) {
     const tickets: Ticket[] = [];
 
@@ -131,6 +132,7 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
           Effect.onExit((exit) =>
             Exit.isFailure(exit)
               ? Effect.gen(function* () {
+                  observeFailure?.(tickets.some((ticket) => ticket.mayHaveBeenWritten));
                   // An interrupted reader cannot release possibly-written FIFO slots for reuse.
                   generation.retire(
                     "aborted",
@@ -179,12 +181,16 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
   const execute = Effect.fnUntraced(function* (
     command: RedisCommand,
     timeout?: number | "forever",
+    observeFailure?: (mayHaveBeenWritten: boolean) => void,
   ) {
     // Single exchanges never install the batch-evidence finalizer.
-    const [outcome] = yield* batch([command], timeout, "single") as Effect.Effect<
-      ReadonlyArray<WireOutcome>,
-      ExecutionError
-    >;
+    const [outcome] = yield* batch(
+      [command],
+      timeout,
+      "single",
+      false,
+      observeFailure,
+    ) as Effect.Effect<ReadonlyArray<WireOutcome>, ExecutionError>;
     if (outcome === undefined) return yield* Effect.die(new Error("Missing session reply slot"));
     return outcome._tag === "Replied" ? outcome.reply : yield* outcome.error;
   });
@@ -210,7 +216,9 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
     retire: () => generation.retire("aborted"),
     drain: Effect.suspend(() => Deferred.await(admission.drained)),
     pending: () => admission.tickets.size,
-    close: Scope.close(scope, Exit.void),
+    close: Effect.sync(() => generation.retire("aborted")).pipe(
+      Effect.andThen(Scope.close(scope, Exit.void)),
+    ),
     takePush: generation.takePush,
   };
 });

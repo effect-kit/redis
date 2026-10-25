@@ -135,8 +135,12 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
         }
       }
 
-      if (closed || !entry.wire.isReady()) yield* discard(entry);
-      else idle[entry.mode].push(entry);
+      if (closed || !entry.wire.isReady()) {
+        const defect = entry.wire.fatal();
+        if (defect !== undefined) fatal = defect;
+        yield* discard(entry);
+        if (defect !== undefined) return yield* Effect.failCause(defect);
+      } else idle[entry.mode].push(entry);
     });
 
   const use = <A, E, RUse>(
@@ -211,6 +215,8 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
       // Wake acquisition waiters; their closed check returns permits without opening sockets.
       yield* sessionPermits.releaseAll;
       yield* blockingPermits.releaseAll;
+      // Retire FIFO ownership before Scope interrupts the reader/writer workers.
+      for (const entry of entries) entry.wire.retire();
       yield* Scope.close(owner, Exit.void);
       entries.clear();
     }),

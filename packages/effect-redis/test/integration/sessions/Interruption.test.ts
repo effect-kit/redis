@@ -3,6 +3,7 @@ import { Cause, Deferred, Effect, Fiber, Redacted } from "effect";
 
 import { BatchError } from "#/errors/BatchError";
 import { Commands } from "#/index";
+import type { RedisSession } from "#/index";
 import { sent } from "#test/support/connection/Controlled";
 import { sessionFixture } from "#test/support/sessions/Fixture";
 
@@ -26,6 +27,46 @@ it.effect(
       expect(Redacted.value(failure.success.outcomes)).toMatchObject([
         { _tag: "Unknown", index: 0 },
       ]);
+      expect(yield* primary.observations).toMatchObject({ closed: 1 });
+    }),
+);
+
+it.effect(
+  "SESSION-UNKNOWN: cancellation of an unsent EXEC retains receipts without claiming execution",
+  () =>
+    Effect.gen(function* () {
+      const { sessions, primary } = yield* sessionFixture();
+      const captured = yield* Deferred.make<RedisSession>();
+      const request = yield* Effect.forkChild(
+        sessions.withSession((session) =>
+          Deferred.succeed(captured, session).pipe(
+            Effect.andThen(session.transaction([Commands.incr("k")])),
+          ),
+        ),
+      );
+      const session = yield* Deferred.await(captured);
+      yield* sent(primary, ["MULTI"], "+OK\r\n");
+      yield* primary.nextWrite;
+
+      // A fast queue reply must not release the writer before its callback completes.
+      yield* primary.receive(new TextEncoder().encode("+QUEUED\r\n"));
+      while ((yield* session.snapshot).mode !== "uncertain") yield* Effect.yieldNow;
+      yield* Fiber.interrupt(request);
+
+      const exit = yield* Fiber.await(request);
+      if (exit._tag !== "Failure") return yield* Effect.die("Expected interruption");
+      expect(Cause.hasInterrupts(exit.cause)).toBe(true);
+      const failure = Cause.findError(exit.cause);
+      if (failure._tag !== "Success" || !(failure.success instanceof BatchError))
+        return yield* Effect.die("Missing unsent EXEC evidence");
+      expect(failure.success).toMatchObject({
+        phase: "transaction-exec",
+        execution: "not-executed",
+      });
+      expect(Redacted.value(failure.success.outcomes)).toMatchObject([
+        { _tag: "Replied", index: 0 },
+      ]);
+      expect(yield* primary.written).toHaveLength(1);
       expect(yield* primary.observations).toMatchObject({ closed: 1 });
     }),
 );

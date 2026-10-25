@@ -130,6 +130,7 @@ it.effect("ADMISSION-03: impossible in-flight size and stateful commands fail be
       ["MULTI"],
       ["CLIENT", "REPLY", "OFF"],
       ["BLPOP", "key", "0"],
+      ["BLMOVEM", "source", "destination", "LEFT", "RIGHT", "0"],
     ] as const) {
       const result = yield* Effect.result(connection.executeOrdinary(command));
       expect(Result.isFailure(result) && result.failure._tag).toBe("AdmissionError");
