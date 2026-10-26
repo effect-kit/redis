@@ -713,3 +713,18 @@ total is promised. Sources remain accessible without ignored research:
 - [Upstash compatibility](https://upstash.com/docs/redis/overall/compatibility)
 - [Garnet semantic compatibility](https://microsoft.github.io/garnet/docs/welcome/compatibility)
 - [Cloud credential refresh example](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/auth-iam.html)
+
+### Module command conventions
+
+- Module versions are independent of server banners. Keep actual module receipts and
+  startup profiles under test/fixtures/modules; normal transport fixtures do not load
+  optional modules. Unknown module/options remain typed server errors, never emulated.
+- JSON modern/legacy and expanded RESP3 formats have explicit contracts. Numeric
+  mutations preserve decimal tokens, including Redis RESP3 legacy arrays. Valkey
+  dialect differences need actual pinned conformance, not inferred Redis behavior.
+- Vector FP32 byte order is explicit and must match the server's native float layout.
+  Keep quantized VEMB RAW bytes/norm/range and score/attribute reply variants distinct.
+- TimeSeries timestamps, retention and buckets use milliseconds; retain bigint times,
+  floating/NaN values, binary labels and multi-aggregation columns. Label queries are
+  server-owned state and need an explicit Cluster node. TS.READ blocking uses native
+  scoped leases; BLOCK zero means no wait, so never encode forever as zero.

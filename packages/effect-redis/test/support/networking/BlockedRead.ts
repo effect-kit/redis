@@ -6,7 +6,7 @@ import { FixtureError } from "#test/support/servers/FixtureError";
 /** Observe the actual blocked server connection before appending, rather than racing a sleep. */
 export const waitForBlockedRead = (
   oracle: Parameters<typeof exchange>[0],
-  command: "xread" | "xreadgroup",
+  command: "xread" | "xreadgroup" | "ts.read",
 ) =>
   Effect.gen(function* () {
     const reply = yield* exchange(oracle, ["CLIENT", "LIST"]);

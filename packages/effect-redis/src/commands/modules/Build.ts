@@ -2,7 +2,7 @@ import { Effect, Schema } from "effect";
 
 import type { ReplyDecoder } from "#/command/Command";
 import type { CommandMetadata } from "#/command/Metadata";
-import { keyed } from "#/commands/internal/Command";
+import { keyed, ordinary } from "#/commands/internal/Command";
 import { parse } from "#/commands/internal/Input";
 import type { CommandInputError } from "#/errors/CommandInputError";
 import type { RedisArgument } from "#/RedisArgument";
@@ -43,3 +43,24 @@ export const Probability = Schema.Number.check(
   Schema.isLessThan(1),
 );
 export const probability = (value: number) => parse(Probability, value).pipe(Effect.map(String));
+
+/** Label/index queries select server-owned state. Cluster execution requires an explicit node. */
+export const moduleKeyless = <A>(
+  family: ModuleFamily,
+  name: string,
+  decode: ReplyDecoder<A>,
+  args: Effect.Effect<ReadonlyArray<RedisArgument>, CommandInputError> = Effect.succeed([]),
+) =>
+  ordinary(
+    moduleMetadata(family, name),
+    decode,
+    args.pipe(
+      Effect.map((tail) => {
+        const [command = "", ...subcommands] = name.split(" ");
+        return {
+          tokens: [command, ...subcommands, ...tail] as const,
+          routing: { _tag: "Keyless" as const },
+        };
+      }),
+    ),
+  );

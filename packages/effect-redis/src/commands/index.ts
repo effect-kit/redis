@@ -39,3 +39,5 @@ export * from "#/commands/probabilistic/index";
 export * from "#/commands/json/index";
 
 export * from "#/commands/vectors/index";
+
+export * from "#/commands/timeseries/index";

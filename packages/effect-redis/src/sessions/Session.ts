@@ -8,6 +8,7 @@ import { blockingFamily } from "#/commands/blocking/Family";
 import { hashImportFamily } from "#/commands/hashes/Import";
 import { Arguments, parse } from "#/commands/internal/Input";
 import { blockingStreamFamily } from "#/commands/streams/ReadFamily";
+import { blockingTimeSeriesFamily } from "#/commands/timeseries/Family";
 import { clientTracking, clientTrackingInfo } from "#/commands/tracking/Controls";
 import type { TrackingOptions } from "#/commands/tracking/Controls";
 import { checkOrdinary } from "#/connection/OrdinaryCommand";
@@ -88,6 +89,7 @@ export const makeSession = (
   const client = {
     ...makeRedis(executor),
     ...blockingFamily(executor),
+    ...blockingTimeSeriesFamily(executor),
     ...hashImportFamily(executor),
     ...blockingStreamFamily(executor),
     ...durabilityControls(wire, state),

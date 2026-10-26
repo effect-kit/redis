@@ -67,6 +67,14 @@ export const blockingRead = (command: RedisCommand, group: boolean) => {
   return false;
 };
 
+/** TS.READ has a fixed key/cursor prefix; a key named BLOCK is not an option. */
+export const blockingTimeSeriesRead = (command: RedisCommand) => {
+  for (let index = 3; index < command.length; index += 2) {
+    if (commandToken(command[index]) === "BLOCK") return true;
+  }
+  return false;
+};
+
 /** The caller declares ordinary single-reply semantics; known session operations still fail closed. */
 export const checkOrdinary = (command: RedisCommand) => {
   if (!Array.isArray(command) || command.length === 0) return undefined;
@@ -76,6 +84,7 @@ export const checkOrdinary = (command: RedisCommand) => {
 
   if (
     modes.has(name) ||
+    (name === "TS.READ" && blockingTimeSeriesRead(command)) ||
     (name === "SCRIPT" && subcommand === "DEBUG") ||
     (name === "CLUSTER" && subcommand === "SYNCSLOTS") ||
     (name === "CLIENT" &&

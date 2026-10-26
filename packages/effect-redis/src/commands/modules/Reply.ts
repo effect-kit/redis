@@ -28,7 +28,11 @@ export const moduleDouble: ReplyDecoder<number> = (reply) => {
       ),
     );
   return (value._tag === "Double" ? Effect.succeed(value.value) : simpleText(reply)).pipe(
-    Effect.flatMap((token) => (/^nan$/i.test(token) ? Effect.succeed(Number.NaN) : score(reply))),
+    Effect.flatMap((token) =>
+      /^nan$/i.test(token)
+        ? Effect.succeed(Number.NaN)
+        : score(value._tag === "SimpleString" ? { _tag: "BlobString", value: value.value } : reply),
+    ),
   );
 };
 

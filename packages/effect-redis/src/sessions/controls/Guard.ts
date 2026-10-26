@@ -1,4 +1,4 @@
-import { blockingRead, commandToken } from "#/connection/OrdinaryCommand";
+import { blockingRead, blockingTimeSeriesRead, commandToken } from "#/connection/OrdinaryCommand";
 import { SessionError } from "#/errors/SessionError";
 import type { RedisCommand } from "#/protocol/encode";
 
@@ -45,6 +45,7 @@ export const isBlocking = (command: RedisCommand) => {
   const name = commandToken(command[0]);
   return (
     blockers.has(name) ||
+    (name === "TS.READ" && blockingTimeSeriesRead(command)) ||
     ((name === "XREAD" || name === "XREADGROUP") && blockingRead(command, name === "XREADGROUP"))
   );
 };

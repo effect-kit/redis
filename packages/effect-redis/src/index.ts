@@ -244,3 +244,28 @@ export type {
   VectorMatch,
   RawEmbedding,
 } from "#/commands/vectors/index";
+
+export type {
+  TimeSeriesMultiAggregation,
+  TimeSeriesMultiAggregationOptions,
+  TimeSeriesTimestamp,
+  TimeSeriesBoundary,
+  TimeSeriesAggregator,
+  TimeSeriesAggregation,
+  TimeSeriesRangeOptions,
+  TimeSeriesMultiRangeOptions,
+  TimeSeriesGetOptions,
+  TimeSeriesCreateOptions,
+  TimeSeriesAddOptions,
+  TimeSeriesIncrementOptions,
+  TimeSeriesLabelSelection,
+  TimeSeriesSample,
+  TimeSeriesRow,
+  TimeSeriesLabels,
+  TimeSeriesResult,
+  TimeSeriesGetResult,
+  TimeSeriesReadCursor,
+  TimeSeriesBlockingReadOptions,
+} from "#/commands/timeseries/index";
+
+export type { TimeSeriesPivotKey, TimeSeriesPivotOptions } from "#/commands/timeseries/Pivot";

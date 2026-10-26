@@ -4,9 +4,9 @@ import { Effect, Fiber, Option, Schema, Stream } from "effect";
 import { makeRedisStreams, PayloadCodec, StreamPayload } from "#/index";
 import { primaryCases } from "#test/support/commands/Backend";
 import { bytes } from "#test/support/commands/CoreCase";
+import { waitForBlockedRead } from "#test/support/networking/BlockedRead";
 import { recordFixture } from "#test/support/servers/Evidence";
 import { sessionBackend } from "#test/support/sessions/Backend";
-import { waitForBlockedRead } from "#test/support/streams/Backend";
 
 it.live.each(primaryCases)(
   "STREAM-RUNTIME: $target.fixture $protocol restart, claims, payloads and continuous tail",

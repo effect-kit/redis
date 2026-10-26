@@ -4,6 +4,7 @@ import { BatchExecutor } from "#/command/BatchExecutor";
 import type { RedisExecutor } from "#/command/Executor";
 import { blockingFamily } from "#/commands/blocking/Family";
 import { blockingStreamFamily } from "#/commands/streams/ReadFamily";
+import { blockingTimeSeriesFamily } from "#/commands/timeseries/Family";
 import { SessionError } from "#/errors/SessionError";
 import type { RedisArgument } from "#/RedisArgument";
 import type { RedisConfig } from "#/RedisConfig";
@@ -78,6 +79,7 @@ export const makeRedisSessions = Effect.fnUntraced(function* <R = never>(
 
   return {
     ...blockingFamily(blockingExecutor),
+    ...blockingTimeSeriesFamily(blockingExecutor),
     ...blockingStreamFamily(blockingExecutor),
     executeBlocking: blockingExecutor.execute,
     ...batches,

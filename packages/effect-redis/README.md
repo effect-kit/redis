@@ -30,6 +30,11 @@ Vector-set builders distinguish members, scored/attribute matches, graph links a
 raw quantized embeddings. `encodeFloat32` uses an explicit byte order (little endian
 by default); match the server CPU for Redis's native FP32 layout. Repeat nondefault
 quantization and connection-count settings on subsequent `vadd` operations.
+TimeSeries builders use milliseconds for timestamps, retention, alignment and buckets.
+Samples preserve bigint timestamps and floating values, including empty-bucket NaN.
+Multi-range results retain binary labels and protocol-specific metadata. Label queries
+require an explicit Cluster node. `sessions.tsReadBlocking` leases its own connection;
+its server wait is finite because TS.READ BLOCK zero means no wait.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()

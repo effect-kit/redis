@@ -22,6 +22,7 @@ import { setFamily } from "#/commands/sets/Family";
 import { sortedSetFamily } from "#/commands/sorted-sets/Family";
 import { streamFamily } from "#/commands/streams/Family";
 import { stringFamily } from "#/commands/strings/Family";
+import { timeSeriesFamily } from "#/commands/timeseries/Family";
 import { vectorFamily } from "#/commands/vectors/Family";
 import { keyFamily } from "#/keys/Commands";
 import type { RedisCommand } from "#/protocol/encode";
@@ -34,6 +35,7 @@ export const makeRedis = (executor: RedisExecutor) => ({
   ...probabilisticFamily(executor),
   ...jsonFamily(executor),
   ...vectorFamily(executor),
+  ...timeSeriesFamily(executor),
   ...scanFamily(executor),
   ...streamFamily(executor),
   ...stringFamily(executor),
