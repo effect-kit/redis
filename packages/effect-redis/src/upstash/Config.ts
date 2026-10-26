@@ -8,7 +8,7 @@ const defaulted = (value: number) =>
 
 const Input = Schema.Struct({
   url: Schema.NonEmptyString,
-  token: Schema.Redacted(Schema.NonEmptyString),
+  token: Schema.Redacted(Schema.NonEmptyString.check(Schema.isPattern(/^[!-~]+$/))),
   allowInsecureLocalhost: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   requestTimeoutMillis: defaulted(30_000),
   streamHandshakeTimeoutMillis: defaulted(10_000),

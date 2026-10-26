@@ -26,6 +26,8 @@ const ChannelName = Schema.NonEmptyString.check(
   Schema.isPattern(/^[^,\r\n]+$/),
   Schema.makeFilter(
     (value) =>
+      value !== "." &&
+      value !== ".." &&
       !value.includes("\u0000") &&
       !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(value),
   ),
@@ -39,10 +41,8 @@ const open = <A>(
 ) =>
   Effect.gen(function* () {
     const scope = yield* Effect.scope;
-    const queue = yield* Queue.make<A, UpstashError | Cause.Done>({
-      capacity: 1,
-      strategy: "dropping",
-    });
+    // Dedicated HTTP streams can backpressure their body reader without blocking ordinary commands.
+    const queue = yield* Queue.bounded<A, UpstashError | Cause.Done>(1);
     const ready = yield* Deferred.make<void, UpstashError>();
     let stopped = false;
     let consuming = false;
@@ -68,7 +68,10 @@ const open = <A>(
               Effect.mapError(requestError),
             );
           yield* checkStatus(response);
-          if (!response.headers["content-type"]?.toLowerCase().startsWith("text/event-stream"))
+          if (
+            response.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase() !==
+            "text/event-stream"
+          )
             return yield* failure("malformed");
 
           let acknowledged = false;

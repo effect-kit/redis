@@ -97,6 +97,14 @@ it.effect(
           reason: "encoding",
         },
       );
+
+      for (const key of [".", ".."]) {
+        const normalized = yield* Commands.set(key, new Uint8Array([255])).prepare;
+        expect(yield* Effect.flip(encodeRequest([normalized], "ordinary", config))).toMatchObject({
+          reason: "encoding",
+          delivery: "unsent",
+        });
+      }
     }),
 );
 

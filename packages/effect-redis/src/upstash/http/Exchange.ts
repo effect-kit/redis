@@ -3,6 +3,7 @@ import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import type { HttpClientResponse } from "effect/http/HttpClientResponse";
 
 import { UpstashError } from "#/errors/UpstashError";
+import { ByteBuilder } from "#/protocol/decode/buffers";
 import type { UpstashConfig } from "#/upstash/Config";
 import type { HttpRequestBody } from "#/upstash/encoding/Request";
 
@@ -38,6 +39,9 @@ export const exchange = (
 export const checkStatus = (response: HttpClientResponse) => {
   const status = response.status;
   if (status >= 200 && status < 300) return Effect.void;
+  const retryAfter = response.headers["retry-after"];
+  const seconds =
+    retryAfter !== undefined && /^[0-9]{1,9}$/.test(retryAfter) ? Number(retryAfter) : undefined;
   return Effect.fail(
     new UpstashError({
       stage: "response",
@@ -49,35 +53,29 @@ export const checkStatus = (response: HttpClientResponse) => {
             : "status",
       delivery: "unknown",
       status,
+      ...(seconds === undefined ? {} : { retryAfterSeconds: seconds }),
     }),
   );
 };
 
 export const readBody = (response: HttpClientResponse, maximum: number) =>
   Effect.gen(function* () {
-    const chunks: Array<Uint8Array> = [];
-    let length = 0;
+    const body = new ByteBuilder(Math.min(4096, maximum));
 
     yield* response.stream.pipe(
       Stream.mapError(responseError),
       Stream.runForEach((chunk) =>
         Effect.suspend(() => {
-          if (chunk.length > maximum - length)
+          if (chunk.length > maximum - body.length)
             return Effect.fail(
               new UpstashError({ stage: "response", reason: "limit", delivery: "unknown" }),
             );
-          chunks.push(new Uint8Array(chunk));
-          length += chunk.length;
+          // Fixed blocks also bound allocation count when an HTTP peer sends one-byte chunks.
+          body.append(chunk);
           return Effect.void;
         }),
       ),
     );
 
-    const bytes = new Uint8Array(length);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-    return bytes;
+    return body.finish();
   });

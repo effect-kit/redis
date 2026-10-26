@@ -103,10 +103,10 @@ export const encodeRequest = (
             )
               throw error;
 
-            const path = `/${command.tokens
-              .slice(0, -1)
-              .map((token) => encodeURIComponent(text(token)))
-              .join("/")}`;
+            const segments = command.tokens.slice(0, -1).map(text);
+            // WHATWG URLs normalize dot segments even when their dots are percent encoded.
+            if (segments.some((segment) => segment === "." || segment === "..")) throw encoding();
+            const path = `/${segments.map(encodeURIComponent).join("/")}`;
             if (utf8.encode(path).length + argument.length > config.maxRequestBytes) throw limit();
             return {
               path,

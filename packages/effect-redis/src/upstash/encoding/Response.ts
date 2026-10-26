@@ -29,14 +29,12 @@ const jsonReply = (value: JsonValue, ambiguous = false): RespValue => {
   if (Array.isArray(value))
     return { _tag: "Array", values: value.map((entry) => jsonReply(entry, ambiguous)) };
   if (value instanceof Map) {
-    return {
-      _tag: "Map",
-      entries: [...value.entries()].map(
-        ([key, entry]) => [jsonReply(key, ambiguous), jsonReply(entry, ambiguous)] as const,
-      ),
-    };
+    // The REST contract does not specify whether object keys participate in base64 encoding.
+    throw new UpstashError({ stage: "response", reason: "encoding", delivery: "replied" });
   }
   if ("_tag" in value && value._tag === "NumberToken") {
+    if (value.token.length > 1024)
+      throw new UpstashError({ stage: "response", reason: "limit", delivery: "unknown" });
     // RESP2 integers are int64. Exponents/fractions retain their exact double token.
     if (/^-?(?:0|[1-9][0-9]*)$/.test(value.token)) {
       const integer = BigInt(value.token);

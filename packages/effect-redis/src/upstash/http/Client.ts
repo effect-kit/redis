@@ -59,12 +59,10 @@ export const makeHttpClient = Effect.fnUntraced(function* (config: UpstashConfig
       Effect.gen(function* () {
         const response = yield* exchange(client, config, body, mode === "transaction");
         const bytes = yield* readBody(response, config.maxResponseBytes);
+        const mediaType = response.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
 
         // Redis rejections use HTTP400 too. Preserve their actual reply instead of collapsing status/error domains.
-        if (
-          response.status === 400 &&
-          response.headers["content-type"]?.includes("application/json")
-        ) {
+        if (response.status === 400 && mediaType === "application/json") {
           const value = yield* responseJson(bytes, config);
           const reply = yield* Effect.try({
             try: () => envelope(value),
@@ -79,10 +77,7 @@ export const makeHttpClient = Effect.fnUntraced(function* (config: UpstashConfig
             });
           return { _tag: "Rejected" as const, reply };
         }
-        if (
-          response.status === 400 &&
-          response.headers["content-type"]?.includes("application/octet-stream")
-        ) {
+        if (response.status === 400 && mediaType === "application/octet-stream") {
           const [reply] = yield* decodeResp(bytes, 1, config);
           if (reply?._tag !== "SimpleError" && reply?._tag !== "BlobError")
             return yield* new UpstashError({
@@ -95,7 +90,7 @@ export const makeHttpClient = Effect.fnUntraced(function* (config: UpstashConfig
 
         yield* checkStatus(response);
         if (mode === "transaction") {
-          if (!response.headers["content-type"]?.includes("application/json"))
+          if (mediaType !== "application/json")
             return yield* new UpstashError({
               stage: "response",
               reason: "malformed",
@@ -111,7 +106,7 @@ export const makeHttpClient = Effect.fnUntraced(function* (config: UpstashConfig
           return { _tag: "Replies" as const, replies };
         }
 
-        if (!response.headers["content-type"]?.includes("application/octet-stream"))
+        if (mediaType !== "application/octet-stream")
           return yield* new UpstashError({
             stage: "response",
             reason: "malformed",

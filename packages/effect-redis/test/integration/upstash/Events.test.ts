@@ -100,7 +100,7 @@ it.effect("SSE rejects ambiguous channels before any HTTP request", () =>
     const fixture = controlledEvents("");
     const client = yield* makeUpstash(httpConfig).pipe(Effect.provide(fixture.layer));
 
-    for (const channel of ["", "one,two", "line\nfeed", "nul\u0000"])
+    for (const channel of ["", ".", "..", "one,two", "line\nfeed", "nul\u0000"])
       expect(yield* Effect.flip(client.events.subscribe(channel))).toMatchObject({
         reason: "encoding",
         delivery: "unsent",

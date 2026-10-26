@@ -20,4 +20,5 @@ export class UpstashError extends Schema.TaggedError<UpstashError>()("UpstashErr
   ]),
   delivery: Schema.Literals(["unsent", "unknown", "replied"]),
   status: Schema.optionalKey(Schema.Int),
+  retryAfterSeconds: Schema.optionalKey(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))),
 }) {}
