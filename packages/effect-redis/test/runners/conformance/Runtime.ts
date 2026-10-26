@@ -16,3 +16,4 @@ const bun =
 
 export const readyLayer = node?.RedisNode.layer ?? bun?.RedisBun.layer;
 export const connect = node?.connect ?? bun?.connect;
+export const transportLayer = node?.layer ?? bun?.layer;

@@ -26,11 +26,21 @@ export const client = Effect.fnUntraced(function* (input: Input) {
     id: string,
     command: Command<A, E>,
     expected: A | ((value: A) => void),
+    outcome: Observation["outcome"] = "passed",
   ) {
     const prepared = yield* command.prepare;
     const name = prepared.metadata.name;
+    const execute =
+      prepared.metadata.execution === "blocking"
+        ? sessions.executeBlocking(command)
+        : prepared.metadata.execution === "exclusive"
+          ? sessions.withSession((session) => session.execute(command))
+          : redis.execute(command);
     if (policy.unavailable.has(name)) {
-      const error = yield* Effect.flip(redis.execute(command));
+      const result = yield* Effect.result(execute);
+      assert.equal(result._tag, "Failure", `${id}: unexpectedly accepted`);
+      if (result._tag !== "Failure") return yield* Effect.die(`Unexpected success: ${id}`);
+      const error = result.failure;
       assert.ok(error instanceof core.ServerError, `${id}: expected a server rejection`);
       const reply = Schema.decodeUnknownSync(
         Schema.Struct({
@@ -40,28 +50,80 @@ export const client = Effect.fnUntraced(function* (input: Input) {
       )(Redacted.value(error.reply));
       assert.match(
         new TextDecoder().decode(reply.value),
-        /^ERR.*(?:unknown|unsupported|not supported|not implemented)/i,
+        policy.engine === "dragonfly" && name.startsWith("FUNCTION ")
+          ? /^ERR (?:wrong number of arguments for 'function' command|Unknown subcommand or wrong number of arguments)/
+          : /^ERR.*(?:unknown|unsupported|not supported|not implemented|no such subcommand)/i,
         id,
       );
       observations.push({ id, command: name, outcome: "expected-unsupported" });
       return;
     }
 
-    const value = yield* redis.execute(command);
+    const value = yield* execute.pipe(
+      Effect.tapError((error) =>
+        Effect.sync(() => {
+          process.stderr.write(
+            `Scenario ${id}: ${error instanceof core.ServerError ? error.code : "client-error"}\n`,
+          );
+        }),
+      ),
+    );
     if (typeof expected === "function") (expected as (value: A) => void)(value);
     else assert.deepEqual(value, expected, id);
-    observations.push({ id, command: name, outcome: "passed" });
+    observations.push({ id, command: name, outcome });
+  });
+
+  const wrongType = Effect.fnUntraced(function* <A, E>(id: string, command: Command<A, E>) {
+    const prepared = yield* command.prepare;
+    const result = yield* Effect.result(redis.execute(command));
+    assert.equal(result._tag, "Failure", `${id}: unexpectedly accepted`);
+    if (result._tag !== "Failure") return yield* Effect.die(`Unexpected success: ${id}`);
+    const error = result.failure;
+    assert.ok(error instanceof core.ServerError, id);
+    // Kvrocks wraps WRONGTYPE inside an ERR response; keep the actual server code intact.
+    assert.equal(error.code, policy.engine === "kvrocks" ? "ERR" : "WRONGTYPE", id);
+    const reply = Schema.decodeUnknownSync(Schema.Struct({ value: Schema.Uint8Array }))(
+      Redacted.value(error.reply),
+    );
+    assert.match(new TextDecoder().decode(reply.value), /WRONGTYPE/, id);
+    observations.push({
+      id,
+      command: prepared.metadata.name,
+      outcome: policy.engine === "kvrocks" ? "different" : "passed",
+    });
+  });
+
+  const rejected = Effect.fnUntraced(function* <A, E>(
+    id: string,
+    command: Command<A, E>,
+    pattern: RegExp,
+  ) {
+    const prepared = yield* command.prepare;
+    const result = yield* Effect.result(redis.execute(command));
+    assert.equal(result._tag, "Failure", `${id}: unexpectedly accepted`);
+    if (result._tag !== "Failure") return yield* Effect.die(`Unexpected success: ${id}`);
+    const error = result.failure;
+    assert.ok(error instanceof core.ServerError, id);
+    const reply = Schema.decodeUnknownSync(Schema.Struct({ value: Schema.Uint8Array }))(
+      Redacted.value(error.reply),
+    );
+    assert.match(new TextDecoder().decode(reply.value), pattern, id);
+    observations.push({ id, command: prepared.metadata.name, outcome: "expected-unsupported" });
   });
 
   return {
     redis,
+    config,
     sessions,
     pubsub,
     context,
     observations,
     prefix,
     policy,
+    protocol: input.protocol,
     check,
+    wrongType,
+    rejected,
     raw: (tokens: RedisCommand) => exchange(oracle, tokens),
     record: (id: string, command: string, outcome: Observation["outcome"] = "passed") => {
       observations.push({ id, command, outcome });

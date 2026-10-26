@@ -21,6 +21,9 @@ The `/upstash` entrypoint adds scoped Effect HTTP execution, pipelines, JSON
 transactions and acknowledged text SSE. Typed provider Search/Vector/ACL extensions
 remain distinct from Redis modules. Local tests use an owned Uprest proxy; they do
 not certify the hosted provider.
+Seven-engine native tests share Node/Bun scenarios and retain exact host/Linux,
+protocol, configuration and module evidence. Their generated records describe tested
+operations and explicit differences, rather than universal Redis compatibility.
 
 ## Development
 

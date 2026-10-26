@@ -2,8 +2,10 @@ import { expect, it } from "@effect/vitest";
 import { Effect, Option, Redacted } from "effect";
 
 import { Commands, makeRedisAdmin } from "#/index";
+import { connect } from "#/node";
 import { atLeast, primaryCases } from "#test/support/commands/Backend";
 import { bytes } from "#test/support/commands/CoreCase";
+import { exchange } from "#test/support/networking/Exchange";
 import { recordFixture } from "#test/support/servers/Evidence";
 import { sessionBackend } from "#test/support/sessions/Backend";
 
@@ -11,7 +13,7 @@ it.live.each(primaryCases)(
   "ADMIN: $target.fixture $protocol explicit inspection, secrets and version gaps",
   ({ target, protocol }) =>
     Effect.gen(function* () {
-      const { sessions, redis, prefix, server } = yield* sessionBackend(target, protocol);
+      const { sessions, redis, prefix, server, config } = yield* sessionBackend(target, protocol);
       const admin = makeRedisAdmin(sessions);
       const key = `${prefix}:memory`;
       yield* redis.set(key, "value");
@@ -102,6 +104,16 @@ it.live.each(primaryCases)(
       expect(yield* admin.clientHelp()).not.toHaveLength(0);
       expect(yield* admin.clientUnblock(9223372036854775807n, "TIMEOUT")).toBe(false);
       expect(yield* admin.clientKill({ id: 9223372036854775807n, skipMe: true })).toBe(0n);
+      const victim = yield* connect(config);
+      yield* exchange(victim, ["CLIENT", "SETNAME", "effect-conformance-address-kill"]);
+      const clients = Redacted.value(yield* admin.clientList());
+      const address = clients
+        .split("\n")
+        .find((line) => line.includes("name=effect-conformance-address-kill "))
+        ?.match(/\baddr=(\S+)/)?.[1];
+      if (address === undefined) return yield* Effect.die("Missing owned client address");
+      yield* admin.execute(Commands.clientKillAddress(address));
+      expect(yield* victim.read).toBeUndefined();
       yield* admin.clientPause(1, "WRITE");
       yield* admin.clientUnpause();
       yield* recordFixture(`phase10-admin-inspection-${target.fixture}-${protocol}`, {

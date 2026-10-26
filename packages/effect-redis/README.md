@@ -280,8 +280,26 @@ daemon and OpenSSL. Bun cases require the `.bun-version` runtime; CI installs it
 owns a supplied Redis/Valkey executable; `--mode endpoint` reads
 `EFFECT_REDIS_TEST_URL` and runs read-only PING/ECHO, with connection-only AUTH when
 needed. Optional `EFFECT_REDIS_TEST_CA` names a custom CA file. See the workspace
-README for commands and manual PR CI triggers. Full engine/provider certification
-remains pending.
+README for commands and manual PR CI triggers. Native compatibility records are scoped
+to exact images, configurations, protocols, runtimes and executed scenarios. The live
+runner writes ignored `test/results/engine-conformance.json` only when all selected
+cases have fresh evidence; it includes build/inventory hashes and individual outcomes.
+Hosted-provider certification remains separate.
+
+Use `RedisProfiles.garnet()` with the ready runtime Layer for its reviewed option guard:
+Garnet 2.2.4 accepts `ZSCAN NOSCORES` while still returning scores, so that profile rejects
+the option before writing. Its default fixture disables Lua; a separate tested configuration
+enables Lua and transaction locking. Vector preview, Redis `MSET` atomicity and equivalent
+`BITFIELD OVERFLOW FAIL` behavior are not implied by accepting command names.
+
+Kvrocks 2.17.0 requires explicit JSONPaths such as `{ paths: ["$"] }`, with their matching-value
+envelopes. `FUNCTION LOAD` preserves its empty acknowledgment; `DBSIZE` preserves cached
+counts until an explicit server scan. Missing strict `XINFO STREAM` counters produce
+`ReplyError`; raw replies retain available fields. Bitfield bit order/int64 behavior differs
+from Redis. Dragonfly's overlapping pattern subscriptions affect reported subscriber counts.
+These server behaviors remain visible; the client does not emulate Redis guarantees.
+Vendor-specific KeyDB commands, Garnet ETags and Kvrocks CAS/CAD/SQL remain raw/custom
+contracts unless a reviewed typed family explicitly covers them.
 
 Licensed under Apache-2.0. Package archives include the license and built artifacts;
 `prepack` rebuilds them, and pnpm replaces catalog references with compatible ranges.

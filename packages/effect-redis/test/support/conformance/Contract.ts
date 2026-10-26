@@ -20,6 +20,11 @@ export const Domain = Schema.Literals([
   "events",
   "modules",
   "extensions",
+  "sparse",
+  "administration",
+  "uncertainty",
+  "all",
+  "garnet-lua",
 ]);
 export type Domain = typeof Domain.Type;
 
@@ -49,6 +54,13 @@ export const Receipt = Schema.Struct({
   version: Schema.NonEmptyString,
   protocol: Schema.Literals(["resp2", "resp3"]),
   domain: Domain,
+  inventory: Schema.Struct({
+    commands: Schema.NonEmptyArray(Schema.NonEmptyString),
+    commandDigest: Schema.String,
+    moduleInventory: Schema.Literals(["listed", "unavailable"]),
+    modules: Schema.Array(Schema.Struct({ name: Schema.String, version: Schema.String })),
+  }),
+  profile: Schema.Struct({ id: Schema.NonEmptyString, revision: Schema.NonEmptyString }),
   observations: Schema.NonEmptyArray(Observation),
 });
 export type Receipt = typeof Receipt.Type;

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -15,6 +16,7 @@ const env = {
   EFFECT_REDIS_TEST_ENGINE: options.engine,
   EFFECT_REDIS_TEST_MODE: options.mode,
   EFFECT_REDIS_TEST_RUNTIME: options.runtime,
+  EFFECT_REDIS_TEST_RUN_ID: randomUUID(),
   ...(options.binary === undefined ? {} : { EFFECT_REDIS_TEST_BINARY: options.binary }),
 };
 
@@ -29,6 +31,11 @@ rmSync(new URL("../../results/", import.meta.url), { recursive: true, force: tru
 for (const args of [
   ["run", "build"],
   ["exec", "vitest", "run", "--config", "test/vitest.live.config.ts"],
+  ...(options.mode === "containers" &&
+  options.engine !== "core" &&
+  process.env.EFFECT_REDIS_TEST_HTTP_ONLY !== "1"
+    ? [["exec", "node", "test/runners/conformance/summarize.ts"]]
+    : []),
 ]) {
   const result = spawnSync("pnpm", args, {
     stdio: "inherit",

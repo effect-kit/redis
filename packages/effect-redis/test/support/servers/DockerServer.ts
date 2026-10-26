@@ -36,6 +36,7 @@ export const allocateServer = Effect.fnUntraced(function* (
     readonly writableConfiguration?: boolean;
     readonly aclRules?: string;
     readonly sentinel?: boolean;
+    readonly garnetLua?: boolean;
   },
 ) {
   const directory = yield* temporaryDirectory;
@@ -55,6 +56,13 @@ export const allocateServer = Effect.fnUntraced(function* (
 
   // Redis sees the container network peer; the published host port is loopback-only.
   const profile = serverProfile(target);
+  if (options?.garnetLua && target.product !== "garnet")
+    return yield* new FixtureError({ stage: "unsupported-fixture-mode" });
+  const command = options?.sentinel
+    ? [...profile.command, "--sentinel"]
+    : options?.garnetLua
+      ? [...profile.command, "--lua", "--lua-transaction-mode"]
+      : profile.command;
   if (
     profile.configuration !== undefined &&
     (tls !== undefined ||
@@ -108,7 +116,7 @@ export const allocateServer = Effect.fnUntraced(function* (
 
   const container = new FixtureContainer(target.reference)
     .withEntrypoint([profile.executable])
-    .withCommand(options?.sentinel ? [...profile.command, "--sentinel"] : profile.command)
+    .withCommand(command)
     .withTmpFs({ "/data": "rw,nosuid,size=256m", "/tmp": "rw,noexec,nosuid,size=16m" })
     .withBindMounts([
       { source: directory, target: "/fixture", mode: options?.writableConfiguration ? "rw" : "ro" },
@@ -155,7 +163,7 @@ export const allocateServer = Effect.fnUntraced(function* (
             writableConfiguration: options?.writableConfiguration ?? false,
             aclRules: options?.aclRules,
             executable: profile.executable,
-            command: options?.sentinel ? [...profile.command, "--sentinel"] : profile.command,
+            command,
           }),
         )
         .digest("hex"),

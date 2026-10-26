@@ -35,6 +35,10 @@ Never describe planned command or server compatibility as implemented or verifie
 Phase 16 adds ready runtime/topology Layers, deployment-scoped credential refresh,
 explicit socket/request rotation and managed-service policies. Hosted certification
 remains pending; official profile metadata and local fixtures do not close phase 18.
+Engine conformance uses shared built-artifact Node/Bun scenarios across seven pinned
+native engines, with separate host/Linux and enabled-Garnet-Lua configurations.
+Compatibility belongs to exact image/build/configuration/runtime/protocol/scenario
+records, not to an engine family or its COMMAND listing.
 
 ## Read before changing code
 
@@ -198,6 +202,17 @@ remains pending; official profile metadata and local fixtures do not close phase
   `test:protocol:fuzz`, then `test:live --runtime all`. It stops on failure and keeps builds ahead
   of live mounts. Docker, OpenSSL and explicitly prepared images are required.
   Artifact-consumer and research-free phase checks remain separate distribution gates.
+- Shared engine scenarios live in `test/runners/conformance/`, with reviewed version-bound
+  expectations and selection under `test/support/conformance/`. Keep them runtime-neutral
+  and load dist entrypoints; copy every runtime dependency into the frozen Linux assets.
+  The live runner owns a fresh run ID and validates every selected record before writing
+  ignored `test/results/engine-conformance.json`. Missing, stale or failed cells must not
+  become a passing aggregate. Keep older primary/module/topology regressions too.
+- Preserve observed dialects and semantic differences. Use explicit deployment profiles
+  for reviewed guards where ignored flags could misattribute replies (Garnet NOSCORES).
+  Never infer option parity from COMMAND, fabricate missing metadata or emulate server
+  guarantees. Scope Pub/Sub release receipts to the listeners captured before pruning;
+  requests arriving during scope closure require their own pruning pass.
 - Check emitted artifacts and package contents before a release. Never include
   ignored research, secrets, fixtures, or local runtime state in a published package.
 - Update concise maintained documentation when behavior, configuration, commands,
