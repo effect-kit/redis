@@ -882,3 +882,25 @@ total is promised. Sources remain accessible without ignored research:
 - Hosted GitHub CI runs only through manual default-branch dispatch with a `providers` environment and
   serialized deployments. PR jobs receive no hosted credentials; missing prerequisites
   fail explicitly. Do not claim remote CI passed until an actual run is observed.
+
+## Hardening and artifact gates
+
+- `RedisTelemetry.layer` is opt-in. Keep dimensions bounded to operation/outcome;
+  never put command names, keys, endpoints, identities or application payloads in
+  telemetry. Sanitize span completion instead of passing the user's Exit to a tracer.
+  Preserve exact values, errors, defects, interruption and public environments.
+- Public Stream outcomes use named explicit return contracts. Do not reintroduce
+  synthesized union declaration drift; `pnpm test:artifacts` compares every emitted
+  byte across three clean builds and tests the exact package in TS7/Node/Bun consumers.
+- `pnpm test:hardening [all|benchmark|soak|readiness]` owns disposable primary/proxy
+  fixtures. Prepare pinned images explicitly. Default runs enforce reviewed workload
+  budgets; `--calibrate` is diagnostic and cannot certify a release. Keep numerical
+  expectations under test/fixtures/hardening and detailed analysis in ignored research.
+- Benchmark metadata must retain host/runtime/image/configuration identity, RTT,
+  CPU, GC availability, memory and latency/queue measurements. Missing observations
+  are not zero. Collect retained-heap samples after GC; join child/fixture cleanup.
+- Preserve UUID evidence under test/results/{providers,artifacts,hardening} when
+  clearing regular live results. Do not rebuild while children mount this dist.
+- Hosted-provider CI remains manual default-branch workflow dispatch only. Offline
+  CI also verifies deterministic artifacts; local container conformance retains its
+  main-push and authorized PR policy. Publication remains a separate explicit action.

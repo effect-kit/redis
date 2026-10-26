@@ -29,40 +29,51 @@ import { vectorFamily } from "#/commands/vectors/Family";
 import { keyFamily } from "#/keys/Commands";
 import type { RedisCommand } from "#/protocol/encode";
 import type { AnyCommand } from "#/sessions/batch/Types";
+import { observe, observedExecutor } from "#/telemetry/Observe";
 
-export const makeRedis = (executor: RedisExecutor) => ({
-  upstash: upstashFamily(executor),
-  ...connectionFamily(executor),
-  ...scriptingFamily(executor),
-  ...pubsubFamily(executor),
-  ...probabilisticFamily(executor),
-  ...jsonFamily(executor),
-  ...vectorFamily(executor),
-  ...timeSeriesFamily(executor),
-  ...searchFamily(executor),
-  ...scanFamily(executor),
-  ...streamFamily(executor),
-  ...stringFamily(executor),
-  ...sortedSetFamily(executor),
-  ...hashFamily(executor),
-  ...listFamily(executor),
-  ...setFamily(executor),
-  ...hyperloglogFamily(executor),
-  ...bitmapFamily(executor),
-  ...keyCommandFamily(executor),
-  ...arrayFamily(executor),
-  ...geoFamily(executor),
-  ...keyFamily(executor),
+export const makeRedis = (source: RedisExecutor) => {
+  const executor = observedExecutor(source);
 
-  pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
-    BatchExecutor.pipe(Effect.flatMap((batches) => batches.pipeline(commands))),
-  transaction: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
-    BatchExecutor.pipe(Effect.flatMap((batches) => batches.transaction(commands))),
+  return {
+    upstash: upstashFamily(executor),
+    ...connectionFamily(executor),
+    ...scriptingFamily(executor),
+    ...pubsubFamily(executor),
+    ...probabilisticFamily(executor),
+    ...jsonFamily(executor),
+    ...vectorFamily(executor),
+    ...timeSeriesFamily(executor),
+    ...searchFamily(executor),
+    ...scanFamily(executor),
+    ...streamFamily(executor),
+    ...stringFamily(executor),
+    ...sortedSetFamily(executor),
+    ...hashFamily(executor),
+    ...listFamily(executor),
+    ...setFamily(executor),
+    ...hyperloglogFamily(executor),
+    ...bitmapFamily(executor),
+    ...keyCommandFamily(executor),
+    ...arrayFamily(executor),
+    ...geoFamily(executor),
+    ...keyFamily(executor),
 
-  execute: executor.execute,
-  executePrepared: executor.executePrepared,
-  raw: (tokens: RedisCommand, contract: RawContract) => executor.execute(raw(tokens, contract)),
-});
+    pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
+      observe(
+        "pipeline",
+        BatchExecutor.pipe(Effect.flatMap((batches) => batches.pipeline(commands))),
+      ),
+    transaction: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
+      observe(
+        "transaction",
+        BatchExecutor.pipe(Effect.flatMap((batches) => batches.transaction(commands))),
+      ),
+
+    execute: executor.execute,
+    executePrepared: executor.executePrepared,
+    raw: (tokens: RedisCommand, contract: RawContract) => executor.execute(raw(tokens, contract)),
+  };
+};
 
 export type RedisClient = ReturnType<typeof makeRedis>;
 

@@ -38,7 +38,9 @@
     "test:live": "pnpm --filter @effect-kit/redis test:live",
     "fixtures:check": "pnpm --filter @effect-kit/redis fixtures:check",
     "test:providers": "pnpm --filter @effect-kit/redis test:providers",
-    "providers:prepare": "pnpm --filter @effect-kit/redis providers:prepare"
+    "providers:prepare": "pnpm --filter @effect-kit/redis providers:prepare",
+    "test:artifacts": "pnpm --filter @effect-kit/redis test:artifacts",
+    "test:hardening": "pnpm --filter @effect-kit/redis test:hardening"
   },
   "dependencies": {
     "effect": "catalog:"

@@ -89,7 +89,9 @@
     "test:live": "node test/runners/live/run.ts",
     "fixtures:check": "node test/runners/fixtures/check.ts",
     "test:providers": "node test/runners/providers/run.ts",
-    "providers:prepare": "node test/runners/providers/prepare.ts"
+    "providers:prepare": "node test/runners/providers/prepare.ts",
+    "test:artifacts": "node test/runners/artifacts/run.ts",
+    "test:hardening": "node --experimental-transform-types test/runners/hardening/run.ts"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",

@@ -15,6 +15,7 @@ import {
 import { FixtureError } from "#test/support/servers/FixtureError";
 import { serverProfile } from "#test/support/servers/Profiles";
 import { awaitReadiness, probe } from "#test/support/servers/Readiness";
+import type { ReadinessObservation } from "#test/support/servers/Readiness";
 import { serverTargets } from "#test/support/servers/Targets";
 import type { ServerTarget } from "#test/support/servers/Targets";
 import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
@@ -37,6 +38,7 @@ export const allocateServer = Effect.fnUntraced(function* (
     readonly aclRules?: string;
     readonly sentinel?: boolean;
     readonly garnetLua?: boolean;
+    readonly onReadiness?: (observation: ReadinessObservation) => void;
   },
 ) {
   const directory = yield* temporaryDirectory;
@@ -137,7 +139,10 @@ export const allocateServer = Effect.fnUntraced(function* (
   const port = started.getMappedPort(profile.port);
 
   const start = Effect.gen(function* () {
-    yield* awaitReadiness(probe(port, tls, options?.password), options?.readinessMillis);
+    yield* awaitReadiness(
+      probe(port, tls, options?.password, options?.onReadiness),
+      options?.readinessMillis,
+    );
 
     const version = yield* containerRequest("server-version", () => started.exec(profile.version));
     const build = version.output.trim();

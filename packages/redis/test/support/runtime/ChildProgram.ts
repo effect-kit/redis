@@ -12,12 +12,18 @@ export const runRuntimeProgram = (options: {
   readonly input: string;
   readonly timeout: number;
   readonly stage: string;
+  readonly exposeGc?: boolean;
+  readonly transformTypes?: boolean;
 }) =>
   Effect.callback<string, FixtureError>((resume) => {
     const child = execFile(
       options.runtime === "node" ? process.execPath : "bun",
       [
         ...(options.runtime === "bun" ? ["--no-env-file", "--no-install"] : []),
+        ...(options.runtime === "node" && options.exposeGc ? ["--expose-gc"] : []),
+        ...(options.runtime === "node" && options.transformTypes
+          ? ["--experimental-transform-types"]
+          : []),
         fileURLToPath(options.program),
       ],
       { timeout: options.timeout, killSignal: "SIGKILL", maxBuffer: 64 * 1024 },

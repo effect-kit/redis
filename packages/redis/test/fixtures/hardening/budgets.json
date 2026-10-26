@@ -1,0 +1,211 @@
+{
+  "version": 1,
+  "reference": {
+    "observedAt": "2026-10-26",
+    "host": {
+      "platform": "darwin",
+      "architecture": "arm64",
+      "cpu": "Apple M3 Pro",
+      "logicalCpus": 11,
+      "memoryBytes": 19327352832
+    },
+    "node": "24.22.0",
+    "bun": "1.4.4",
+    "redis": "Redis server v=8.10.2 sha=00000000:1 malloc=jemalloc-5.3.0 bits=64 build=c4a0461010fb17f1",
+    "valkey": "9.1.2",
+    "method": "12 runtime/engine/transport cells, 200ms warmup then 500ms calibration per workload. Floors are one quarter of the slowest observed throughput; ceilings are five times the highest observed p99, with a 25ms timer/noise floor. Broad regression gates, not application SLOs.",
+    "memoryMethod": "A sustained three-window Node HTTP diagnostic observed up to 603 MiB transient RSS; after service cleanup and full GC, retained heap was 42.57 MiB, RSS 510.05 MiB and external storage 16.92 MiB. Allow 768 MiB allocator RSS, retain a separate 64 MiB post-cleanup heap limit and 8 MiB/32 KiB/s post-GC soak growth limits. Validate five-minute HTTP soaks; no unbounded-memory claim."
+  },
+  "windows": 3,
+  "windowMillis": 500,
+  "soakMillis": 300000,
+  "minimumCycles": 100,
+  "minimumSamples": 16,
+  "maximumHeapGrowthBytes": 8388608,
+  "maximumHeapSlopeBytesPerSecond": 32768,
+  "maximumRssBytes": 805306368,
+  "minimumTelemetryThroughputRatio": 0.2,
+  "workloads": {
+    "http:get-256b-c1": {
+      "minimumObservedOperationsPerSecond": 325.558,
+      "maximumObservedP99Millis": 23.469,
+      "minimumOperationsPerSecond": 81,
+      "maximumP99Millis": 118
+    },
+    "http:get-256b-c32": {
+      "minimumObservedOperationsPerSecond": 1329.399,
+      "maximumObservedP99Millis": 83.491,
+      "minimumOperationsPerSecond": 332,
+      "maximumP99Millis": 418
+    },
+    "http:get-64k-c8": {
+      "minimumObservedOperationsPerSecond": 971.993,
+      "maximumObservedP99Millis": 34.422,
+      "minimumOperationsPerSecond": 242,
+      "maximumP99Millis": 173
+    },
+    "http:set-256b-c16": {
+      "minimumObservedOperationsPerSecond": 1132.855,
+      "maximumObservedP99Millis": 56.639,
+      "minimumOperationsPerSecond": 283,
+      "maximumP99Millis": 284
+    },
+    "http:incr-c16": {
+      "minimumObservedOperationsPerSecond": 1524.012,
+      "maximumObservedP99Millis": 63.469,
+      "minimumOperationsPerSecond": 381,
+      "maximumP99Millis": 318
+    },
+    "http:hgetall-16-c8": {
+      "minimumObservedOperationsPerSecond": 931.408,
+      "maximumObservedP99Millis": 57.597,
+      "minimumOperationsPerSecond": 232,
+      "maximumP99Millis": 288
+    },
+    "http:xadd-256b-c8": {
+      "minimumObservedOperationsPerSecond": 1049.761,
+      "maximumObservedP99Millis": 44.829,
+      "minimumOperationsPerSecond": 262,
+      "maximumP99Millis": 225
+    },
+    "http:pipeline-32-c4": {
+      "minimumObservedOperationsPerSecond": 405.203,
+      "maximumObservedP99Millis": 67.602,
+      "minimumOperationsPerSecond": 101,
+      "maximumP99Millis": 339
+    },
+    "http:get-metrics-c32": {
+      "minimumObservedOperationsPerSecond": 1080.472,
+      "maximumObservedP99Millis": 80.907,
+      "minimumOperationsPerSecond": 270,
+      "maximumP99Millis": 405
+    },
+    "http:get-tracing-c32": {
+      "minimumObservedOperationsPerSecond": 1341.208,
+      "maximumObservedP99Millis": 75.414,
+      "minimumOperationsPerSecond": 335,
+      "maximumP99Millis": 378
+    },
+    "tcp:get-256b-c1": {
+      "minimumObservedOperationsPerSecond": 707.401,
+      "maximumObservedP99Millis": 7.253,
+      "minimumOperationsPerSecond": 176,
+      "maximumP99Millis": 37
+    },
+    "tcp:get-256b-c32": {
+      "minimumObservedOperationsPerSecond": 7506.036,
+      "maximumObservedP99Millis": 52.081,
+      "minimumOperationsPerSecond": 1876,
+      "maximumP99Millis": 261
+    },
+    "tcp:get-64k-c8": {
+      "minimumObservedOperationsPerSecond": 2349.27,
+      "maximumObservedP99Millis": 49.291,
+      "minimumOperationsPerSecond": 587,
+      "maximumP99Millis": 247
+    },
+    "tcp:set-256b-c16": {
+      "minimumObservedOperationsPerSecond": 7053.708,
+      "maximumObservedP99Millis": 13.937,
+      "minimumOperationsPerSecond": 1763,
+      "maximumP99Millis": 70
+    },
+    "tcp:incr-c16": {
+      "minimumObservedOperationsPerSecond": 8434.318,
+      "maximumObservedP99Millis": 12.856,
+      "minimumOperationsPerSecond": 2108,
+      "maximumP99Millis": 65
+    },
+    "tcp:hgetall-16-c8": {
+      "minimumObservedOperationsPerSecond": 2157.705,
+      "maximumObservedP99Millis": 15.062,
+      "minimumOperationsPerSecond": 539,
+      "maximumP99Millis": 76
+    },
+    "tcp:xadd-256b-c8": {
+      "minimumObservedOperationsPerSecond": 2059.374,
+      "maximumObservedP99Millis": 27.27,
+      "minimumOperationsPerSecond": 514,
+      "maximumP99Millis": 137
+    },
+    "tcp:pipeline-32-c4": {
+      "minimumObservedOperationsPerSecond": 303.767,
+      "maximumObservedP99Millis": 198.223,
+      "minimumOperationsPerSecond": 75,
+      "maximumP99Millis": 992
+    },
+    "tcp:get-metrics-c32": {
+      "minimumObservedOperationsPerSecond": 7408.17,
+      "maximumObservedP99Millis": 55.498,
+      "minimumOperationsPerSecond": 1852,
+      "maximumP99Millis": 278
+    },
+    "tcp:get-tracing-c32": {
+      "minimumObservedOperationsPerSecond": 5603.106,
+      "maximumObservedP99Millis": 32.036,
+      "minimumOperationsPerSecond": 1400,
+      "maximumP99Millis": 161
+    },
+    "tls:get-256b-c1": {
+      "minimumObservedOperationsPerSecond": 799.425,
+      "maximumObservedP99Millis": 7.59,
+      "minimumOperationsPerSecond": 199,
+      "maximumP99Millis": 38
+    },
+    "tls:get-256b-c32": {
+      "minimumObservedOperationsPerSecond": 5486.518,
+      "maximumObservedP99Millis": 50.738,
+      "minimumOperationsPerSecond": 1371,
+      "maximumP99Millis": 254
+    },
+    "tls:get-64k-c8": {
+      "minimumObservedOperationsPerSecond": 1131.192,
+      "maximumObservedP99Millis": 61.531,
+      "minimumOperationsPerSecond": 282,
+      "maximumP99Millis": 308
+    },
+    "tls:set-256b-c16": {
+      "minimumObservedOperationsPerSecond": 3245.735,
+      "maximumObservedP99Millis": 36.405,
+      "minimumOperationsPerSecond": 811,
+      "maximumP99Millis": 183
+    },
+    "tls:incr-c16": {
+      "minimumObservedOperationsPerSecond": 4090.478,
+      "maximumObservedP99Millis": 27.768,
+      "minimumOperationsPerSecond": 1022,
+      "maximumP99Millis": 139
+    },
+    "tls:hgetall-16-c8": {
+      "minimumObservedOperationsPerSecond": 1842.004,
+      "maximumObservedP99Millis": 43.501,
+      "minimumOperationsPerSecond": 460,
+      "maximumP99Millis": 218
+    },
+    "tls:xadd-256b-c8": {
+      "minimumObservedOperationsPerSecond": 3046.26,
+      "maximumObservedP99Millis": 20.975,
+      "minimumOperationsPerSecond": 761,
+      "maximumP99Millis": 105
+    },
+    "tls:pipeline-32-c4": {
+      "minimumObservedOperationsPerSecond": 366.643,
+      "maximumObservedP99Millis": 41.755,
+      "minimumOperationsPerSecond": 91,
+      "maximumP99Millis": 209
+    },
+    "tls:get-metrics-c32": {
+      "minimumObservedOperationsPerSecond": 6751.936,
+      "maximumObservedP99Millis": 23.771,
+      "minimumOperationsPerSecond": 1687,
+      "maximumP99Millis": 119
+    },
+    "tls:get-tracing-c32": {
+      "minimumObservedOperationsPerSecond": 5024.081,
+      "maximumObservedP99Millis": 95.399,
+      "minimumOperationsPerSecond": 1256,
+      "maximumP99Millis": 477
+    }
+  },
+  "maximumRetainedHeapBytes": 67108864
+}

@@ -1,6 +1,6 @@
 # @effect-kit/redis
 
-A runtime-neutral Redis client foundation for Effect v4. The package remains private.
+A runtime-neutral Redis client for Effect v4. The package remains private.
 
 Use a ready-to-use Layer for ordinary applications. Native Redis-compatible engines
 share the same constructor; the chosen server determines command availability:
@@ -460,7 +460,8 @@ The development typecheck includes compile-only public inference and codec servi
 contracts. Shared live command scenarios cover seven current native engines with Node
 and Bun in RESP2/3, including separate Linux runtimes and explicit unsupported/different
 outcomes. Older Redis/Valkey builds retain dedicated regressions. Evidence covers exact
-executed scenarios; hosted-provider certification remains pending.
+executed scenarios. Hosted evidence covers the explicitly configured free-service
+subset described above; other provider configurations remain deferred.
 
 Development uses `#/` source imports and `#test/` imports for all test-owned modules.
 Node resolves them through package imports; tsdown rewrites built module references.
@@ -883,3 +884,61 @@ operations, 64 event cohorts, three discovery attempts, five-second discovery an
 500 ms candidate deadlines, plus 30-second ordinary operation/refresh intervals.
 Native session/blocking limits apply per data pool; event cohorts own additional
 dedicated sockets. `learnSentinels: true` opts into bounded peer discovery.
+
+`RedisTelemetry.layer()` opts Redis facade operations into Effect metrics. Merge it
+with the ready runtime Layer; `{ tracing: true }` additionally creates client spans:
+
+```ts
+import { Effect, Layer } from "effect";
+
+import { Redis, RedisTelemetry } from "@effect-kit/redis";
+import { RedisNode } from "@effect-kit/redis/node";
+
+const observableRedis = Layer.mergeAll(
+  RedisNode.layer({ url: "redis://localhost:6379" }),
+  RedisTelemetry.layer({ tracing: true }),
+);
+const observableProgram = Redis.pipe(
+  Effect.flatMap((redis) => redis.ping()),
+  Effect.provide(observableRedis),
+);
+```
+
+Instrumentation is disabled by default. Metrics are `effect_redis.operations`
+(completions), `effect_redis.operations.active` (current operations) and
+`effect_redis.operation.duration_ms` (whole-operation latency histogram). Dimensions
+are fixed operation kind (`command`, `pipeline`, `transaction`) and completion
+outcome. A batch counts once. Direct low-level executors, sessions and event/Stream
+helpers retain their existing snapshots rather than these facade counters. Spans
+are `redis.command`, `redis.pipeline` and `redis.transaction`; their end status
+contains only a fixed outcome, never the application's result or error. Library
+labels contain no keys, arguments, command names, endpoints or identities. Ambient
+Effect metric labels and application tracers remain application-owned. Export metrics
+through your Effect instrumentation; no exporter or background polling is installed.
+`{ metrics: false, tracing: true }` enables spans alone.
+
+Shutdown belongs to the Layer's Scope: await its finalizers before ending the host.
+Cancellation after possible write retires that connection; it cannot undo a remote
+mutation. Replacement connections admit future work with fresh handshakes, without
+replaying old commands. A pipeline is ordered, a transaction does not roll back
+individual runtime errors, and WATCH conflict is a distinct result. Streams and
+Pub/Sub do not promise exactly-once delivery. Retain application idempotency keys
+when an uncertain result needs business-level recovery.
+
+`pnpm test:artifacts` performs three clean builds and requires byte-identical JS and
+declarations, then checks the exact archive with independent TS7/Node/Bun consumers.
+`pnpm test:hardening` runs disposable benchmark, soak and readiness suites. It needs
+prepared primary/proxy images, Docker, OpenSSL and the pinned Bun runtime. Select
+`benchmark`, `soak` or `readiness` to rerun one part; `--calibrate` produces diagnostic
+measurements without release certification. Measurements and budgets are scoped to
+the recorded workloads and host conditions, rather than performance guarantees for
+an arbitrary deployment. Both commands keep immutable evidence under ignored test
+results. Never rebuild this checkout while live children are reading its artifacts.
+
+The supported Effect peer is `^4.0.6`; major-version widening requires compatibility
+review. Runtime, engine and module claims refer to executed versions/configurations,
+not every version accepting a Redis command. Before release, keep the package private
+until ownership and publication authorization are verified. Report vulnerabilities
+privately through the repository's **Security → Report a vulnerability** interface
+when enabled; do not post credentials or exploit details in a public issue.
+Private vulnerability reporting must be enabled before publication.

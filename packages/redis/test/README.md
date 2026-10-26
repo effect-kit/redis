@@ -121,3 +121,21 @@ Live JUnit/JSON and fixture evidence go to ignored `results/`, collected by CI.
 Main pushes run live CI automatically; PR live runs require authorized manual
 selection. Keep that authorization controller under root `.github/`, separate from
 untrusted package code. See the workspace README for CI triggers and backend scope.
+
+`runners/artifacts/` checks three independent clean builds, every archive entry and
+portable import graphs, then compiles/runs `fixtures/distribution/` from the exact
+packed archive in isolated consumers. Run `pnpm test:artifacts` before live mounts.
+
+`runners/hardening/` owns measured Redis/Valkey TCP/TLS/local HTTP workloads, five-minute
+native and sustained-HTTP Node/Bun cleanup soaks and 100 fresh fixture startups plus
+delayed-start forwarding.
+`fixtures/hardening/budgets.json` contains executable regression thresholds derived
+from recorded calibration. Default `pnpm test:hardening` enforces those budgets;
+`--calibrate` is diagnostic and cannot pass the release gate. Node exposes GC for soak
+measurements; Bun uses native GC and reports unavailable GC timing/timer enumeration
+as null. Both verify server-side client cleanup. Hardware, versions, images, server
+configuration hashes and client/server resource measurements accompany each run.
+Immutable evidence stays under `results/hardening/<run-id>/` and `results/artifacts/<run-id>/`.
+The **Release hardening** workflow is manual dispatch; hosted providers remain a
+separate dispatch-only workflow with isolated secrets. No performance gate implicitly
+contacts a real hosted database or loads a local credentials file.
