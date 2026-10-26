@@ -1,10 +1,20 @@
 import { createConnection } from "node:net";
 import { connect } from "node:tls";
 
-import { Effect, Redacted } from "effect";
+import { Effect, Redacted, Schedule } from "effect";
 
 import { FixtureError } from "#test/support/servers/FixtureError";
 import type { Certificates } from "#test/support/tls/Certificates";
+
+/** The configured startup deadline owns readiness independently of how quickly probes fail. */
+export const awaitReadiness = (attempt: Effect.Effect<void, FixtureError>, millis = 10_000) =>
+  attempt.pipe(
+    Effect.retry({ schedule: Schedule.spaced(50) }),
+    Effect.timeoutOrElse({
+      duration: millis,
+      orElse: () => Effect.fail(new FixtureError({ stage: "server-readiness" })),
+    }),
+  );
 
 /** Independent wire probe: readiness cannot pass because our codec and adapter share a bug. */
 export const probe = (

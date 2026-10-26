@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { copyFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { Effect, Redacted, Schedule } from "effect";
+import { Effect, Redacted } from "effect";
 
 import { Wait } from "testcontainers";
 import type { StartedNetwork } from "testcontainers";
@@ -14,7 +14,7 @@ import {
 } from "#test/support/servers/Containers";
 import { FixtureError } from "#test/support/servers/FixtureError";
 import { serverProfile } from "#test/support/servers/Profiles";
-import { probe } from "#test/support/servers/Readiness";
+import { awaitReadiness, probe } from "#test/support/servers/Readiness";
 import { serverTargets } from "#test/support/servers/Targets";
 import type { ServerTarget } from "#test/support/servers/Targets";
 import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
@@ -137,13 +137,7 @@ export const allocateServer = Effect.fnUntraced(function* (
   const port = started.getMappedPort(profile.port);
 
   const start = Effect.gen(function* () {
-    yield* probe(port, tls, options?.password).pipe(
-      Effect.retry({ schedule: Schedule.spaced(50), times: 60 }),
-      Effect.timeoutOrElse({
-        duration: options?.readinessMillis ?? 10_000,
-        orElse: () => Effect.fail(new FixtureError({ stage: "server-readiness" })),
-      }),
-    );
+    yield* awaitReadiness(probe(port, tls, options?.password), options?.readinessMillis);
 
     const version = yield* containerRequest("server-version", () => started.exec(profile.version));
     const build = version.output.trim();

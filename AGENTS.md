@@ -170,6 +170,8 @@ records, not to an engine family or its COMMAND listing.
   images, loopback ports and awaited cleanup. Never reuse containers across runs or
   automatically pull images during tests. Own cleanup before starting; use the
   Testcontainers runtime API for lifecycle/volumes, not Docker CLI subprocesses.
+  Docker readiness uses its configured overall deadline; do not add an independent
+  attempt cap that ends startup early when connection failures return quickly.
   Backend startup profiles must preserve actual configuration/module differences.
   Missing prerequisites fail; they are not passing skips.
   Do not rebuild or pack the same checkout while live probes mount its dist/ folder;
