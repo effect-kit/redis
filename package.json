@@ -19,6 +19,7 @@
   "scripts": {
     "build": "turbo run build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "verify": "pnpm check && pnpm fixtures:check && pnpm test:protocol:fuzz && pnpm test:node",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "pnpm lint:root && turbo run lint",

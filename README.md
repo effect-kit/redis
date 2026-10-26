@@ -32,20 +32,21 @@ Commitlint, and Git hook conventions. TypeScript 7 checks types;
 tsdown uses Klarity’s library preset to build unbundled ESM and declarations, with
 Publint checking package exports.
 
-| Command                   | Purpose                                               |
-| ------------------------- | ----------------------------------------------------- |
-| `pnpm build`              | Build workspace packages through Turborepo            |
-| `pnpm typecheck`          | Check source, tests and public type contracts         |
-| `pnpm lint`               | Lint root configs, source and tests                   |
-| `pnpm format`             | Format tracked project files with Oxfmt               |
-| `pnpm format:check`       | Check formatting                                      |
-| `pnpm test`               | Run offline unit and controlled integration tests     |
-| `pnpm test:protocol:fuzz` | Build and run the watchdog protocol corpus            |
-| `pnpm fixtures:check`     | Validate pinned backend test fixtures                 |
-| `pnpm fixtures:pull`      | Explicitly download pinned integration-test images    |
-| `pnpm test:node`          | Alias for the full live suite                         |
-| `pnpm test:live`          | Run live socket/fault and twelve server-version cases |
-| `pnpm check`              | Formatting, lint, typecheck, test, and build          |
+| Command                   | Purpose                                                      |
+| ------------------------- | ------------------------------------------------------------ |
+| `pnpm build`              | Build workspace packages through Turborepo                   |
+| `pnpm typecheck`          | Check source, tests and public type contracts                |
+| `pnpm lint`               | Lint root configs, source and tests                          |
+| `pnpm format`             | Format tracked project files with Oxfmt                      |
+| `pnpm format:check`       | Check formatting                                             |
+| `pnpm test`               | Run offline unit and controlled integration tests            |
+| `pnpm test:protocol:fuzz` | Build and run the watchdog protocol corpus                   |
+| `pnpm fixtures:check`     | Validate pinned backend test fixtures                        |
+| `pnpm fixtures:pull`      | Explicitly download pinned integration-test images           |
+| `pnpm test:node`          | Alias for the full live suite                                |
+| `pnpm test:live`          | Run live socket/fault and twelve server-version cases        |
+| `pnpm check`              | Formatting, lint, typecheck, test, and build                 |
+| `pnpm verify`             | Offline checks, fixture validation, fuzz and all live suites |
 
 ## Workspace
 
@@ -86,6 +87,11 @@ Licensed under [Apache-2.0](LICENSE). The library remains private during develop
 Node networking is exposed through `@envoy1084/effect-redis/node`. Default live tests
 use disposable Testcontainers fixtures and require a local Docker-compatible daemon,
 OpenSSL and explicitly prepared images. `pnpm check` stays offline.
+
+Run `pnpm verify` for the complete regular verification sequence. It runs offline
+checks, fixture validation, the protocol corpus and every live suite in order,
+stopping at the first failure. Prepare images once with `pnpm fixtures:pull`.
+The full live matrix currently takes about 15 minutes locally; allow it to finish.
 
 ```sh
 pnpm fixtures:pull                     # or --engine valkey

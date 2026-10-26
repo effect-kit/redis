@@ -23,6 +23,7 @@ support code that acquires and cleans up resources.
 
 Run from the workspace root:
 
+- `pnpm verify`: offline checks, fixture validation, fuzz and every live suite, stopping on failure.
 - `pnpm test`: offline unit and controlled integration suites via `vitest.config.ts`.
 - `pnpm --filter @envoy1084/effect-redis test:unit`: unit suite only.
 - `pnpm fixtures:check`: validate image pins, target versions and module profiles.

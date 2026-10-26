@@ -41,7 +41,8 @@ Run from the workspace root:
 - `pnpm --filter @envoy1084/effect-redis build`: unbundled ESM/declarations plus Publint.
 - `pnpm test:protocol:fuzz`: built-artifact fuzz/large-input corpus under an external watchdog.
 - `pnpm fixtures:check`: validate pinned backend fixtures before live acquisition.
-- `pnpm check`: the complete workspace checks.
+- `pnpm check`: offline workspace checks.
+- `pnpm verify`: offline checks, fixture validation, protocol corpus and all live suites.
 
 Default tests require no Redis process, credentials or network access. `pnpm test:live`
 (`test:node` alias) uses scoped Testcontainers fixtures for twelve versions across

@@ -166,6 +166,10 @@ Never describe planned command or server compatibility as implemented or verifie
   typechecks, offline unit/controlled integration tests, and builds. Run `pnpm fixtures:check`
   to validate backend pins before live acquisition; never depend on ignored research. Report skipped
   checks and their reason.
+- Use `pnpm verify` for the full regular sequence: `check`, `fixtures:check`,
+  `test:protocol:fuzz`, then `test:node`. It stops on failure and keeps builds ahead
+  of live mounts. Docker, OpenSSL and explicitly prepared images are required.
+  Artifact-consumer and research-free phase checks remain separate distribution gates.
 - Check emitted artifacts and package contents before a release. Never include
   ignored research, secrets, fixtures, or local runtime state in a published package.
 - Update concise maintained documentation when behavior, configuration, commands,
