@@ -4,6 +4,22 @@ import { Effect, Option } from "effect";
 import { Commands } from "#/index";
 import { array, blob, bytes } from "#test/support/commands/CoreCase";
 
+it.effect(
+  "DIALECT: Kvrocks TS.GET unwraps exactly one sample without accepting multiple rows",
+  () =>
+    Effect.gen(function* () {
+      const command = yield* Commands.tsGet("k").prepare;
+      const sample = array({ _tag: "Integer", value: 1n }, { _tag: "Double", value: "2" });
+
+      expect(yield* command.decode(array(sample))).toEqual(
+        Option.some({ timestamp: 1n, value: 2 }),
+      );
+      expect(yield* Effect.flip(command.decode(array(sample, sample)))).toMatchObject({
+        _tag: "ReplyError",
+      });
+    }),
+);
+
 it.effect("DIALECT: Dragonfly uncounted ZRANDMEMBER preserves one member and absence", () =>
   Effect.gen(function* () {
     const command = yield* Commands.zrandmember("k").prepare;

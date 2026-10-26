@@ -131,7 +131,8 @@ export const runTransaction = <Cs extends ReadonlyArray<AnyCommand>>(
       }
 
       const value = undecorate(reply);
-      if (value._tag === "Null" && value.kind !== "bulk") {
+      // Kvrocks RESP2 uses a null bulk for WATCH conflicts; every null here denotes aborted EXEC.
+      if (value._tag === "Null") {
         state.set("idle");
         return { _tag: "Conflict" } as const;
       }

@@ -22,6 +22,9 @@ export const sample: ReplyDecoder<TimeSeriesSample> = (reply) =>
   )(reply).pipe(Effect.map(([timestamp, value]) => ({ timestamp, value })));
 export const optionalSample: ReplyDecoder<Option.Option<TimeSeriesSample>> = (reply) => {
   const value = undecorate(reply);
+  // Kvrocks TS.GET returns a one-row collection rather than the RedisTimeSeries scalar tuple.
+  if (value._tag === "Array" && value.values.length === 1 && value.values[0]?._tag === "Array")
+    return nullable(sample)(value.values[0]);
   return value._tag === "Array" && value.values.length === 0
     ? Effect.succeed(Option.none())
     : nullable(sample)(reply);

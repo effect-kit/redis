@@ -54,9 +54,9 @@ it.effect(
     }),
 );
 
-it.effect(
-  "SESSION-TX: WATCH/read/EXEC stays on one lease and null EXEC is an explicit conflict",
-  () =>
+it.effect.each(["*-1\r\n", "$-1\r\n", "_\r\n"])(
+  "SESSION-TX: WATCH/read/EXEC stays on one lease and null EXEC is an explicit conflict (%s)",
+  (reply) =>
     Effect.gen(function* () {
       const { sessions, primary } = yield* sessionFixture();
       const request = yield* Effect.forkChild(
@@ -68,7 +68,7 @@ it.effect(
       yield* sent(primary, ["GET", "a"], "$3\r\nold\r\n");
       yield* sent(primary, ["MULTI"], "+OK\r\n");
       yield* sent(primary, ["SET", "a", "next"], "+QUEUED\r\n");
-      yield* sent(primary, ["EXEC"], "*-1\r\n");
+      yield* sent(primary, ["EXEC"], reply);
       expect(yield* Fiber.join(request)).toEqual({ _tag: "Conflict" });
     }),
 );
