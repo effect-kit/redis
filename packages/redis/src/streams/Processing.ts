@@ -1,5 +1,6 @@
 import { Duration, Effect, Option, Predicate, Redacted, Schema, Stream } from "effect";
 
+import type { RedisError } from "#/command/Executor";
 import { Argument, parse } from "#/commands/internal/Input";
 import { PositiveInteger } from "#/config/Validation";
 import { StreamConsumerError } from "#/errors/StreamConsumerError";
@@ -52,7 +53,11 @@ export const processMessages = <A, E, R, ES, RS, EP = never, RP = never>(
   source: Stream.Stream<GroupMessage, ES, RS>,
   handle: (message: GroupMessage) => Effect.Effect<A, E, R>,
   options: ProcessingOptions<E, EP, RP> = {},
-) =>
+): Stream.Stream<
+  ProcessingOutcome<A, E | StreamConsumerError>,
+  RedisError | StreamConsumerError | E | ES | EP,
+  R | RS | RP
+> =>
   Stream.unwrap(
     Effect.gen(function* () {
       const policy = yield* parse(Policy, options);

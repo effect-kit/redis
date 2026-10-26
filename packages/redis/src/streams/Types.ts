@@ -10,10 +10,22 @@ export interface StreamMessage<A = StreamEntry> {
 export type GroupMessage = StreamMessage<GroupEntry>;
 
 export type ProcessingOutcome<A, E> =
-  | { readonly _tag: "Processed"; readonly message: GroupMessage; readonly result: A }
-  | { readonly _tag: "Handled"; readonly message: GroupMessage }
+  // Explicit absent fields preserve the historically inferred shape and stabilize TS7 declaration emission.
+  | {
+      readonly _tag: "Processed";
+      readonly message: GroupMessage;
+      readonly result: A;
+      readonly error?: never;
+    }
+  | {
+      readonly _tag: "Handled";
+      readonly message: GroupMessage;
+      readonly result?: never;
+      readonly error?: never;
+    }
   | {
       readonly _tag: "Pending";
       readonly message: GroupMessage;
       readonly error: Redacted.Redacted<E>;
+      readonly result?: never;
     };

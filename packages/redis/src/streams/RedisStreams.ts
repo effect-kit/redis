@@ -1,7 +1,9 @@
 import { Context, Effect, Layer, Stream } from "effect";
 
+import type { RedisError } from "#/command/Executor";
 import { Argument, Arguments, parse } from "#/commands/internal/Input";
 import { ReadOptionsSchema } from "#/commands/streams/Read";
+import type { StreamConsumerError } from "#/errors/StreamConsumerError";
 import { Redis } from "#/Redis";
 import type { RedisClient } from "#/Redis";
 import type { RedisArgument } from "#/RedisArgument";
@@ -12,7 +14,7 @@ import type { ProcessingOptions } from "#/streams/Processing";
 import { makeReaders } from "#/streams/Reader";
 import type { GroupReaderKeys, ReaderOptions } from "#/streams/Reader";
 import { makeRecovery } from "#/streams/Recovery";
-import type { GroupMessage } from "#/streams/Types";
+import type { GroupMessage, ProcessingOutcome } from "#/streams/Types";
 
 export const makeRedisStreams = (
   redis: RedisClient,
@@ -37,7 +39,11 @@ export const makeRedisStreams = (
       handle: (message: GroupMessage) => Effect.Effect<A, E, R>,
       options: ProcessingOptions<E, EP, RP> = {},
       readOptions: ReaderOptions = {},
-    ) =>
+    ): Stream.Stream<
+      ProcessingOutcome<A, E | StreamConsumerError>,
+      RedisError | StreamConsumerError | E | EP,
+      R | RP
+    > =>
       Stream.unwrap(
         Effect.gen(function* () {
           // Validate the complete reader policy before processing or acknowledging pending entries.
