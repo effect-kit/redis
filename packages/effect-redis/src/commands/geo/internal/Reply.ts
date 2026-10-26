@@ -2,8 +2,8 @@ import { Effect, Option } from "effect";
 
 import type { ReplyDecoder } from "#/command/Command";
 import { array } from "#/command/reply/Collections";
-import { tuple } from "#/command/reply/Data";
-import { blob, integer, mismatch, undecorate } from "#/command/reply/Scalars";
+import { tuple, unsigned } from "#/command/reply/Data";
+import { blob, mismatch, undecorate } from "#/command/reply/Scalars";
 import { score } from "#/command/reply/Score";
 import type { GeoDetails } from "#/commands/geo/internal/Query";
 
@@ -13,6 +13,16 @@ export interface GeoResult {
   readonly hash: Option.Option<bigint>;
   readonly coordinates: Option.Option<readonly [number, number]>;
 }
+
+const hash: ReplyDecoder<bigint> = (reply) => {
+  const value = undecorate(reply);
+  // Dragonfly RESP3 marks an exact decimal hash as a double; parse its token without Number rounding.
+  return unsigned(
+    value._tag === "Double"
+      ? { _tag: "BlobString", value: new TextEncoder().encode(value.value) }
+      : reply,
+  );
+};
 
 /** Redis fixes detail order independently of the order of WITH* argument flags. */
 export const geoResults = (options: GeoDetails): ReplyDecoder<ReadonlyArray<GeoResult>> =>
@@ -47,7 +57,8 @@ export const geoResults = (options: GeoDetails): ReplyDecoder<ReadonlyArray<GeoR
       return {
         member: yield* blob(member),
         distance: options.distance ? yield* read(score) : Option.none(),
-        hash: options.hash ? yield* read(integer) : Option.none(),
+        // Dragonfly/Kvrocks return decimal bulk hashes; keep the integer exact in either encoding.
+        hash: options.hash ? yield* read(hash) : Option.none(),
         coordinates: options.coordinates ? yield* read(tuple(score, score)) : Option.none(),
       };
     }),

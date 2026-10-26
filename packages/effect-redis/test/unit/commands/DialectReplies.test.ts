@@ -5,6 +5,30 @@ import { Commands } from "#/index";
 import { array, blob, bytes } from "#test/support/commands/CoreCase";
 
 it.effect(
+  "DIALECT: geographic WITHHASH accepts exact decimal bulk hashes and rejects fractions",
+  () =>
+    Effect.gen(function* () {
+      const command = yield* Commands.geosearchWith(
+        "k",
+        { origin: { member: "a" }, area: { radius: 1, unit: "km" } },
+        { hash: true },
+      ).prepare;
+
+      expect(
+        yield* command.decode(array(array(blob("a"), blob("3479099956230698")))),
+      ).toMatchObject([{ member: bytes("a"), hash: Option.some(3479099956230698n) }]);
+      expect(
+        yield* command.decode(
+          array(array(blob("a"), { _tag: "Double", value: "3479099956230698" })),
+        ),
+      ).toMatchObject([{ hash: Option.some(3479099956230698n) }]);
+      expect(
+        yield* Effect.flip(command.decode(array(array(blob("a"), blob("1.5"))))),
+      ).toMatchObject({ _tag: "ReplyError", path: [0] });
+    }),
+);
+
+it.effect(
   "DIALECT: Kvrocks TS.GET unwraps exactly one sample without accepting multiple rows",
   () =>
     Effect.gen(function* () {
