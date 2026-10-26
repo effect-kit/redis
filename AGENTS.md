@@ -20,7 +20,8 @@ GET-byte caches with controlled/type/primary Redis/Valkey conformance.
 Phase 10 adds typed Lua/functions, bounded script loading, explicit administration,
 public HIMPORT/BACKUP operations and isolated MONITOR/SHUTDOWN modes.
 Phase 11 adds native client-routed Redis/Valkey Cluster, node-bound sessions/scripts,
-bounded topology recovery and topology-bound event/cache lifetimes. Sentinel remains pending.
+bounded topology recovery and topology-bound event/cache lifetimes. Phase 12 adds native
+Redis/Valkey Sentinel discovery, role-verified data admission and future-work failover.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -509,6 +510,34 @@ Implemented subscription/tracking policy:
   replies. Local PubSub/Queue fanout is bounded. Slow subscribers must not block the
   shared reply reader. Overflow/reconnect must fail or expose an explicit delivery
   gap; never silently drop messages or imply reconnect recovered missed events.
+
+Implemented Sentinel policy:
+
+- `RedisSentinel.layer` provides RedisSentinel, Redis, CommandExecutor and BatchExecutor.
+  Reuse native leases, FIFO, blocking, script, stream and event implementations; keep
+  discovery/generation code runtime-neutral. Sentinel control endpoints and data-node
+  configuration, credential sources and TLS identities remain separate.
+- Query a bounded Sentinel set, verify the primary's ROLE, and re-resolve before every
+  physical data open. Capture the internal role policy in ordinary/session/event owners
+  so lazy acquisition cannot lose it. Default reads target the primary; explicit eligible
+  replica reads may be stale. Sessions, scans, scripts and stream consumers stay primary.
+- Discovery workers belong to the client Scope, independently of individual waiters.
+  Bound deadlines, attempts, waiters, pools and event cohorts. Learn peers only when
+  enabled and within the endpoint bound. Polling and physical-open queries are the
+  implemented strategy; notifications are not required for correctness.
+- Acquisition can follow a replacement only before invoking the user's callback.
+  Never repeat started callbacks, application commands, uncertain mutations or EXEC.
+  Preserve native delivery/indexed evidence and keep application decoding outside
+  recovery. Pool pressure and deliberate successful socket retirement do not invalidate
+  a healthy deployment generation. Cleanup defects poison replacement acquisition.
+- Leases and cursor streams remain bound to their starting generation. Close old event
+  cohorts and clear caches before publishing replacement routing; retained views fail
+  and callers explicitly reacquire. Control requests are owned by client close, use
+  explicit configured endpoint indexes and never retry mutations automatically.
+- ROLE verification does not fence a partitioned old primary or prevent asynchronous
+  replication data loss. Do not promise strong consistency, zero data loss or complete
+  hosted/secondary Sentinel certification. Real tests own three data nodes and three
+  Sentinels; partition tests cut established peer links without hiding inspection access.
 
 ### Topology and capability policy
 

@@ -35,6 +35,7 @@ export const allocateServer = Effect.fnUntraced(function* (
     readonly networkAlias?: string;
     readonly writableConfiguration?: boolean;
     readonly aclRules?: string;
+    readonly sentinel?: boolean;
   },
 ) {
   const directory = yield* temporaryDirectory;
@@ -107,7 +108,7 @@ export const allocateServer = Effect.fnUntraced(function* (
 
   const container = new FixtureContainer(target.reference)
     .withEntrypoint([profile.executable])
-    .withCommand(profile.command)
+    .withCommand(options?.sentinel ? [...profile.command, "--sentinel"] : profile.command)
     .withTmpFs({ "/data": "rw,nosuid,size=256m", "/tmp": "rw,noexec,nosuid,size=16m" })
     .withBindMounts([
       { source: directory, target: "/fixture", mode: options?.writableConfiguration ? "rw" : "ro" },
@@ -154,7 +155,7 @@ export const allocateServer = Effect.fnUntraced(function* (
             writableConfiguration: options?.writableConfiguration ?? false,
             aclRules: options?.aclRules,
             executable: profile.executable,
-            command: profile.command,
+            command: options?.sentinel ? [...profile.command, "--sentinel"] : profile.command,
           }),
         )
         .digest("hex"),

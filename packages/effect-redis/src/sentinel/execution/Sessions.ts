@@ -1,6 +1,12 @@
-import { Effect, Exit } from "effect";
+import { Cause, Effect, Exit } from "effect";
 
+import type { RedisError } from "#/command/Executor";
 import { undecorate } from "#/command/reply/Scalars";
+import { ConnectionError } from "#/errors/ConnectionError";
+import { HandshakeError } from "#/errors/HandshakeError";
+import { ProtocolError } from "#/errors/ProtocolError";
+import { SentinelError } from "#/errors/SentinelError";
+import { TransportError } from "#/errors/TransportError";
 import type { RespValue } from "#/protocol/RespValue";
 import type { SentinelConfig } from "#/sentinel/Config";
 import { makeSentinelAdmission } from "#/sentinel/execution/Admission";
@@ -23,6 +29,12 @@ const rejectedRole = (reply: RespValue) => {
   );
 };
 
+const connectionFailed = (error: unknown) =>
+  error instanceof ConnectionError ||
+  error instanceof HandshakeError ||
+  error instanceof TransportError ||
+  (error instanceof ProtocolError && error.stage !== "encode");
+
 export const makeSentinelSessions = (
   manager: Omit<SentinelManager, "contextFor">,
   config: SentinelConfig,
@@ -31,21 +43,24 @@ export const makeSentinelSessions = (
   let nextWireId = 0;
   const identities = new WeakMap<SessionWire, number>();
   const admission = makeSentinelAdmission(policy.maxOperations, policy.operationTimeoutMillis);
-  const use = <A, E, R>(
+  const useOnce = <A, E, R>(
     mode: LeaseMode,
     replica: boolean,
     body: (wire: SessionWire, generation: SentinelGeneration) => Effect.Effect<A, E, R>,
+    state: { entered: boolean; generation?: SentinelGeneration },
+    fixedGeneration?: SentinelGeneration,
   ) =>
     Effect.gen(function* () {
-      const generation = yield* manager.ensure;
+      const generation = fixedGeneration ?? (yield* manager.ensure);
+      state.generation = generation;
+      yield* manager.check(generation);
       const pool = yield* manager.pool(generation, manager.select(generation, replica));
       const observe = (reply: RespValue) => {
         if (rejectedRole(reply)) generation.obsolete = true;
       };
-      let entered = false;
       return yield* pool
         .use(mode, (wire) => {
-          entered = true;
+          state.entered = true;
           let identity = identities.get(wire);
           if (identity === undefined) {
             identity = ++nextWireId;
@@ -58,18 +73,18 @@ export const makeSentinelSessions = (
               execute: (...args) =>
                 wire.execute(...args).pipe(
                   Effect.tap((reply) => Effect.sync(() => observe(reply))),
-                  Effect.tapError(() =>
+                  Effect.tapError((error) =>
                     Effect.sync(() => {
-                      generation.obsolete = true;
+                      if (connectionFailed(error)) generation.obsolete = true;
                     }),
                   ),
                 ),
               fence: (...args) =>
                 wire.fence(...args).pipe(
                   Effect.tap((reply) => Effect.sync(() => observe(reply))),
-                  Effect.tapError(() =>
+                  Effect.tapError((error) =>
                     Effect.sync(() => {
-                      generation.obsolete = true;
+                      if (connectionFailed(error)) generation.obsolete = true;
                     }),
                   ),
                 ),
@@ -89,15 +104,60 @@ export const makeSentinelSessions = (
           );
         })
         .pipe(
+          Effect.tap(() =>
+            fixedGeneration === undefined ? Effect.void : manager.check(generation),
+          ),
           Effect.onExit((exit) =>
             Effect.gen(function* () {
               const defect = pool.fatal();
               if (defect !== undefined) manager.poison(defect);
-              if (generation.obsolete || (!entered && Exit.isFailure(exit)))
-                yield* manager.invalidate(generation);
+              const acquisitionFailed =
+                !state.entered &&
+                Exit.isFailure(exit) &&
+                exit.cause.reasons.some(
+                  (reason) => Cause.isFailReason(reason) && connectionFailed(reason.error),
+                );
+              if (generation.obsolete || acquisitionFailed) yield* manager.invalidate(generation);
             }),
           ),
         );
+    });
+
+  const use = <A, E, R>(
+    mode: LeaseMode,
+    replica: boolean,
+    body: (wire: SessionWire, generation: SentinelGeneration) => Effect.Effect<A, E, R>,
+    fixedGeneration?: SentinelGeneration,
+  ): Effect.Effect<A, E | RedisError, R> =>
+    Effect.gen(function* () {
+      for (let attempt = 0; attempt < policy.discoveryAttempts; attempt++) {
+        const state: { entered: boolean; generation?: SentinelGeneration } = { entered: false };
+        const result = yield* Effect.result(useOnce(mode, replica, body, state, fixedGeneration));
+        if (result._tag === "Success") return result.success;
+
+        const error = result.failure;
+        const changed =
+          (error instanceof SentinelError && error.reason === "topology-changed") ||
+          (error instanceof ConnectionError &&
+            error.delivery === "unsent" &&
+            state.generation?.replacementObserved === true) ||
+          (error instanceof HandshakeError &&
+            error.stage === "role" &&
+            error.reason === "role-mismatch");
+        // Only pre-callback acquisition can move. A user workflow or application command is never repeated.
+        if (
+          fixedGeneration !== undefined ||
+          state.entered ||
+          !changed ||
+          attempt + 1 === policy.discoveryAttempts
+        )
+          return yield* Effect.fail(error);
+      }
+      return yield* new SentinelError({
+        reason: "data-unavailable",
+        plane: "data",
+        delivery: "unsent",
+      });
     });
 
   const session = <A, E, R>(

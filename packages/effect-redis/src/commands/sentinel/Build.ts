@@ -9,7 +9,7 @@ import type { RedisArgument } from "#/RedisArgument";
 
 export const Name = Schema.NonEmptyString;
 export const Port = Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 65535 }));
-export const names = (values: ReadonlyArray<string>) => parse(Schema.Array(Name), values);
+export const names = (values: ReadonlyArray<string>) => parse(Schema.NonEmptyArray(Name), values);
 export const name = (value: string) =>
   parse(Name, value).pipe(Effect.map((selected) => [selected]));
 
@@ -20,7 +20,21 @@ export const sentinelCommand = <A>(
   args: Effect.Effect<ReadonlyArray<RedisArgument>, CommandInputError> = Effect.succeed([]),
 ) =>
   ordinary(
-    { ...metadata(`SENTINEL ${subcommand}`, "sentinel", ["SENTINEL"]), execution: "exclusive" },
+    {
+      ...metadata(
+        `SENTINEL ${subcommand}`,
+        "sentinel",
+        ["SENTINEL"],
+        ["GET-PRIMARY-ADDR-BY-NAME", "PRIMARY", "PRIMARIES", "IS-PRIMARY-DOWN-BY-ADDR"].includes(
+          subcommand,
+        )
+          ? ["Valkey 8.0+ alias; not available in the pinned Redis baseline"]
+          : subcommand === "FAILOVER"
+            ? ["COORDINATED requires Valkey 9.0+"]
+            : [],
+      ),
+      execution: "exclusive",
+    },
     decode,
     args.pipe(
       Effect.map((tail) => ({

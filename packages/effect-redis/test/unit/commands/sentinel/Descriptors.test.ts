@@ -58,7 +58,9 @@ it.effect("peer vote epochs remain exact and parameter settings stay explicitly 
       array(blob("sentinel-pass"), blob("synthetic-secret")),
     );
     expect(JSON.stringify(result)).not.toContain("synthetic-secret");
-    expect(Redacted.value(result)).toEqual([["sentinel-pass", "synthetic-secret"]]);
+    expect(Redacted.value(result)).toEqual([
+      [new TextEncoder().encode("sentinel-pass"), new TextEncoder().encode("synthetic-secret")],
+    ]);
   }),
 );
 

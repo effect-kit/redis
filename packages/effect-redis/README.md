@@ -19,7 +19,8 @@ unit, controlled, primary Redis/Valkey and packed-consumer coverage. Scoped Pub/
 client tracking and bounded GET-byte caches extend event delivery. Lua/functions,
 administration, native hash imports/backups and diagnostic modes are implemented.
 Native Redis/Valkey Cluster adds slot routing, topology recovery and node-bound workflows.
-Sentinel remains pending.
+Native Redis/Valkey Sentinel adds verified discovery, generation-bound sessions and
+future-work failover.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
@@ -524,3 +525,70 @@ two blocking sockets per node, 1,024 admitted commands/16 MiB retained intent, e
 redirects, 64 event cohorts and 30-second ordinary deadlines/refresh intervals. Event
 cohorts own additional dedicated sockets. All resources belong to Scope. Full hosted
 provider and secondary-engine Cluster certification remains separate.
+
+## Sentinel
+
+`RedisSentinel.layer(config, options)` provides `RedisSentinel`, `Redis`,
+`CommandExecutor` and `BatchExecutor`. The scoped factory captures the same services:
+
+```ts
+import { Effect } from "effect";
+
+import { decodeSentinelConfig, makeRedisSentinel } from "@envoy1084/effect-redis";
+import { layer as NodeTransport } from "@envoy1084/effect-redis/node";
+
+const sentinelProgram = Effect.scoped(
+  Effect.gen(function* () {
+    const config = yield* decodeSentinelConfig({
+      serviceName: "cache",
+      sentinels: [
+        { endpoint: { host: "localhost", port: 26379 } },
+        { endpoint: { host: "localhost", port: 26380 } },
+      ],
+      data: { database: 0 },
+    });
+    const client = yield* makeRedisSentinel(config);
+
+    yield* client.redis.set("user:42:name", "Ada");
+    return yield* client.redis.get("user:42:name");
+  }),
+).pipe(Effect.provide(NodeTransport));
+```
+
+Sentinel endpoints default to port 26379 and DB0. The data template selects the
+application database and protocol; discovery supplies its address. Each physical data
+connection re-resolves Sentinel and verifies ROLE after authentication/negotiation.
+`sentinelConnection.credentials` and `connection.credentials` capture independent
+Effect credential sources; fixed credentials instead belong to their respective
+configuration. Each source is reacquired in its physical connection's Scope.
+
+Discovery TLS belongs to each Sentinel endpoint. `dataTls` accepts validated TLS
+options with redacted CA/certificate/key material and explicit `rejectUnauthorized`.
+`addressMap(address, plane)` translates advertised addresses separately for control
+and data connections and can override TLS `serverName` independently of the dial host.
+
+Primary reads are the default. `readPreference: "replica-preferred"` explicitly allows
+stale reads for eligible ordinary commands; sessions, writes, scripts, scans and stream
+consumers stay on the primary. Pipelines and transactions retain standalone multi-key
+semantics. `withSession`, `withBlockingSession`, `watch`, `scripts()`, `streams` and
+`admin` reuse native ownership and typed results. A lease never moves after its callback
+starts. Bounded acquisition may follow a newly discovered primary before that point.
+
+Future work can discover promotion after failure; an operation that may have executed
+is never replayed. Unknown mutation/EXEC outcomes retain their native indexed evidence.
+Periodic refresh and per-connection queries drive discovery; Sentinel notifications
+are not required. ROLE cannot fence an isolated old primary, and asynchronous replication
+can lose acknowledged writes during failover. This client does not add strong consistency.
+
+`scanKeys` and the other lazy scans remain bound to their starting primary/generation
+and fail on a change. `pubsub()` and `tracking()` create scoped cohorts; old cohorts close
+and caches clear before replacement routing is published. Reacquire them explicitly.
+`sentinel(index).execute(Commands.sentinelMasters())` targets a configured control
+endpoint. The typed Sentinel family preserves version-specific aliases/options and
+actual server errors. Control mutations are explicit and never retried automatically.
+
+Defaults bound discovery to 16 Sentinel endpoints and 16 data-node pools, 1,024 logical
+operations, 64 event cohorts, three discovery attempts, five-second discovery and
+500 ms candidate deadlines, plus 30-second ordinary operation/refresh intervals.
+Native session/blocking limits apply per data pool; event cohorts own additional
+dedicated sockets. `learnSentinels: true` opts into bounded peer discovery.

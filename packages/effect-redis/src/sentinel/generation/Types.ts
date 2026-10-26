@@ -1,4 +1,4 @@
-import type { Cause, Effect, Scope } from "effect";
+import type { Effect, Scope } from "effect";
 
 import type { SentinelAddress } from "#/commands/sentinel/Discovery";
 import type { ExpectedRole } from "#/connection/Role";
@@ -12,7 +12,7 @@ export interface SentinelGeneration {
   readonly pools: Map<string, LeasePool>;
   readonly observers: Set<Effect.Effect<void>>;
   obsolete: boolean;
-  fatal?: Cause.Cause<never>;
+  replacementObserved: boolean;
 }
 
 export interface SentinelNode {

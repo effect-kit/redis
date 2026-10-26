@@ -44,5 +44,6 @@ export const sentinelSimulateFailure = (
       modes,
     ),
   );
+/** Pinned servers also clear simulation flags when processing HELP. */
 export const sentinelSimulateFailureHelp = () =>
   sentinelCommand("SIMULATE-FAILURE", help, Effect.succeed(["help"]));

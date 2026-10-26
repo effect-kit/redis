@@ -15,6 +15,21 @@ export const RoleExpectation = Context.Reference<ExpectedRole | undefined>(
 
 export const verifyRole = Effect.fnUntraced(function* (reply: RespValue, expected: ExpectedRole) {
   const value = undecorate(reply);
+  if (value._tag === "SimpleError" || value._tag === "BlobError") {
+    const denied = ["NOAUTH ", "NOPERM ", "WRONGPASS "].some(
+      (prefix) =>
+        value.value.length >= prefix.length &&
+        value.value
+          .subarray(0, prefix.length)
+          .every((byte, index) => byte === prefix.charCodeAt(index)),
+    );
+    return yield* new HandshakeError({
+      stage: "role",
+      reason: denied ? "rejected" : "invalid-reply",
+      delivery: "unsent",
+      cause: Redacted.make(reply),
+    });
+  }
   const role =
     value._tag === "Array" && value.values[0] !== undefined
       ? yield* simpleText(value.values[0]).pipe(

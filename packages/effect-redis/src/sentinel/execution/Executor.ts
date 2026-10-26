@@ -8,6 +8,7 @@ import { SentinelError } from "#/errors/SentinelError";
 import { UnsupportedCommandError } from "#/errors/UnsupportedCommandError";
 import type { SentinelSessions } from "#/sentinel/execution/Sessions";
 import { replicaEligible } from "#/sentinel/execution/Validation";
+import type { SentinelGeneration } from "#/sentinel/generation/Types";
 import type { SentinelPolicy } from "#/sentinel/Options";
 import { isBlocking } from "#/sessions/controls/Guard";
 
@@ -15,6 +16,7 @@ export const makeSentinelExecutor = (
   sessions: SentinelSessions,
   policy: SentinelPolicy,
   blocking = false,
+  generation?: SentinelGeneration,
 ): RedisExecutor => {
   const reply = <A, E, R>(command: PreparedCommand<A, E, R>) => {
     const deadline =
@@ -45,11 +47,15 @@ export const makeSentinelExecutor = (
           }
           return yield* sessions.use(
             blocking ? "blocking" : "session",
-            !blocking && policy.readPreference === "replica-preferred" && replicaEligible(command),
+            !blocking &&
+              generation === undefined &&
+              policy.readPreference === "replica-preferred" &&
+              replicaEligible(command),
             (wire) => {
               writing();
               return wire.execute(command.tokens, command.replyTimeoutMillis);
             },
+            generation,
           );
         }),
       deadline,

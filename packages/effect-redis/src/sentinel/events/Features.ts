@@ -3,9 +3,11 @@ import { Effect, Exit, Option, Scope, Stream } from "effect";
 import type { Command, PreparedCommand } from "#/command/Command";
 import { decodeReply } from "#/command/Decode";
 import { SentinelError } from "#/errors/SentinelError";
+import { ServerError } from "#/errors/ServerError";
 import type { RedisKey } from "#/keys/RedisKey";
 import type { RedisArgument } from "#/RedisArgument";
 import type { RedisConfig } from "#/RedisConfig";
+import { sentinelSessionValidation } from "#/sentinel/execution/Validation";
 import type { SentinelManager } from "#/sentinel/generation/Manager";
 import type { SentinelGeneration } from "#/sentinel/generation/Types";
 import type { SentinelOptions } from "#/sentinel/Options";
@@ -26,9 +28,10 @@ const observeTracking = <A, E, RUse>(
     Effect.tapError((error) => {
       // Only native operations reach this boundary; application decoders run below it.
       if (
-        error instanceof Error &&
-        "_tag" in error &&
-        ["ConnectionError", "HandshakeError", "TransportError"].includes(String(error._tag))
+        (error instanceof ServerError && error.code === "READONLY") ||
+        (error instanceof Error &&
+          "_tag" in error &&
+          ["ConnectionError", "HandshakeError", "TransportError"].includes(String(error._tag)))
       )
         return manager.invalidate(generation);
       return Effect.void;
@@ -39,21 +42,25 @@ const guardEvents = <A, E, RStream>(
   check: Effect.Effect<void, SentinelError>,
   stream: Stream.Stream<A, E, RStream>,
 ) =>
-  stream.pipe(
+  Stream.unwrap(check.pipe(Effect.as(stream))).pipe(
+    Stream.mapEffect((event) => check.pipe(Effect.as(event))),
     Stream.catchCause((cause) =>
       Stream.fromEffect(check.pipe(Effect.andThen(Effect.failCause(cause)))),
     ),
   );
 
 /** Event cohorts stay bound to one published deployment; topology changes require explicit reacquisition. */
-export const makeSentinelEvents = <R>(manager: SentinelManager<R>, options: SentinelOptions<R>) => {
+export const makeSentinelEvents = <RData, RSentinel>(
+  manager: SentinelManager<RData, RSentinel>,
+  options: SentinelOptions<RData, RSentinel>,
+) => {
   const open = <A, E>(
     acquire: (
       config: RedisConfig,
       check: Effect.Effect<void, SentinelError>,
       generation: SentinelGeneration,
       scope: Scope.Closeable,
-    ) => Effect.Effect<A, E, R | Transport | Scope.Scope>,
+    ) => Effect.Effect<A, E, RData | Transport | Scope.Scope>,
   ) =>
     Effect.gen(function* () {
       const generation = yield* manager.ensure;
@@ -150,9 +157,11 @@ export const makeSentinelEvents = <R>(manager: SentinelManager<R>, options: Sent
             ? {}
             : { credentials: options.connection.credentials }),
         });
+        const validate = sentinelSessionValidation(manager, generation, config.database);
 
         const executePrepared = <A, E, RD>(intent: PreparedCommand<A, E, RD>) =>
           check.pipe(
+            Effect.andThen(validate.command(intent)),
             Effect.andThen(
               observeTracking(
                 manager,
@@ -175,6 +184,7 @@ export const makeSentinelEvents = <R>(manager: SentinelManager<R>, options: Sent
             command.prepare.pipe(
               Effect.flatMap((intent) =>
                 check.pipe(
+                  Effect.andThen(validate.command(intent)),
                   Effect.andThen(
                     observeTracking(
                       manager,

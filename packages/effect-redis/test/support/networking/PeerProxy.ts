@@ -11,23 +11,22 @@ import { FixtureError } from "#test/support/servers/FixtureError";
 import { imageReference, runtimeImage } from "#test/support/servers/Targets";
 import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
 
-/** All inter-server data and bus links traverse this owned native Node proxy. */
-export const clusterBusProxy = Effect.fnUntraced(function* (network: StartedNetwork) {
+/** All configured inter-server data/bus links traverse this owned native Node proxy. */
+export const peerProxy = Effect.fnUntraced(function* (network: StartedNetwork) {
   const reference = imageReference(runtimeImage);
   yield* requireImage(reference);
   const directory = yield* temporaryDirectory;
   yield* Effect.tryPromise({
     try: () =>
       copyFile(
-        new URL("../../fixtures/cluster/bus-proxy.mjs", import.meta.url),
-        join(directory, "bus-proxy.mjs"),
+        new URL("../../fixtures/networking/peer-proxy.mjs", import.meta.url),
+        join(directory, "peer-proxy.mjs"),
       ),
-    catch: (cause) =>
-      new FixtureError({ stage: "cluster-proxy-copy", cause: Redacted.make(cause) }),
+    catch: (cause) => new FixtureError({ stage: "peer-proxy-copy", cause: Redacted.make(cause) }),
   });
   const container = new FixtureContainer(reference)
     .withEntrypoint(["node"])
-    .withCommand(["/fixture/bus-proxy.mjs"])
+    .withCommand(["/fixture/peer-proxy.mjs"])
     .withNetwork(network)
     .withBindMounts([{ source: directory, target: "/fixture", mode: "ro" }])
     .loopbackPort(18080)
@@ -42,7 +41,7 @@ export const clusterBusProxy = Effect.fnUntraced(function* (network: StartedNetw
         if (!response.ok) throw new Error("Proxy rejected control");
       },
       catch: (cause) =>
-        new FixtureError({ stage: "cluster-proxy-control", cause: Redacted.make(cause) }),
+        new FixtureError({ stage: "peer-proxy-control", cause: Redacted.make(cause) }),
     });
   yield* request("/health", "GET").pipe(Effect.retry({ schedule: Schedule.spaced(50), times: 60 }));
 

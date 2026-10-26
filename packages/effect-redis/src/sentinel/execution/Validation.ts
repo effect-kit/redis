@@ -10,6 +10,8 @@ import type { SessionValidation } from "#/sessions/Validation";
 export const replicaEligible = (command: PreparedCommand<unknown, unknown, unknown>) =>
   command.metadata.execution === "ordinary" &&
   command.metadata.family !== "scripting" &&
+  !command.metadata.scenarios.includes("SCAN") &&
+  !["SCAN", "HSCAN", "SSCAN", "ZSCAN", "CLUSTERSCAN"].includes(commandToken(command.tokens[0])) &&
   command.routing._tag === "Keys" &&
   command.routing.keys.every((key) => key.access === "read");
 
@@ -17,8 +19,8 @@ export const sentinelSessionValidation = (
   manager: Pick<SentinelManager, "check">,
   generation: SentinelGeneration,
   database: number,
-): SessionValidation => ({
-  command: (intent) =>
+): SessionValidation => {
+  const command: SessionValidation["command"] = (intent) =>
     manager
       .check(generation)
       .pipe(
@@ -29,24 +31,22 @@ export const sentinelSessionValidation = (
               )
             : Effect.void,
         ),
-      ),
-  batch: (commands) =>
-    Effect.forEach(
-      commands,
-      (intent) => sentinelSessionValidation(manager, generation, database).command(intent),
-      { discard: true },
-    ),
-  watch: () => manager.check(generation),
-  database: (selected) =>
-    manager
-      .check(generation)
-      .pipe(
-        Effect.andThen(
-          BigInt(selected) === BigInt(database)
-            ? Effect.void
-            : Effect.fail(
-                new SentinelError({ reason: "routing", plane: "data", delivery: "unsent" }),
-              ),
+      );
+  return {
+    command,
+    batch: (commands) => Effect.forEach(commands, command, { discard: true }),
+    watch: () => manager.check(generation),
+    database: (selected) =>
+      manager
+        .check(generation)
+        .pipe(
+          Effect.andThen(
+            BigInt(selected) === BigInt(database)
+              ? Effect.void
+              : Effect.fail(
+                  new SentinelError({ reason: "routing", plane: "data", delivery: "unsent" }),
+                ),
+          ),
         ),
-      ),
-});
+  };
+};

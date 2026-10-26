@@ -19,7 +19,9 @@ export const discoveryFailure = (
           error.stage === "role" &&
           error.reason === "role-mismatch"
             ? "role-mismatch"
-            : (error._tag === "HandshakeError" && ["auth", "credentials"].includes(error.stage)) ||
+            : (error._tag === "HandshakeError" &&
+                  (["auth", "credentials"].includes(error.stage) ||
+                    (error.stage === "role" && error.reason === "rejected"))) ||
                 (error._tag === "ServerError" &&
                   ["NOAUTH", "NOPERM", "WRONGPASS"].includes(error.code))
               ? "authentication"

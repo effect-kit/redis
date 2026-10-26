@@ -7,6 +7,7 @@ import {
   Deferred,
   Effect,
   Exit,
+  Redacted,
   Scope,
   Semaphore,
 } from "effect";
@@ -33,12 +34,12 @@ const fingerprint = (view: SentinelView) =>
   ]);
 
 /** One published generation owns every pool and event cohort for its discovered deployment. */
-export const makeSentinelManager = Effect.fnUntraced(function* <R>(
+export const makeSentinelManager = Effect.fnUntraced(function* <RData, RSentinel>(
   config: SentinelConfig,
   policy: SentinelPolicy,
-  options: SentinelOptions<R>,
+  options: SentinelOptions<RData, RSentinel>,
 ) {
-  const captured = yield* Effect.context<R | Transport>();
+  const captured = yield* Effect.context<RData | RSentinel | Transport>();
   const transport = yield* Transport;
   const owner = yield* Scope.fork(yield* Effect.scope);
   const discovery = yield* makeSentinelDiscovery(config, policy, options).pipe(
@@ -129,6 +130,7 @@ export const makeSentinelManager = Effect.fnUntraced(function* <R>(
                     pools: new Map(),
                     observers: new Set(),
                     obsolete: false,
+                    replacementObserved: false,
                   };
                   refreshedAt = yield* Clock.currentTimeMillis;
                   return current;
@@ -183,9 +185,19 @@ export const makeSentinelManager = Effect.fnUntraced(function* <R>(
     return Transport.of({
       open: (requested) =>
         Effect.gen(function* () {
+          if (fatal !== undefined) return yield* Effect.failCause(fatal);
+          if (closed || generation.obsolete)
+            return yield* new TransportError({ stage: "open", reason: "unavailable" });
           // Every replacement socket re-resolves Sentinel, even when its pool still has the old address.
           const answer = yield* discovery.lookup.pipe(
-            Effect.mapError(() => new TransportError({ stage: "open", reason: "unavailable" })),
+            Effect.mapError(
+              (cause) =>
+                new TransportError({
+                  stage: "open",
+                  reason: "unavailable",
+                  cause: Redacted.make(cause),
+                }),
+            ),
           );
           const retained =
             addressIdentity(answer.primary) === addressIdentity(generation.view.primary) &&
@@ -194,6 +206,7 @@ export const makeSentinelManager = Effect.fnUntraced(function* <R>(
                 (replica) => addressIdentity(replica) === addressIdentity(node.address),
               ));
           if (!retained || generation.obsolete || closed) {
+            if (!retained) generation.replacementObserved = true;
             generation.obsolete = true;
             return yield* new TransportError({ stage: "open", reason: "unavailable" });
           }
@@ -313,4 +326,6 @@ export const makeSentinelManager = Effect.fnUntraced(function* <R>(
   };
 });
 
-export type SentinelManager<R = never> = Effect.Success<ReturnType<typeof makeSentinelManager<R>>>;
+export type SentinelManager<RData = never, RSentinel = RData> = Effect.Success<
+  ReturnType<typeof makeSentinelManager<RData, RSentinel>>
+>;

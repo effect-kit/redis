@@ -18,13 +18,45 @@ const Input = Schema.Struct({
   data: Schema.optionalKey(Schema.Record(Schema.String, Schema.Unknown)),
 });
 
+const EndpointPort = Schema.Struct({
+  endpoint: Schema.Union([
+    Schema.Struct({ host: Schema.String, port: Schema.optionalKey(Schema.Unknown) }),
+    Schema.Struct({ url: Schema.URLFromString }),
+  ]),
+});
+
+const sentinelEndpoint = Effect.fnUntraced(function* (input: unknown) {
+  // Project only port presence; the shared decoder still validates the complete native configuration.
+  const selected = yield* Schema.decodeUnknownEffect(EndpointPort, { onExcessProperty: "ignore" })(
+    input,
+  ).pipe(
+    Effect.mapError(
+      () =>
+        new RedisConfigError({
+          field: "sentinel.sentinels",
+          reason: "Invalid Sentinel TCP endpoint",
+        }),
+    ),
+  );
+  const decoded = yield* decodeRedisConfig(input);
+  if (decoded.endpoint._tag !== "Tcp")
+    return yield* new RedisConfigError({
+      field: "sentinel.sentinels",
+      reason: "Sentinel requires TCP",
+    });
+  const defaultPort =
+    "host" in selected.endpoint
+      ? selected.endpoint.port === undefined
+      : selected.endpoint.url.port === "";
+
+  return defaultPort ? { ...decoded, endpoint: { ...decoded.endpoint, port: 26379 } } : decoded;
+});
+
 export const decodeSentinelConfig = Effect.fnUntraced(function* (
   input: unknown,
 ): Effect.fn.Return<SentinelConfig, RedisConfigError> {
   const selected = yield* decode(Input, "sentinel", input);
-  const sentinels = yield* Effect.forEach(selected.sentinels, (endpoint) =>
-    decodeRedisConfig(endpoint),
-  );
+  const sentinels = yield* Effect.forEach(selected.sentinels, sentinelEndpoint);
   if (sentinels.some((config) => config.database !== 0 || config.endpoint._tag !== "Tcp"))
     return yield* new RedisConfigError({
       field: "sentinel.sentinels",

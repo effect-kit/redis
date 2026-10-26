@@ -18,7 +18,9 @@ type Physical = {
 };
 
 /** Each test supplies individual physical connections and exact wire exchanges, never a simulated Redis server. */
-export const sentinelTransport = Effect.fnUntraced(function* () {
+export const sentinelTransport = Effect.fnUntraced(function* (
+  faults: { readonly cleanupDefectAt?: number } = {},
+) {
   const connections = yield* Queue.bounded<Physical>(64);
   let acquired = 0;
   const layer = Layer.succeed(Transport, {
@@ -30,7 +32,11 @@ export const sentinelTransport = Effect.fnUntraced(function* () {
         const transport = yield* Transport.pipe(Effect.provide(fixture.layer));
         acquired++;
         yield* Queue.offer(connections, { host: config.endpoint.host, fixture });
-        return yield* transport.open(config);
+        const physical = yield* transport.open(config);
+        if (acquired === faults.cleanupDefectAt)
+          yield* Effect.addFinalizer(() => Effect.die("sentinel-controlled-cleanup"));
+
+        return physical;
       }),
   });
   const next = Queue.take(connections);
@@ -55,8 +61,11 @@ export const sentinelTransport = Effect.fnUntraced(function* () {
   return { layer, next, discovery, data, acquired: () => acquired };
 });
 
-export const sentinelControlled = Effect.fnUntraced(function* (options: SentinelOptions = {}) {
-  const fixture = yield* sentinelTransport();
+export const sentinelControlled = Effect.fnUntraced(function* (
+  options: SentinelOptions = {},
+  faults: { readonly cleanupDefectAt?: number } = {},
+) {
+  const fixture = yield* sentinelTransport(faults);
   const config = yield* decodeSentinelConfig({
     serviceName: "cache",
     sentinels: [{ endpoint: { host: "s1" }, protocol: "resp2" }],

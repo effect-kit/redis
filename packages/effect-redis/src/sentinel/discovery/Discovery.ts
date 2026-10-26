@@ -21,12 +21,12 @@ export interface SentinelView {
 }
 
 /** A query coordinator owns its worker independently of any one cancelled waiter. */
-export const makeSentinelDiscovery = Effect.fnUntraced(function* <R>(
+export const makeSentinelDiscovery = Effect.fnUntraced(function* <RData, RSentinel>(
   config: SentinelConfig,
   policy: SentinelPolicy,
-  options: SentinelOptions<R>,
+  options: SentinelOptions<RData, RSentinel>,
 ) {
-  const context = yield* Effect.context<R | Transport>();
+  const context = yield* Effect.context<RData | RSentinel | Transport>();
   const scope = yield* Effect.scope;
   const endpoints = [...config.sentinels];
   let preferred = 0;

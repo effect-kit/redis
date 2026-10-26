@@ -25,13 +25,15 @@ const Policy = Schema.Struct({
   readPreference: Schema.Literals(["primary", "replica-preferred"]).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed("primary")),
   ),
-  dataTls: Schema.optionalKey(TlsOptions),
+  dataTls: Schema.optionalKey(Schema.toType(TlsOptions)),
 });
 
-export interface SentinelOptions<R = never> extends Partial<typeof Policy.Type> {
-  readonly sentinelConnection?: ConnectionOptions<R>;
-  readonly connection?: ConnectionOptions<R>;
-  readonly sessions?: Omit<SessionOptions<R>, "connection">;
+export interface SentinelOptions<RData = never, RSentinel = RData> extends Partial<
+  typeof Policy.Type
+> {
+  readonly sentinelConnection?: ConnectionOptions<RSentinel>;
+  readonly connection?: ConnectionOptions<RData>;
+  readonly sessions?: Omit<SessionOptions<RData>, "connection">;
   readonly addressMap?: (
     address: SentinelAddress,
     plane: "sentinel" | "data",

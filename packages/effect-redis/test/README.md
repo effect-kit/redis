@@ -63,10 +63,19 @@ availability is distinguished from expected rejections on restricted/older fixtu
 bounded ownership, script recovery, indexed EXEC loss and cleanup defects. `e2e/cluster/`
 owns six-node Redis/Valkey clusters, with reshard/promotion, translated TLS identities,
 replica reads, explicit Valkey multi-DB and topology-bound events/caches. Network
-partition cases use `fixtures/cluster/bus-proxy.mjs` in the existing pinned Node image
+partition cases use `fixtures/networking/peer-proxy.mjs` in the existing pinned Node image
 to cut established inter-server data/bus links while preserving inspection access.
 All containers, networks and proxy resources have awaited cleanup; no images are pulled
 implicitly. These suites join the existing main/manual-PR live lanes.
+
+`unit/sentinel/` and `integration/sentinel/` cover configuration, discovery deadlines,
+credential capture, generation ownership, cancellation, pressure and cleanup defects.
+`e2e/sentinel/` owns three data nodes and three Sentinels. Discovery/control workflows
+span all seven Redis/Valkey baselines in RESP2/3; current builds add actual promotion,
+established-link partitions, unknown INCR/EXEC outcomes, replica selection, separate
+authentication and mTLS. The shared peer proxy supplies the network fault boundary.
+These tests demonstrate client failover behavior; ROLE alone cannot fence an isolated
+old primary or prevent asynchronous replication loss.
 
 The live runner also supports `--mode binary --engine redis|valkey --binary /absolute/path`
 for an owned local process. `--mode endpoint` requires `EFFECT_REDIS_TEST_URL` and

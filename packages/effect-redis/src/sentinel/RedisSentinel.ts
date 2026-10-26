@@ -16,6 +16,7 @@ import type { SentinelConfig } from "#/sentinel/Config";
 import { makeSentinelControl } from "#/sentinel/Control";
 import { makeSentinelEvents } from "#/sentinel/events/Features";
 import { makeSentinelExecutor } from "#/sentinel/execution/Executor";
+import { makeSentinelScans } from "#/sentinel/execution/Scans";
 import { makeSentinelSessions } from "#/sentinel/execution/Sessions";
 import { makeSentinelManager } from "#/sentinel/generation/Manager";
 import { decodeSentinelPolicy } from "#/sentinel/Options";
@@ -24,9 +25,9 @@ import { prepareBatch } from "#/sessions/batch/Prepare";
 import type { AnyCommand, BatchExecutorService } from "#/sessions/batch/Types";
 import { makeRedisStreams } from "#/streams/RedisStreams";
 
-export const makeRedisSentinel = Effect.fnUntraced(function* <R = never>(
+export const makeRedisSentinel = Effect.fnUntraced(function* <RData = never, RSentinel = RData>(
   config: SentinelConfig,
-  options: SentinelOptions<R> = {},
+  options: SentinelOptions<RData, RSentinel> = {},
 ) {
   const {
     connection,
@@ -67,7 +68,7 @@ export const makeRedisSentinel = Effect.fnUntraced(function* <R = never>(
   const leases = makeSentinelSessions(manager, config, policy);
   const executor = makeSentinelExecutor(leases, policy);
   const blocking = makeSentinelExecutor(leases, policy, true);
-  const control = yield* makeSentinelControl(config.sentinels, policy, options);
+  const control = yield* makeSentinelControl(config.sentinels, policy, options, manager);
   const events = makeSentinelEvents(manager, options);
   const batches: BatchExecutorService = {
     pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
@@ -83,7 +84,8 @@ export const makeRedisSentinel = Effect.fnUntraced(function* <R = never>(
         ),
       ),
   };
-  const redis = { ...makeRedis(executor), ...batches };
+  const scans = makeSentinelScans(manager, leases, policy);
+  const redis = { ...makeRedis(executor), ...scans, ...batches };
 
   yield* manager.refresh.pipe(
     Effect.onExit((exit) => (Exit.isFailure(exit) ? manager.close : Effect.void)),
@@ -108,6 +110,7 @@ export const makeRedisSentinel = Effect.fnUntraced(function* <R = never>(
     redis,
     executor,
     ...batches,
+    ...scans,
     ...blockingFamily(blocking),
     ...blockingStreamFamily(blocking),
     executeBlocking: blocking.execute,
@@ -139,7 +142,10 @@ export type RedisSentinelClient = Effect.Success<ReturnType<typeof makeRedisSent
 export class RedisSentinel extends Context.Service<RedisSentinel, RedisSentinelClient>()(
   "@envoy1084/effect-redis/RedisSentinel",
 ) {
-  static layer<R = never>(config: SentinelConfig, options?: SentinelOptions<R>) {
+  static layer<RData = never, RSentinel = RData>(
+    config: SentinelConfig,
+    options?: SentinelOptions<RData, RSentinel>,
+  ) {
     const sentinel = Layer.effect(RedisSentinel, makeRedisSentinel(config, options));
     return Layer.mergeAll(
       Layer.effect(CommandExecutor, RedisSentinel.pipe(Effect.map((client) => client.executor))),

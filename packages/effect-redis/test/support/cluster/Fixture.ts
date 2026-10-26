@@ -9,8 +9,8 @@ import { simpleText } from "#/command/reply/Data";
 import { connect, layer } from "#/node";
 import type { RedisCommand } from "#/protocol/encode";
 import { decodeRedisConfig } from "#/RedisConfig";
-import { clusterBusProxy } from "#test/support/cluster/BusProxy";
 import { exchange } from "#test/support/networking/Exchange";
+import { peerProxy } from "#test/support/networking/PeerProxy";
 import { containerRequest, requireImage } from "#test/support/servers/Containers";
 import { allocateServer } from "#test/support/servers/DockerServer";
 import { FixtureError } from "#test/support/servers/FixtureError";
@@ -42,7 +42,7 @@ export const clusterFixture = Effect.fnUntraced(function* (
     return yield* new FixtureError({ stage: "cluster-protocol" });
   yield* requireImage(target.reference);
   const network = yield* fixtureNetwork;
-  const proxy = options.proxy ? yield* clusterBusProxy(network) : undefined;
+  const proxy = options.proxy ? yield* peerProxy(network) : undefined;
   const nodes = yield* Effect.forEach(
     [0, 1, 2, 3, 4, 5],
     (index) =>

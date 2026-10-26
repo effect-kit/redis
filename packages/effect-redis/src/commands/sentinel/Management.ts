@@ -1,7 +1,7 @@
 import { Effect, Redacted, Schema } from "effect";
 
 import { pairs, simpleText, unsigned } from "#/command/reply/Data";
-import { status } from "#/command/reply/Scalars";
+import { blob, status } from "#/command/reply/Scalars";
 import { sensitive } from "#/commands/admin/Build";
 import { Pairs, parse } from "#/commands/internal/Input";
 import { Name, Port, name, sentinelCommand } from "#/commands/sentinel/Build";
@@ -65,7 +65,7 @@ export const sentinelSet = (service: string, entries: Settings) =>
 export const sentinelConfigGet = (patterns: readonly [string, ...string[]]) =>
   sentinelCommand(
     "CONFIG GET",
-    sensitive(pairs(simpleText, simpleText)),
+    sensitive(pairs(blob, blob)),
     parse(Schema.NonEmptyArray(Name), patterns),
   );
 export const sentinelConfigSet = (entries: Settings) =>

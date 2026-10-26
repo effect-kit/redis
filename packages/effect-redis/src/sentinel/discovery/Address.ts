@@ -20,12 +20,12 @@ const Address = Schema.Struct({
 export const addressIdentity = (address: SentinelAddress) =>
   JSON.stringify([address.host, address.port]);
 
-export const connectionConfig = Effect.fnUntraced(function* <R>(
+export const connectionConfig = Effect.fnUntraced(function* (
   base: RedisConfig,
   address: SentinelAddress,
   plane: "sentinel" | "data",
   policy: SentinelPolicy,
-  options: SentinelOptions<R>,
+  options: Pick<SentinelOptions, "addressMap">,
 ) {
   const announced = { host: address.host, port: address.port };
   const mapped = yield* decode(
