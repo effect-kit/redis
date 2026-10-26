@@ -24,12 +24,14 @@ import { sortedSetFamily } from "#/commands/sorted-sets/Family";
 import { streamFamily } from "#/commands/streams/Family";
 import { stringFamily } from "#/commands/strings/Family";
 import { timeSeriesFamily } from "#/commands/timeseries/Family";
+import { upstashFamily } from "#/commands/upstash/Family";
 import { vectorFamily } from "#/commands/vectors/Family";
 import { keyFamily } from "#/keys/Commands";
 import type { RedisCommand } from "#/protocol/encode";
 import type { AnyCommand } from "#/sessions/batch/Types";
 
 export const makeRedis = (executor: RedisExecutor) => ({
+  upstash: upstashFamily(executor),
   ...connectionFamily(executor),
   ...scriptingFamily(executor),
   ...pubsubFamily(executor),

@@ -1,4 +1,5 @@
 export { ping } from "#/commands/connection/Ping";
+export * as Upstash from "#/commands/upstash/index";
 export { pingMessage } from "#/commands/connection/Echo";
 
 export * from "#/commands/strings/index";
