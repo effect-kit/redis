@@ -51,6 +51,8 @@ Publint checking package exports.
 | `pnpm format:check`                                           | Check formatting                                                  |
 | `pnpm test`                                                   | Run offline unit and controlled integration tests                 |
 | `pnpm test:protocol:fuzz`                                     | Build and run the watchdog protocol corpus                        |
+| `pnpm test:artifacts`                                         | Compare three clean builds and check exact packed consumers       |
+| `pnpm test:hardening`                                         | Run gated benchmarks, soaks and fresh-start readiness tests       |
 | `pnpm fixtures:check`                                         | Validate pinned backend test fixtures                             |
 | `pnpm fixtures:pull`                                          | Explicitly download pinned integration-test images                |
 | `pnpm test:node`                                              | Run live cases through the Node adapter                           |
@@ -129,8 +131,9 @@ outcomes. Older Redis/Valkey builds retain their dedicated regression suites. Cl
 primaries and three replicas, including resharding, promotion, partitions and TLS.
 Sentinel suites own three data servers and three Sentinels, covering discovery on every
 primary baseline and current-build promotion, partitions, separate credentials and mTLS.
-Evidence covers exact executed configurations and scenarios; hosted-provider certification
-remains pending. Bun is a runtime, rather than a server fixture. Endpoint mode also accepts `EFFECT_REDIS_TEST_CA` for a custom
+Evidence covers exact executed configurations and scenarios. Hosted certification covers
+the approved free-service subset above; other hosted configurations remain deferred.
+Bun is a runtime, rather than a server fixture. Endpoint mode also accepts `EFFECT_REDIS_TEST_CA` for a custom
 CA file; it never downloads images or starts/stops the external server.
 
 HTTP cases use the current Redis/Valkey fixtures and digest-pinned Uprest 0.5.0.

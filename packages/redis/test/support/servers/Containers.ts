@@ -8,6 +8,7 @@ import {
   getReaper,
   ImageName,
   PullPolicy,
+  RandomPortGenerator,
 } from "testcontainers";
 
 import { FixtureError } from "#test/support/servers/FixtureError";
@@ -27,6 +28,7 @@ export const containerRequest = <A>(stage: string, request: () => Promise<A>) =>
 export class FixtureContainer extends GenericContainer {
   readonly fixtureName = `effect-redis-${randomUUID()}`;
   diagnostic = "";
+  private readonly loopbackPorts = new Set<number>();
 
   constructor(readonly reference: string) {
     super(reference);
@@ -47,10 +49,27 @@ export class FixtureContainer extends GenericContainer {
   }
 
   loopbackPort(port: number) {
+    this.loopbackPorts.add(port);
     this.withExposedPorts(port);
-    this.hostConfig.PortBindings = { [`${port}/tcp`]: [{ HostIp: "127.0.0.1", HostPort: "0" }] };
+    this.hostConfig.PortBindings = {
+      ...this.hostConfig.PortBindings,
+      [`${port}/tcp`]: [{ HostIp: "127.0.0.1", HostPort: "0" }],
+    };
 
     return this;
+  }
+
+  async prepareLoopbackPorts() {
+    const allocator = new RandomPortGenerator();
+    for (const port of this.loopbackPorts) {
+      // A VM's automatic port allocator cannot see listeners/ephemeral sockets on the host OS.
+      // oxlint-disable-next-line no-await-in-loop -- Allocate distinct host ports before container publication.
+      const host = await allocator.generatePort();
+      this.hostConfig.PortBindings = {
+        ...this.hostConfig.PortBindings,
+        [`${port}/tcp`]: [{ HostIp: "127.0.0.1", HostPort: String(host) }],
+      };
+    }
   }
 
   sharedVolume(volume: string, path: string) {
@@ -92,7 +111,10 @@ export const scopedContainer = Effect.fnUntraced(function* (container: FixtureCo
   );
 
   // Otherwise SDK acquisition could create a container after interruption has run cleanup.
-  return yield* containerRequest("container-start", () => container.start()).pipe(
+  return yield* containerRequest("container-start", async () => {
+    await container.prepareLoopbackPorts();
+    return container.start();
+  }).pipe(
     Effect.uninterruptible,
     Effect.mapError(
       (error) =>

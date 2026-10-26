@@ -901,6 +901,10 @@ total is promised. Sources remain accessible without ignored research:
   are not zero. Collect retained-heap samples after GC; join child/fixture cleanup.
 - Preserve UUID evidence under test/results/{providers,artifacts,hardening} when
   clearing regular live results. Do not rebuild while children mount this dist.
+- Allocate published loopback ports on the host with Testcontainers' public port
+  generator before container start. A VM's automatic port allocator cannot see
+  occupied host ports; successful container start does not prove usable forwarding.
+  Keep end-to-end PING readiness and fail actual binding/startup errors explicitly.
 - Hosted-provider CI remains manual default-branch workflow dispatch only. Offline
   CI also verifies deterministic artifacts; local container conformance retains its
   main-push and authorized PR policy. Publication remains a separate explicit action.
