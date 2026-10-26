@@ -17,6 +17,10 @@ server backups, MONITOR and SHUTDOWN modes are implemented. Native Redis/Valkey 
 adds explicit routing, bounded discovery/redirects, node-bound sessions and topology-aware
 event/cache lifetimes. Redis/Valkey Sentinel adds verified discovery, generation-bound
 leases and future-work failover. Broader runtime/provider certification remains pending.
+The `/upstash` entrypoint adds scoped Effect HTTP execution, pipelines, JSON
+transactions and acknowledged text SSE. Typed provider Search/Vector/ACL extensions
+remain distinct from Redis modules. Local tests use an owned Uprest proxy; they do
+not certify the hosted provider.
 
 ## Development
 
@@ -47,6 +51,8 @@ Publint checking package exports.
 | `pnpm test:node`          | Run live cases through the Node adapter                      |
 | `pnpm test:bun`           | Run real Bun socket, backend and topology cases              |
 | `pnpm test:live`          | Run both runtimes against applicable live fixtures           |
+| `pnpm test:upstash`       | Run local HTTP/proxy, fault and Node/Bun consumer tests      |
+| `pnpm dev:upstash`        | Keep an owned HTTP fixture running for interactive use       |
 | `pnpm check`              | Formatting, lint, typecheck, test, and build                 |
 | `pnpm verify`             | Offline checks, fixture validation, fuzz and all live suites |
 
@@ -101,6 +107,8 @@ pnpm test:live                         # all engines and socket/fault tests
 pnpm test:live --engine valkey         # selected engine, all pinned versions
 pnpm test:bun --engine valkey          # Bun runtime, selected backend
 pnpm test:live --runtime node          # Node runtime only
+pnpm test:upstash                      # local HTTP fixtures, Node and Bun
+pnpm dev:upstash --engine valkey       # checks the client, then waits for Ctrl+C
 pnpm test:live --mode binary --engine redis --binary /absolute/path/redis-server
 # Explicit existing endpoint: set EFFECT_REDIS_TEST_URL privately in your shell.
 pnpm test:live --mode endpoint         # AUTH if needed, PING/ECHO only; no writes
@@ -117,6 +125,12 @@ primary baseline and current-build promotion, partitions, separate credentials a
 Full engine, module and hosted-provider certification remains pending. Bun is a runtime, rather
 than a server fixture. Endpoint mode also accepts `EFFECT_REDIS_TEST_CA` for a custom
 CA file; it never downloads images or starts/stops the external server.
+
+HTTP cases use the current Redis/Valkey fixtures and digest-pinned Uprest 0.5.0.
+`fixtures:pull --engine redis|valkey` prepares the corresponding proxy image too.
+`dev:upstash` writes a private, ignored connection file under test results and
+removes it on Ctrl+C. It prints the endpoint and file path, without the bearer token.
+Use a separate checkout for another live run: test runners clear their results directory.
 
 Live CI runs on every push to `main`. PRs run offline checks automatically. Writers
 can comment `/test live` on a PR for the full suite, or `/test live valkey` for a

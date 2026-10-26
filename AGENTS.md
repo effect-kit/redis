@@ -28,6 +28,9 @@ Module availability and dialects remain specific to the actual enabled versions.
 The `/bun` adapter adds scoped native TCP/TLS/Unix and Crypto with actual Bun host
 and pinned Linux runtime scenarios. Shared command, session and topology code stays
 runtime-neutral; record exact runtime/platform evidence before compatibility claims.
+The `/upstash` adapter adds bounded Effect HTTP execution, JSON transactions and text
+SSE, plus separate provider Search/Vector/ACL descriptors. Controlled provider contracts
+and owned local Uprest fixtures are distinct from hosted certification (Phase 18).
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
@@ -271,6 +274,19 @@ real-server conformance before making public compatibility promises.
   custom and scripting transaction replies whose erased RESP types cannot be recovered.
   Reuse Effect's bounded Sse decoder; readiness requires provider acknowledgment and
   EOF/retry/overflow exposes a gap/failure without automatic replay or reconnection.
+- HTTP ordinary/pipeline replies use RESP2; JSON-only transaction object keys and
+  erased custom/script wire types require explicit rejection until a reviewed contract
+  establishes lossless decoding. Reject binary request positions that JSON cannot
+  represent and dot segments that URL parsing would normalize. SSE uses one validated
+  text channel and a bounded backpressured handoff; it provides no binary fidelity claim.
+  Keep `commands/upstash` separate from Redis `FT.*`/`V*` dialects.
+- Local HTTP fixtures use the tracked digest-pinned Uprest profile with owned current
+  Redis/Valkey servers. Include them in the existing live CI policy, never provision
+  hosted infrastructure implicitly. `test:upstash` selects only HTTP cases;
+  `dev:upstash` owns a generated 0600 connection file under ignored results, removes
+  it on SIGINT/SIGTERM and never prints the token. Do not clear that directory through
+  another runner while an interactive fixture uses it. Native TS fixture children
+  need `--experimental-transform-types` for existing parameter-property declarations.
 - Keep command families in separate modules/files (strings, hashes, lists, sets,
   sorted sets, streams, keys, Pub/Sub, scripting, administration, module families).
   Keep research catalogs split into category files under each backend's folder too.

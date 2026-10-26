@@ -31,6 +31,8 @@ Run from the workspace root:
 - `pnpm test:live`: native/backend integration and e2e via `vitest.live.config.ts`.
 - `pnpm test:live --engine valkey`: select the engine's applicable live cases.
 - `pnpm test:bun --engine valkey`: run the selected backend through actual Bun processes.
+- `pnpm test:upstash`: HTTP fetch faults, Redis/Valkey proxy cases and built Node/Bun consumers.
+- `pnpm dev:upstash --engine redis --runtime all`: validate both consumers and retain an interactive fixture.
 - `pnpm test:live --runtime node|bun|all`: select the runtime independently of the engine.
 - `pnpm test:protocol:fuzz`: built codec corpus in a worker with an external deadline.
 - `pnpm typecheck`: includes `types/`; Vitest never executes those contracts.
@@ -98,6 +100,22 @@ for an owned local process. `--mode endpoint` requires `EFFECT_REDIS_TEST_URL` a
 only authenticates and sends read-only PING/ECHO; optional `EFFECT_REDIS_TEST_CA`
 supplies a CA file. These smoke checks do not certify a deployment's command support.
 Mutating cases use disposable fixtures and unique prefixes, never shared-server FLUSH.
+
+`unit/upstash/` owns response/extension contracts; `integration/upstash/` composes
+the real executor with controlled HTTP/SSE boundaries. `integration/http/` tests
+actual fetch cancellation, redirects, size limits and untrusted TLS identities.
+`e2e/upstash/` uses disposable current Redis/Valkey servers plus Uprest 0.5.0,
+with pins under `fixtures/upstash/`. Fault relays lose actual committed responses;
+independent native reads establish mutation/EXEC/group-delivery outcomes. Node/Bun
+children load built HTTP exports. The dev-command test checks credentials-file
+permissions and SIGTERM cleanup. None of these establishes hosted Upstash parity.
+
+HTTP cases join `test:live` and the existing main/manual-PR CI policy for Redis,
+Valkey and `all`; `core` includes fetch faults. `test:upstash` selects only these
+cases, with the same `--engine` and `--runtime` filters. Endpoint/binary modes stay
+native smoke checks. The interactive command writes a generated bearer token into
+an owned 0600 file under ignored `results/`; it removes that file and its containers
+on SIGINT/SIGTERM. Do not run another live runner against the same results directory.
 
 Live JUnit/JSON and fixture evidence go to ignored `results/`, collected by CI.
 Main pushes run live CI automatically; PR live runs require authorized manual

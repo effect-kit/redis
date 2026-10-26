@@ -7,6 +7,64 @@ scoped text SSE subscriptions/MONITOR. It shares ordinary command decoders and b
 types. HTTP has explicit encoding and capability limits: physical sessions stay
 native, and JSON-only transactions reject raw/custom/script replies whose RESP types
 cannot be reconstructed losslessly. Hosted Upstash certification remains pending.
+
+Supply an Effect HttpClient to the HTTP Layer. Load the redacted bearer token from
+your application's secret configuration:
+
+```ts
+import { Effect, Layer, Redacted } from "effect";
+import { FetchHttpClient } from "effect/http";
+
+import { Commands, Redis } from "@envoy1084/effect-redis";
+import * as Upstash from "@envoy1084/effect-redis/upstash";
+
+declare const upstashToken: Redacted.Redacted<string>;
+
+const upstashLive = Upstash.layer({
+  url: "https://your-database.upstash.io",
+  token: upstashToken,
+}).pipe(Layer.provide(FetchHttpClient.layer));
+
+const upstashProgram = Effect.gen(function* () {
+  const redis = yield* Redis;
+  yield* redis.set("greeting", "hello");
+
+  // Each pipeline slot retains its own typed Result; the pipeline is not atomic.
+  return yield* redis.pipeline([Commands.get("greeting"), Commands.incr("visits")]);
+});
+
+const upstashRunnable = upstashProgram.pipe(Effect.provide(upstashLive));
+```
+
+`makeUpstash` instead captures the HttpClient and owning Scope, exposing `redis`,
+`batches` and `events` directly. `UpstashEvents.subscribe(channel)` and `.monitor()`
+require a Scope and return acknowledged subscriptions with a `messages` Stream and
+a `close` Effect. One UTF-8 channel is bound per request; commas, CR/LF, NUL and URL
+dot-segment names fail before sending. Text messages preserve commas. SSE does not
+promise arbitrary binary/multiline payloads or transparent reconnection: EOF/retry
+exposes a gap. A bounded handoff backpressures each dedicated HTTP reader.
+
+Ordinary requests and pipelines use lossless RESP2 responses. JSON-only transactions
+preserve bigint number tokens and reviewed status/blob semantics, but reject ambiguous
+raw/custom/script descriptors before dispatch and unsupported object encodings after
+reply. HTTP never automatically retries mutations or transactions. Binary responses
+are preserved; invalid-UTF8 request arguments need the single-command final-body
+form. Other binary positions/batches and URL-normalized dot segments fail explicitly.
+HTTP provides no physical sessions, WATCH, blocking leases, client tracking or native
+Cluster/Sentinel routing. Use a native adapter for those connection-bound capabilities.
+
+Provider builders live under `Commands.Upstash`, the `/upstash` entrypoint's
+`Commands`, and `redis.upstash`. The 11 `SEARCH.*`, eight `VECTOR.*` and
+`ACL RESTTOKEN` operations have reviewed typed replies. They are separate from
+`FT.*`/`V*` modules. `searchQueryWith` takes an explicit PayloadCodec;
+`base64Fp32` explicitly encodes finite FP32 vectors. Availability is determined by
+the actual service; local Uprest deliberately rejects provider-only extensions.
+
+Run `pnpm fixtures:pull --engine redis` then `pnpm test:upstash` from the workspace
+for local Redis/Valkey proxy and actual Node/Bun fetch tests. `pnpm dev:upstash`
+checks a disposable fixture and keeps it alive until Ctrl+C, with connection details
+in an owned private file under ignored test results. No Upstash account is required.
+
 The public API includes configuration decoding, binary `encodeCommand`, incremental
 `makeRespDecoder`, lossless `RespValue`/`RespPairs`, `RedisArgument`/`RedisCommand`,
 codec limits and typed errors. The Node-only `/node` entrypoint exports `connect`,

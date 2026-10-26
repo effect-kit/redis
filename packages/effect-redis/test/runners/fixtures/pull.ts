@@ -6,6 +6,7 @@ import { getContainerRuntimeClient, ImageName } from "testcontainers";
 
 import { moduleFixtures } from "#test/support/modules/Manifest";
 import { currentImages, imageReference, selectEngine } from "#test/support/servers/Targets";
+import { proxyImage } from "#test/support/upstash/Manifest";
 
 const { values } = parseArgs({
   args: process.argv.slice(2).filter((arg) => arg !== "--"),
@@ -39,6 +40,12 @@ await Effect.runPromise(
     { concurrency: 1 },
   ),
 );
+
+if (["all", "redis", "valkey"].includes(selectedEngine)) {
+  process.stdout.write(`Pulling HTTP fixture ${proxyImage}\n`);
+  await client.image.pull(ImageName.fromString(proxyImage));
+  await client.image.inspect(ImageName.fromString(proxyImage));
+}
 
 await Effect.runPromise(
   Effect.forEach(

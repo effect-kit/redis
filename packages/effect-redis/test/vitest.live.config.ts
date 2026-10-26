@@ -86,12 +86,36 @@ const bunFiles =
 
 const include = [...(runtime === "bun" ? [] : nodeFiles), ...(runtime === "node" ? [] : bunFiles)];
 
+const httpOnly = process.env.EFFECT_REDIS_TEST_HTTP_ONLY === "1";
+if (httpOnly && mode !== "containers")
+  throw new Error("HTTP fixture selection requires container mode");
+const httpFiles =
+  mode === "containers" && ["all", "redis", "valkey", "core"].includes(selectedEngine)
+    ? [
+        ...(runtime === "bun" ? [] : ["test/integration/http/*.test.ts"]),
+        ...(selectedEngine === "core"
+          ? []
+          : [
+              "test/e2e/upstash/Runtime.test.ts",
+              ...(runtime === "bun"
+                ? []
+                : [
+                    "test/e2e/upstash/Client.test.ts",
+                    "test/e2e/upstash/Uncertainty.test.ts",
+                    "test/e2e/upstash/Development.test.ts",
+                  ]),
+            ]),
+      ]
+    : [];
+if (httpOnly && httpFiles.length === 0)
+  throw new Error("HTTP Bun cases require --engine all|redis|valkey");
+
 export default defineConfig({
   root: fileURLToPath(new URL("../", import.meta.url)),
   envDir: false,
   test: {
     environment: "node",
-    include: [...include],
+    include: httpOnly ? httpFiles : [...include, ...httpFiles],
     passWithNoTests: false,
     testTimeout: 45_000,
     hookTimeout: 45_000,

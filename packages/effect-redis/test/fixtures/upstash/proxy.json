@@ -1,0 +1,7 @@
+{
+  "version": "0.5.0",
+  "source": "14f2901e6f3bdf74e4444b6dfe717af669c15f0a",
+  "image": "ghcr.io/nelsonlaidev/uprest:v0.5.0",
+  "digest": "sha256:3ca574b52bb6bcbd9af13a908670ece96424edb608146d6b5b567285d5935d6b",
+  "architectures": ["arm64", "x64"]
+}

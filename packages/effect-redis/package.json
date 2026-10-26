@@ -2,7 +2,7 @@
   "name": "@envoy1084/effect-redis",
   "version": "0.0.0",
   "private": true,
-  "description": "Native Effect v4 Redis client with typed commands, scripting, Streams, Pub/Sub and bounded scoped RESP2/RESP3 connections.",
+  "description": "Native Effect v4 Redis client with typed commands, scoped Node/Bun sockets, Upstash HTTP/SSE, Streams and Pub/Sub.",
   "keywords": [
     "binary-safe",
     "bun",
@@ -10,6 +10,7 @@
     "effect",
     "effect-ts",
     "effect-v4",
+    "http",
     "lua",
     "pubsub",
     "redis",
@@ -18,8 +19,10 @@
     "resp",
     "resp2",
     "resp3",
+    "sse",
     "streams",
     "typescript",
+    "upstash",
     "valkey"
   ],
   "homepage": "https://github.com/envoy1084/effect-redis#readme",
@@ -80,6 +83,8 @@
     "prepack": "pnpm run build",
     "test:node": "pnpm run test:live --runtime node",
     "test:bun": "pnpm run test:live --runtime bun",
+    "test:upstash": "node test/runners/upstash/run.ts",
+    "dev:upstash": "pnpm run build && node --experimental-transform-types test/runners/upstash/dev.ts",
     "fixtures:pull": "node test/runners/fixtures/pull.ts",
     "test:live": "node test/runners/live/run.ts",
     "fixtures:check": "node test/runners/fixtures/check.ts"
