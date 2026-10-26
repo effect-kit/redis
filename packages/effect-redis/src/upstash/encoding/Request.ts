@@ -4,7 +4,7 @@ import type { PreparedCommand } from "#/command/Command";
 import { checkOrdinary, commandToken } from "#/connection/OrdinaryCommand";
 import { UpstashError } from "#/errors/UpstashError";
 import type { RedisArgument } from "#/RedisArgument";
-import type { UpstashConfig } from "#/upstash/Config";
+import type { UpstashSettings } from "#/upstash/Config";
 
 const utf8 = new TextEncoder();
 const unpaired = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
@@ -70,7 +70,7 @@ export interface HttpRequestBody {
 export const encodeRequest = (
   commands: ReadonlyArray<PreparedCommand<unknown, unknown, unknown>>,
   mode: "ordinary" | "pipeline" | "transaction",
-  config: UpstashConfig,
+  config: UpstashSettings,
 ) =>
   Effect.try({
     try: (): HttpRequestBody => {

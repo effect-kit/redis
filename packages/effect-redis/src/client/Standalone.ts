@@ -5,6 +5,8 @@ import { prepareNative } from "#/client/Input";
 import type { NativeClientInput } from "#/client/Input";
 import { CommandExecutor } from "#/command/Executor";
 import { Connection } from "#/connection/Connection";
+import { RedisCredentials } from "#/credentials/Manager";
+import { makeNativeCredentials } from "#/credentials/Native";
 import { Redis } from "#/Redis";
 import { RedisScripts } from "#/scripting/RedisScripts";
 import { RedisSessions } from "#/sessions/RedisSessions";
@@ -16,7 +18,14 @@ export const standaloneLayer = <R = never>(input: NativeClientInput<R>) =>
   Layer.unwrap(
     Effect.gen(function* () {
       const prepared = yield* prepareNative(input);
-      const { config, connection } = prepared;
+      const { config } = prepared;
+      const identity = yield* makeNativeCredentials(
+        prepared.source,
+        prepared.credentialLifetime,
+        undefined,
+        prepared,
+      );
+      const connection = { ...prepared.connection, credentials: identity.credentials };
       const executor = CommandExecutor.layer.pipe(
         Layer.provide(Connection.layer(config, connection)),
       );
@@ -36,6 +45,7 @@ export const standaloneLayer = <R = never>(input: NativeClientInput<R>) =>
           ...prepared.subscriptions,
           ...(connection.credentials === undefined ? {} : { credentials: connection.credentials }),
         }),
-      );
+        Layer.succeed(RedisCredentials, identity.identity),
+      ).pipe(Layer.provide(identity.infrastructure));
     }),
   );

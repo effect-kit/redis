@@ -1,5 +1,6 @@
 import { Crypto, Effect, Option, Result, Schema, Stream } from "effect";
 
+import { readyClient } from "#test/runners/bun/Ready";
 import { core, ensure, equalBytes } from "#test/runners/bun/Runtime";
 
 export const client = Effect.fnUntraced(function* (input: unknown) {
@@ -87,6 +88,7 @@ export const client = Effect.fnUntraced(function* (input: unknown) {
   );
 
   return [
+    ...(yield* readyClient(input)),
     "binary",
     "int64",
     "typed-errors",

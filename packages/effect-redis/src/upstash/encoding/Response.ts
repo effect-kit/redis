@@ -4,7 +4,7 @@ import { Base64 } from "effect/encoding";
 import { UpstashError } from "#/errors/UpstashError";
 import { makeRespDecoder } from "#/protocol/decode/Decoder";
 import type { RespValue } from "#/protocol/RespValue";
-import type { UpstashConfig } from "#/upstash/Config";
+import type { UpstashSettings } from "#/upstash/Config";
 import type { JsonValue } from "#/upstash/encoding/Json";
 import { parseJson } from "#/upstash/encoding/Json";
 import type { JsonReplyPolicy } from "#/upstash/encoding/Status";
@@ -61,7 +61,7 @@ export const envelope = (value: JsonValue, policy?: JsonReplyPolicy): RespValue 
   return { _tag: "SimpleError", value: utf8.encode(error) };
 };
 
-export const responseJson = (bytes: Uint8Array, config: UpstashConfig) =>
+export const responseJson = (bytes: Uint8Array, config: UpstashSettings) =>
   Effect.try({
     try: () => new TextDecoder("utf-8", { fatal: true }).decode(bytes),
     catch: malformed,
@@ -79,7 +79,7 @@ export const decodeJsonBatch = (value: JsonValue, policies: ReadonlyArray<JsonRe
     },
   });
 
-export const decodeResp = (bytes: Uint8Array, count: number, config: UpstashConfig) =>
+export const decodeResp = (bytes: Uint8Array, count: number, config: UpstashSettings) =>
   Effect.gen(function* () {
     const decoder = yield* Effect.fromResult(
       makeRespDecoder({

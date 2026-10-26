@@ -1,6 +1,7 @@
 import type { CommandInputError } from "#/errors/CommandInputError";
 import type { ConnectionError } from "#/errors/ConnectionError";
 import type { HandshakeError } from "#/errors/HandshakeError";
+import type { ProfileError } from "#/errors/ProfileError";
 import type { ProtocolError } from "#/errors/ProtocolError";
 import type { ReplyError } from "#/errors/ReplyError";
 import type { ServerError } from "#/errors/ServerError";
@@ -15,4 +16,5 @@ export type EventError =
   | ReplyError
   | ServerError
   | SubscriptionError
-  | TransportError;
+  | TransportError
+  | ProfileError;

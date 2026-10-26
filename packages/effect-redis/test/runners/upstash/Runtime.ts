@@ -98,6 +98,25 @@ const program = Effect.gen(function* () {
   ensure(unsupported._tag === "ServerError", "provider-errors");
   checks.push("provider-errors");
 
+  yield* Effect.gen(function* () {
+    const ready = yield* core.Redis;
+    const credentials = yield* core.RedisCredentials;
+    ensure(Option.getOrThrow(yield* ready.get(`${prefix}:batch`)) === "OK", "ready-http");
+    const batch = yield* ready.pipeline([core.Commands.get(`${prefix}:batch`)]);
+    ensure(Option.getOrThrow(Result.getOrThrow(batch[0])) === "OK", "ready-http-batch");
+    yield* credentials.rotate;
+    yield* ready.ping();
+  }).pipe(
+    Effect.provide(
+      http.RedisUpstash.layer({
+        url: input.url,
+        allowInsecureLocalhost: true,
+        credentials: Effect.succeed({ password: Redacted.make(input.token) }),
+      }),
+    ),
+  );
+  checks.push("ready-layer", "ready-batches", "explicit-rotation");
+
   return {
     runtime: typeof Bun === "undefined" ? "node" : "bun",
     version: typeof Bun === "undefined" ? process.versions.node : Bun.version,

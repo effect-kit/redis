@@ -32,6 +32,9 @@ The `/upstash` adapter adds bounded Effect HTTP execution, JSON transactions and
 SSE, plus separate provider Search/Vector/ACL descriptors. Controlled provider contracts
 and owned local Uprest fixtures are distinct from hosted certification (Phase 18).
 Never describe planned command or server compatibility as implemented or verified.
+Phase 16 adds ready runtime/topology Layers, deployment-scoped credential refresh,
+explicit socket/request rotation and managed-service policies. Hosted certification
+remains pending; official profile metadata and local fixtures do not close phase 18.
 
 ## Read before changing code
 
@@ -676,6 +679,33 @@ Implemented Cluster policy:
   expiry, refresh for new/re-established connections, and coordinate reauthentication
   with exclusive sessions. Cloud identity SDKs must not become core dependencies;
   callers can supply credentials from their existing identity system.
+
+Implemented ready-Layer identity/profile policy:
+
+- `RedisCredentials.provider` is a pure declaration. Each consuming Layer owns one
+  coordinator, captures source services, coalesces bounded acquisition and caches
+  only validated expiring values. The source's temporary resources close after
+  acquisition; cached values must not depend on those resources. Defaults are a
+  60s refresh margin, 5s acquisition timeout and 128 waiters. Preserve defects and
+  interruption; expected source failures are redacted typed errors.
+- Native `credentialLifetime` is explicit: reconnect, token-expiry or max-age.
+  Effective refresh acceptance covers the retirement margin. Never inject AUTH
+  into a transaction, blocking lease or subscription. Retirement preserves unknown
+  outcomes; new work alone reconnects. Cleanup failures poison replacement ownership.
+  Chunk distant absolute deadlines to avoid native timer overflow.
+- `RedisCredentials.rotate` invalidates and joins current acquisition, then retires
+  owned sockets or aborts current HTTP workers. Sentinel control uses a separate
+  `RedisSentinelCredentials` service/cache and `sentinelCredentials` input. A control
+  rotation must not retire data sockets. Keep physical acquisition planes explicit.
+- Provider profiles select actual routing/auth/TLS/database/restriction/module policy,
+  with reviewed sources and pending certification. AWS IAM socket age differs from
+  token expiry; Google IAM keeps existing authentication; Entra retires three minutes
+  before expiry. Unknown availability is server-owned, never guessed unsupported.
+  Keep known restrictions enforced in ordinary, batch and event wire paths.
+- Check exact host and TLS-name allowlists after topology translation and before
+  socket/credential acquisition. IAM/Entra topology profiles require explicit network
+  trust. Hostname allowlists do not replace DNS/IP controls or CA/SNI verification.
+  HTTP redirects stay disabled; source tokens never enter URLs or default diagnostics.
 
 ### Upstash and Bun
 

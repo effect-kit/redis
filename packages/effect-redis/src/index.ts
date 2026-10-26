@@ -1,6 +1,21 @@
 export type { RedisArgument } from "#/RedisArgument";
 export { decodeRedisConfig } from "#/RedisConfig";
 export type { RedisConfig, RedisConfigInput } from "#/RedisConfig";
+export { RedisCredentials } from "#/credentials/Manager";
+export { RedisSentinelCredentials } from "#/credentials/Sentinel";
+export type { RedisCredentialService, CredentialSnapshot } from "#/credentials/Manager";
+export type {
+  CredentialInput,
+  CredentialProvider,
+  CredentialValues,
+  RefreshPolicy,
+} from "#/credentials/Provider";
+export type { CredentialLifetime } from "#/credentials/Lifetime";
+export { CredentialError } from "#/errors/CredentialError";
+export * as RedisProfiles from "#/profiles/index";
+export type { DeploymentProfile } from "#/profiles/Profile";
+export type { NetworkPolicy } from "#/profiles/Network";
+export { ProfileError } from "#/errors/ProfileError";
 
 export { RedisCluster, makeRedisCluster } from "#/cluster/RedisCluster";
 export type { RedisClusterClient } from "#/cluster/RedisCluster";

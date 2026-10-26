@@ -1,4 +1,4 @@
-import { Effect, Redacted, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
 import { UpstashError } from "#/errors/UpstashError";
 
@@ -6,9 +6,8 @@ const positive = Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 64 * 1
 const defaulted = (value: number) =>
   positive.pipe(Schema.withDecodingDefaultKey(Effect.succeed(value)));
 
-const Input = Schema.Struct({
+const Settings = Schema.Struct({
   url: Schema.NonEmptyString,
-  token: Schema.Redacted(Schema.NonEmptyString.check(Schema.isPattern(/^[!-~]+$/))),
   allowInsecureLocalhost: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   requestTimeoutMillis: defaulted(30_000),
   streamHandshakeTimeoutMillis: defaulted(10_000),
@@ -22,16 +21,20 @@ const Input = Schema.Struct({
   maxEventBytes: defaulted(1024 * 1024),
 });
 
+const Bearer = Schema.Redacted(
+  Schema.NonEmptyString.check(Schema.isPattern(/^[!-~]+$/), Schema.isMaxLength(16384)),
+);
+const Input = Schema.Struct({ ...Settings.fields, token: Bearer });
+
 export type UpstashConfigInput = typeof Input.Encoded;
 export type UpstashConfig = typeof Input.Type;
+export type UpstashSettings = typeof Settings.Type;
+export type UpstashSettingsInput = typeof Settings.Encoded;
 
 const invalid = () =>
   new UpstashError({ stage: "config", reason: "configuration", delivery: "unsent" });
 
-export const decodeUpstashConfig = Effect.fnUntraced(function* (input: unknown) {
-  const config = yield* Schema.decodeUnknownEffect(Input, { onExcessProperty: "error" })(
-    input,
-  ).pipe(Effect.mapError(invalid));
+const normalize = Effect.fnUntraced(function* <A extends UpstashSettings>(config: A) {
   const url = yield* Effect.try({ try: () => new URL(config.url), catch: invalid });
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
 
@@ -43,8 +46,6 @@ export const decodeUpstashConfig = Effect.fnUntraced(function* (input: unknown) 
     url.search !== "" ||
     url.hash !== "" ||
     url.pathname !== "/" ||
-    Redacted.value(config.token).length > 16384 ||
-    /[\r\n]/.test(Redacted.value(config.token)) ||
     config.maxNestingDepth > 128 ||
     config.maxConcurrentRequests > 1024 ||
     config.maxBatchCommands > 10_000
@@ -53,3 +54,18 @@ export const decodeUpstashConfig = Effect.fnUntraced(function* (input: unknown) 
 
   return { ...config, url: url.origin };
 });
+
+export const decodeBearer = (input: unknown) =>
+  Schema.decodeUnknownEffect(Bearer)(input).pipe(Effect.mapError(invalid));
+
+export const decodeUpstashConfig = (input: unknown) =>
+  Schema.decodeUnknownEffect(Input, { onExcessProperty: "error" })(input).pipe(
+    Effect.mapError(invalid),
+    Effect.flatMap(normalize),
+  );
+
+export const decodeUpstashSettings = (input: unknown) =>
+  Schema.decodeUnknownEffect(Settings, { onExcessProperty: "error" })(input).pipe(
+    Effect.mapError(invalid),
+    Effect.flatMap(normalize),
+  );

@@ -7,6 +7,7 @@ import * as Commands from "#/commands/sentinel/Discovery";
 import type { SentinelAddress } from "#/commands/sentinel/Discovery";
 import { makeConnection } from "#/connection/Connection";
 import { RoleExpectation } from "#/connection/Role";
+import { CredentialPlane } from "#/credentials/Plane";
 import { SentinelError } from "#/errors/SentinelError";
 import type { RedisConfig } from "#/RedisConfig";
 import type { SentinelConfig } from "#/sentinel/Config";
@@ -55,7 +56,7 @@ export const makeSentinelDiscovery = Effect.fnUntraced(function* <RData, RSentin
         ...options.sentinelConnection,
         reconnectAttempts: 1,
       },
-    );
+    ).pipe(Effect.provideService(CredentialPlane, "sentinel"));
     const execute = <A>(command: Command<A>) =>
       command.prepare.pipe(
         Effect.flatMap((intent) =>

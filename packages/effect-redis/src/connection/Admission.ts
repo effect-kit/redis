@@ -5,13 +5,19 @@ import type { Limits } from "#/config/Limits";
 import { AdmissionError } from "#/errors/AdmissionError";
 import type { ConnectionError } from "#/errors/ConnectionError";
 import type { HandshakeError } from "#/errors/HandshakeError";
+import type { ProfileError } from "#/errors/ProfileError";
 import type { ProtocolError } from "#/errors/ProtocolError";
 import { encodeCommand } from "#/protocol/encode";
 import type { RedisCommand } from "#/protocol/encode";
 import { encodeBatch } from "#/protocol/encodeBatch";
 import type { RespValue } from "#/protocol/RespValue";
 
-export type ExecutionError = AdmissionError | ConnectionError | HandshakeError | ProtocolError;
+export type ExecutionError =
+  | AdmissionError
+  | ConnectionError
+  | HandshakeError
+  | ProtocolError
+  | ProfileError;
 
 export interface Ticket {
   readonly result: Deferred.Deferred<RespValue, ExecutionError>;

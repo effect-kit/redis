@@ -8,6 +8,7 @@ import { ConnectionError } from "#/errors/ConnectionError";
 import { HandshakeError } from "#/errors/HandshakeError";
 import { SubscriptionError } from "#/errors/SubscriptionError";
 import type { EventError } from "#/events/Types";
+import { ProfileCommandPolicy } from "#/profiles/Commands";
 import { encodeCommand } from "#/protocol/encode";
 import type { RedisCommand } from "#/protocol/encode";
 import type { RespValue } from "#/protocol/RespValue";
@@ -37,6 +38,7 @@ export const makeEventWire = Effect.fnUntraced(function* <R>(
     });
 
   const physical = yield* (yield* Transport).open(config);
+  const commandPolicy = yield* ProfileCommandPolicy;
   const reader = yield* makeReplyReader(physical, config.limits);
   const mutex = yield* Semaphore.make(1);
   const retired = yield* Deferred.make<void>();
@@ -162,6 +164,8 @@ export const makeEventWire = Effect.fnUntraced(function* <R>(
       () =>
         mutex.withPermits(1)(
           Effect.gen(function* () {
+            const restricted = commandPolicy(command);
+            if (restricted !== undefined) return yield* restricted;
             if (stopped !== undefined) {
               if (Cause.hasDies(stopped)) return yield* Effect.failCause(stopped);
               return yield* new ConnectionError({

@@ -5,6 +5,7 @@ export class UpstashError extends Schema.TaggedError<UpstashError>()("UpstashErr
   stage: Schema.Literals(["config", "request", "response", "stream"]),
   reason: Schema.Literals([
     "configuration",
+    "credentials",
     "authentication",
     "status",
     "rate-limit",
@@ -21,4 +22,5 @@ export class UpstashError extends Schema.TaggedError<UpstashError>()("UpstashErr
   delivery: Schema.Literals(["unsent", "unknown", "replied"]),
   status: Schema.optionalKey(Schema.Int),
   retryAfterSeconds: Schema.optionalKey(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))),
+  cause: Schema.optionalKey(Schema.Redacted(Schema.Unknown)),
 }) {}

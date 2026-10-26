@@ -28,6 +28,7 @@ import { HandshakeError } from "#/errors/HandshakeError";
 import { ProtocolError } from "#/errors/ProtocolError";
 import { RedisConfigError } from "#/errors/RedisConfigError";
 import { TransportError } from "#/errors/TransportError";
+import { ProfileCommandPolicy } from "#/profiles/Commands";
 import type { RedisCommand } from "#/protocol/encode";
 import type { RespValue } from "#/protocol/RespValue";
 import type { RedisConfig } from "#/RedisConfig";
@@ -73,6 +74,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
   options?: ConnectionOptions<R>,
 ) {
   const transport = yield* Transport;
+  const commandPolicy = yield* ProfileCommandPolicy;
   const expectedRole = yield* RoleExpectation;
   const context = yield* Effect.context<R>();
 
@@ -286,6 +288,9 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
         const now = yield* Clock.currentTimeMillis;
         const ticket = yield* Effect.suspend((): Effect.Effect<Ticket, ExecutionError> => {
           if (closing || stopped) return Effect.fail(unavailable());
+
+          const restricted = commandPolicy(command);
+          if (restricted !== undefined) return Effect.fail(restricted);
 
           const modeError = checkOrdinary(command);
           if (modeError !== undefined) return Effect.fail(modeError);

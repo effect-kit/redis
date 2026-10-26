@@ -13,6 +13,7 @@ import { BatchError } from "#/errors/BatchError";
 import { ConnectionError } from "#/errors/ConnectionError";
 import { HandshakeError } from "#/errors/HandshakeError";
 import { ProtocolError } from "#/errors/ProtocolError";
+import { ProfileCommandPolicy } from "#/profiles/Commands";
 import type { RedisCommand } from "#/protocol/encode";
 import type { RespValue } from "#/protocol/RespValue";
 import type { RedisConfig } from "#/RedisConfig";
@@ -31,6 +32,7 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
 ) {
   const { credentials } = options;
   const transport = yield* Transport;
+  const commandPolicy = yield* ProfileCommandPolicy;
   const expectedRole = yield* RoleExpectation;
   const admission = new Admission(config.limits);
 
@@ -84,6 +86,10 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
     observeFailure?: (mayHaveBeenWritten: boolean) => void,
   ) {
     const tickets: Ticket[] = [];
+    for (const command of commands) {
+      const restricted = commandPolicy(command);
+      if (restricted !== undefined) return yield* restricted;
+    }
 
     return yield* Effect.uninterruptibleMask((restore) =>
       Effect.gen(function* () {

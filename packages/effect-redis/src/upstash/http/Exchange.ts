@@ -4,7 +4,7 @@ import type { HttpClientResponse } from "effect/http/HttpClientResponse";
 
 import { UpstashError } from "#/errors/UpstashError";
 import { ByteBuilder } from "#/protocol/decode/buffers";
-import type { UpstashConfig } from "#/upstash/Config";
+import type { UpstashSettings } from "#/upstash/Config";
 import type { HttpRequestBody } from "#/upstash/encoding/Request";
 
 export const requestError = () =>
@@ -15,15 +15,16 @@ export const responseError = () =>
 /** Fetch must expose redirects for inspection; body-form keys must not enter automatic HTTP spans. */
 export const exchange = (
   client: HttpClient.HttpClient,
-  config: UpstashConfig,
+  config: UpstashSettings,
   body: HttpRequestBody,
   json: boolean,
+  bearer: Redacted.Redacted<string>,
 ) =>
   HttpClient.withScope(client)
     .execute(
       HttpClientRequest.post(config.url + body.path).pipe(
         HttpClientRequest.setHeaders({
-          authorization: `Bearer ${Redacted.value(config.token)}`,
+          authorization: `Bearer ${Redacted.value(bearer)}`,
           "content-type": body.contentType,
           ...(json ? { "upstash-encoding": "base64" } : { "upstash-response-format": "resp2" }),
         }),

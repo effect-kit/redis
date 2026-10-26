@@ -24,6 +24,8 @@ import type { UpstashHttpClient } from "#/upstash/http/Client";
 export const makeHttpExecutor = (http: UpstashHttpClient): RedisExecutor => {
   const executePrepared = Effect.fnUntraced(function* <A, E, R>(command: PreparedCommand<A, E, R>) {
     yield* validateHttpCommand(command);
+    const restricted = http.guard(command.tokens);
+    if (restricted !== undefined) return yield* restricted;
     const outcome = yield* http.request([command], "ordinary");
     const reply = outcome._tag === "Rejected" ? outcome.reply : outcome.replies[0];
     if (reply === undefined) return yield* Effect.die("Missing validated HTTP reply");
@@ -47,6 +49,8 @@ export const makeHttpBatches = (http: UpstashHttpClient): BatchExecutorService =
       const prepared = yield* prepareBatch(commands, http.config.maxBatchCommands);
       for (const command of prepared) {
         yield* validateHttpCommand(command);
+        const restricted = http.guard(command.tokens);
+        if (restricted !== undefined) return yield* restricted;
         if (mode === "transaction" && ambiguousJson(command))
           return yield* new UpstashError({
             stage: "request",
@@ -62,7 +66,7 @@ export const makeHttpBatches = (http: UpstashHttpClient): BatchExecutorService =
       const unknown = (error: unknown) =>
         new BatchError({
           phase,
-          execution: "unknown",
+          execution: sent ? "unknown" : "not-executed",
           outcomes: Redacted.make(
             prepared.map((_, index) => ({
               _tag: sent ? "Unknown" : "Unsent",
@@ -74,9 +78,10 @@ export const makeHttpBatches = (http: UpstashHttpClient): BatchExecutorService =
 
       // Preserve indexed evidence in interrupted/defect Causes as on native batches.
       const outcomes = yield* Effect.gen(function* () {
-        sent = true;
         const result = yield* http
-          .request(prepared, mode)
+          .request(prepared, mode, () => {
+            sent = true;
+          })
           .pipe(
             Effect.catch(
               (error: UpstashError): Effect.Effect<never, UpstashError | PartialBatchError<Cs>> =>

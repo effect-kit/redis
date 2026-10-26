@@ -5,6 +5,7 @@ import type { RedisExecutor } from "#/command/Executor";
 import { makeConnection } from "#/connection/Connection";
 import { commandToken } from "#/connection/OrdinaryCommand";
 import { RoleExpectation } from "#/connection/Role";
+import { CredentialPlane } from "#/credentials/Plane";
 import { SentinelError } from "#/errors/SentinelError";
 import type { RedisCommand } from "#/protocol/encode";
 import type { RedisConfig } from "#/RedisConfig";
@@ -58,7 +59,10 @@ export const makeSentinelControl = Effect.fnUntraced(function* <RData, RSentinel
               const connection = yield* makeConnection(config, {
                 ...options.sentinelConnection,
                 reconnectAttempts: 1,
-              }).pipe(Effect.mapError((error) => discoveryFailure("sentinel", error)));
+              }).pipe(
+                Effect.provideService(CredentialPlane, "sentinel"),
+                Effect.mapError((error) => discoveryFailure("sentinel", error)),
+              );
               writing();
               // A failed control mutation keeps native unknown-outcome evidence; only acquisition is translated.
               return yield* connection.executeOrdinary(tokens);

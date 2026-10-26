@@ -50,6 +50,64 @@ const readyUpstashLive = RedisUpstash.layerConfig(
 CommandExecutor, BatchExecutor and UpstashEvents; physical RedisSessions remain a
 native capability. The lower-level factories below support custom infrastructure.
 
+Ready Layers also expose `RedisCredentials`. Supply redacted fixed credentials or
+an Effect from your identity system. A provider adds bounded, coalesced refresh:
+
+```ts
+import { Effect } from "effect";
+
+import { RedisCredentials, RedisProfiles } from "@envoy1084/effect-redis";
+import type { CredentialValues } from "@envoy1084/effect-redis";
+import { RedisNode } from "@envoy1084/effect-redis/node";
+
+declare const acquireCacheIdentity: Effect.Effect<CredentialValues, unknown>;
+
+const identityRedisLive = RedisNode.layer({
+  url: "rediss://cache.example.com:6379",
+  profile: RedisProfiles.elasticache({
+    engine: "valkey",
+    deployment: "replication-group",
+    routing: "standalone",
+    authentication: "iam",
+  }),
+  credentials: RedisCredentials.provider(acquireCacheIdentity, {
+    refreshBeforeMillis: 60_000,
+    acquisitionTimeoutMillis: 5000,
+    maxWaiters: 128,
+  }),
+});
+```
+
+The source returns `{ username?, password, expiresAtMillis? }`; identity and secret
+strings use `Redacted`, and expiry is absolute UTC epoch milliseconds. Each Layer
+owns its cache, worker and source services. Only expiring credentials are cached;
+values without expiry are reacquired for future connections. No cloud SDK is added.
+HTTP accepts `credentials` instead of `token`; `.layerWithHttpClient` retains custom
+Effect HttpClient composition. Request deadlines include credential acquisition.
+
+Default native lifetime is `{ mode: "reconnect" }`. Explicit `credentialLifetime`
+can select `token-expiry` with `retireBeforeMillis`, or `max-age` with `maxAgeMillis`.
+AWS IAM profiles retire at 11h55m; Azure Entra retires three minutes before expiry;
+Google IAM keeps authenticated sockets open. These policies close sockets instead
+of inserting AUTH into sessions. Written mutations/pops/EXEC can have unknown
+outcomes, and subscriptions can lose delivery. New work reconnects with fresh identity.
+`RedisCredentials.rotate` deliberately invalidates the cache and retires owned native
+sockets or aborts current HTTP work; it never retries that work. Sentinel accepts
+separate `sentinelCredentials`/`sentinelCredentialLifetime` and exposes
+`RedisSentinelCredentials.rotate` for its control plane.
+
+`RedisProfiles` covers seven local engines and named Redis Cloud/Software, AWS,
+Google, Azure, Upstash, Aiven, DigitalOcean and Tair configurations. Select the actual
+routing/authentication mode; proxy routing uses `.layer`, client Cluster uses
+`.layerCluster`. Profiles enforce reviewed TLS, database, command and module limits.
+Omitted module selection leaves availability to the server; `modules: []` disables
+known module families explicitly. Unknown commands still reach the server.
+All managed-service profiles have certification pending. Local fixtures do not
+certify hosted products. For discovered endpoints, `network.allowedHosts` and optional
+`allowedServerNames` apply after address translation and before credentials; IAM/Entra
+Cluster/Sentinel profiles require this explicit trust list. It is a hostname policy,
+not a DNS/IP firewall. TLS trust and server-name verification remain active.
+
 The `/upstash` entrypoint provides an Effect HttpClient executor and acknowledged,
 scoped text SSE subscriptions/MONITOR. It shares ordinary command decoders and batch
 types. HTTP has explicit encoding and capability limits: physical sessions stay

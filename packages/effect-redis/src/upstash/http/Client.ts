@@ -1,20 +1,35 @@
-import { Effect, Fiber, Option, Semaphore } from "effect";
-import type { Scope } from "effect";
+import { Deferred, Effect, Fiber, Option, Semaphore } from "effect";
+import type { Redacted, Scope } from "effect";
 import { HttpClient } from "effect/http";
 
 import type { PreparedCommand } from "#/command/Command";
 import { UpstashError } from "#/errors/UpstashError";
-import type { UpstashConfig } from "#/upstash/Config";
+import type { CommandPolicy } from "#/profiles/Commands";
+import type { UpstashSettings } from "#/upstash/Config";
 import { encodeRequest } from "#/upstash/encoding/Request";
 import { decodeJsonBatch, decodeResp, envelope, responseJson } from "#/upstash/encoding/Response";
 import { jsonReplyPolicy } from "#/upstash/encoding/Status";
 import { checkStatus, exchange, readBody } from "#/upstash/http/Exchange";
 
-export const makeHttpClient = Effect.fnUntraced(function* (config: UpstashConfig) {
+export interface HttpClientOptions {
+  readonly bearer: Effect.Effect<Redacted.Redacted<string>, UpstashError>;
+  readonly guard?: CommandPolicy;
+}
+
+interface ActiveRequest {
+  fiber?: Fiber.Fiber<unknown, unknown>;
+  cancelled: boolean;
+}
+
+export const makeHttpClient = Effect.fnUntraced(function* (
+  config: UpstashSettings,
+  options: HttpClientOptions,
+) {
   const client = yield* HttpClient.HttpClient;
   const owner = yield* Effect.scope;
   const semaphore = yield* Semaphore.make(config.maxConcurrentRequests);
   let closed = false;
+  const active = new Set<ActiveRequest>();
   yield* Effect.addFinalizer(() =>
     Effect.sync(() => {
       closed = true;
@@ -42,7 +57,22 @@ export const makeHttpClient = Effect.fnUntraced(function* (config: UpstashConfig
       return Effect.uninterruptibleMask((restore) =>
         Effect.gen(function* () {
           // The service scope and caller both own cancellation; no detached fetch survives either.
-          const fiber = yield* Effect.forkIn(restore(limited), owner);
+          const started = Deferred.makeUnsafe<void>();
+          const request: ActiveRequest = { cancelled: false };
+          active.add(request);
+          const fiber = yield* Effect.forkIn(
+            restore(Deferred.await(started).pipe(Effect.andThen(limited))).pipe(
+              Effect.onExit(() =>
+                Effect.sync(() => {
+                  active.delete(request);
+                }),
+              ),
+            ),
+            owner,
+          );
+          request.fiber = fiber;
+          if (request.cancelled) yield* Fiber.interrupt(fiber);
+          else yield* Deferred.succeed(started, undefined);
           return yield* restore(Fiber.join(fiber)).pipe(Effect.ensuring(Fiber.interrupt(fiber)));
         }),
       );
@@ -51,13 +81,18 @@ export const makeHttpClient = Effect.fnUntraced(function* (config: UpstashConfig
   const request = Effect.fnUntraced(function* (
     commands: ReadonlyArray<PreparedCommand<unknown, unknown, unknown>>,
     mode: "ordinary" | "pipeline" | "transaction",
+    onDispatch?: () => void,
   ) {
-    // Later caller mutation cannot change how JSON's erased wire types are reconstructed.
-    const policies = commands.map(jsonReplyPolicy);
-    const body = yield* encodeRequest(commands, mode, config);
+    let dispatched = false;
     return yield* run(
       Effect.gen(function* () {
-        const response = yield* exchange(client, config, body, mode === "transaction");
+        // Admission owns encoding and its snapshot before asynchronous credential acquisition.
+        const policies = commands.map(jsonReplyPolicy);
+        const body = yield* encodeRequest(commands, mode, config);
+        const bearer = yield* options.bearer;
+        dispatched = true;
+        onDispatch?.();
+        const response = yield* exchange(client, config, body, mode === "transaction", bearer);
         const bytes = yield* readBody(response, config.maxResponseBytes);
         const mediaType = response.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
 
@@ -121,14 +156,36 @@ export const makeHttpClient = Effect.fnUntraced(function* (config: UpstashConfig
           duration: config.requestTimeoutMillis,
           orElse: () =>
             Effect.fail(
-              new UpstashError({ stage: "request", reason: "timeout", delivery: "unknown" }),
+              new UpstashError({
+                stage: "request",
+                reason: "timeout",
+                delivery: dispatched ? "unknown" : "unsent",
+              }),
             ),
         }),
       ),
     );
   });
 
-  return { request, run, client, config };
+  const abortCurrent = Effect.gen(function* () {
+    const requests = Array.from(active);
+    for (const current of requests) current.cancelled = true;
+    yield* Effect.forEach(
+      requests,
+      (current) => (current.fiber === undefined ? Effect.void : Fiber.interrupt(current.fiber)),
+      { concurrency: 16, discard: true },
+    );
+  }).pipe(Effect.uninterruptible);
+
+  return {
+    request,
+    run,
+    client,
+    config,
+    bearer: options.bearer,
+    guard: options.guard ?? (() => undefined),
+    abortCurrent,
+  };
 });
 
 export type UpstashHttpClient = Effect.Success<ReturnType<typeof makeHttpClient>>;

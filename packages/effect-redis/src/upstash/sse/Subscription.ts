@@ -5,6 +5,7 @@ import { FetchHttpClient } from "effect/http";
 
 import { monitorRecord } from "#/diagnostics/MonitorRecord";
 import type { MonitorRecord } from "#/diagnostics/MonitorRecord";
+import type { ProfileError } from "#/errors/ProfileError";
 import { UpstashError } from "#/errors/UpstashError";
 import type { UpstashHttpClient } from "#/upstash/http/Client";
 import { checkStatus, requestError, responseError } from "#/upstash/http/Exchange";
@@ -40,6 +41,8 @@ const open = <A>(
   decode: (text: string) => Effect.Effect<A, UpstashError>,
 ) =>
   Effect.gen(function* () {
+    const restricted = http.guard(path === "/monitor" ? ["MONITOR"] : ["SUBSCRIBE"]);
+    if (restricted !== undefined) return yield* restricted;
     const scope = yield* Effect.scope;
     // Dedicated HTTP streams can backpressure their body reader without blocking ordinary commands.
     const queue = yield* Queue.bounded<A, UpstashError | Cause.Done>(1);
@@ -50,11 +53,12 @@ const open = <A>(
     const produce = http
       .run(
         Effect.gen(function* () {
+          const bearer = yield* http.bearer;
           const response = yield* HttpClient.withScope(http.client)
             .execute(
               HttpClientRequest.post(http.config.url + path).pipe(
                 HttpClientRequest.setHeaders({
-                  authorization: `Bearer ${Redacted.value(http.config.token)}`,
+                  authorization: `Bearer ${Redacted.value(bearer)}`,
                   accept: "text/event-stream",
                 }),
               ),
@@ -159,7 +163,7 @@ export const makeSubscriptions = (http: UpstashHttpClient) => ({
   /** SSE's comma-delimited envelope is text-only; one known, unambiguous channel is bound per request. */
   subscribe: (
     channel: string,
-  ): Effect.Effect<UpstashSubscription<UpstashMessage>, UpstashError, Scope.Scope> =>
+  ): Effect.Effect<UpstashSubscription<UpstashMessage>, UpstashError | ProfileError, Scope.Scope> =>
     Schema.decodeUnknownEffect(ChannelName)(channel).pipe(
       Effect.mapError(() => failure("encoding", "unsent")),
       Effect.flatMap((selected) => {
@@ -176,7 +180,11 @@ export const makeSubscriptions = (http: UpstashHttpClient) => ({
       }),
     ),
 
-  monitor: (): Effect.Effect<UpstashSubscription<MonitorRecord>, UpstashError, Scope.Scope> =>
+  monitor: (): Effect.Effect<
+    UpstashSubscription<MonitorRecord>,
+    UpstashError | ProfileError,
+    Scope.Scope
+  > =>
     open(http, "/monitor", '"OK"', (text) =>
       Effect.succeed(
         monitorRecord({ _tag: "SimpleString", value: new TextEncoder().encode(text) }),

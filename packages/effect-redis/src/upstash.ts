@@ -1,4 +1,5 @@
 export { RedisUpstash } from "#/upstash/Layers";
+export type { UpstashClientInput } from "#/upstash/Layers";
 export { layer, makeUpstash } from "#/upstash/Upstash";
 export { decodeUpstashConfig } from "#/upstash/Config";
 export type { UpstashConfig, UpstashConfigInput } from "#/upstash/Config";

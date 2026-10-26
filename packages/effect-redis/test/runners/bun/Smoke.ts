@@ -2,6 +2,7 @@ import { Effect, Redacted } from "effect";
 
 import type { RedisCommand } from "#/index";
 import { core, native, ensure, equalBytes } from "#test/runners/bun/Runtime";
+import { nativeInput } from "#test/support/client/Input";
 
 /** Endpoint mode admits only connection AUTH and read-only PING/ECHO. */
 export const smoke = Effect.fnUntraced(function* (input: unknown) {
@@ -47,5 +48,10 @@ export const smoke = Effect.fnUntraced(function* (input: unknown) {
   );
   yield* connection.close;
 
-  return ["connection-only-auth", "read-only-ping", "binary-echo"];
+  yield* core.Redis.pipe(
+    Effect.flatMap((redis) => redis.ping()),
+    Effect.provide(native.RedisBun.layer(nativeInput(config))),
+  );
+
+  return ["connection-only-auth", "read-only-ping", "binary-echo", "ready-layer"];
 });

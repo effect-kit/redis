@@ -2,10 +2,10 @@ import { Effect, Stream } from "effect";
 import { Sse } from "effect/encoding";
 
 import { UpstashError } from "#/errors/UpstashError";
-import type { UpstashConfig } from "#/upstash/Config";
+import type { UpstashSettings } from "#/upstash/Config";
 
 /** Bound native chunks before the SSE channel buffers decoded events from one feed. */
-export const decodeEvents = <E>(source: Stream.Stream<Uint8Array, E>, config: UpstashConfig) =>
+export const decodeEvents = <E>(source: Stream.Stream<Uint8Array, E>, config: UpstashSettings) =>
   Stream.unwrap(
     Effect.sync(() => {
       const decoder = new TextDecoder("utf-8", { fatal: true });
