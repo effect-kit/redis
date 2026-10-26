@@ -5,6 +5,7 @@
   "description": "Native Effect v4 Redis client with typed commands, scripting, Streams, Pub/Sub and bounded scoped RESP2/RESP3 connections.",
   "keywords": [
     "binary-safe",
+    "bun",
     "client-side-caching",
     "effect",
     "effect-ts",

@@ -29,6 +29,8 @@ export const validateBackendManifest = ({
   );
 
   for (const fixture of native) {
+    if (fixture.id === "bun" && fixture.source.commit === null)
+      issues.push("Missing Bun source revision");
     if (!images.some((image) => image.fixture === fixture.id))
       issues.push(`Missing fixture image: ${fixture.id}`);
   }

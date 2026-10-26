@@ -1,6 +1,6 @@
 import { Effect, Layer, Schema } from "effect";
 
-import { authError, client } from "#test/runners/bun/Client";
+import { authError, client, smallBuffer } from "#test/runners/bun/Client";
 import { cluster } from "#test/runners/bun/Cluster";
 import { events } from "#test/runners/bun/Events";
 import { modules } from "#test/runners/bun/Modules";
@@ -13,7 +13,9 @@ import { uncertainty } from "#test/runners/bun/Uncertainty";
 import { RuntimeInput } from "#test/support/runtime/bun/Input";
 
 const program = Effect.gen(function* () {
-  const text = yield* Effect.promise(() => Bun.stdin.text());
+  const text = yield* Effect.promise(() =>
+    process.argv[2] === undefined ? Bun.stdin.text() : Bun.file(process.argv[2]).text(),
+  );
   const input = yield* Effect.try({
     try: () => {
       if (text.length > 65536) throw new Error("Input limit");
@@ -23,6 +25,16 @@ const program = Effect.gen(function* () {
   });
   const checks = yield* (() => {
     switch (input.scenario) {
+      case "small-buffer":
+        return smallBuffer(input.config);
+      case "application":
+        return Effect.gen(function* () {
+          return [
+            ...(yield* client(input.config)),
+            ...(yield* sessions(input.config)),
+            ...(yield* events(input.config)),
+          ];
+        });
       case "smoke":
         return smoke(input.config);
       case "uncertainty":
@@ -48,6 +60,7 @@ const program = Effect.gen(function* () {
 
   return {
     bun: Bun.version,
+    revision: Bun.revision,
     platform: process.platform,
     architecture: process.arch,
     scenario: input.scenario,

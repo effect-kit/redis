@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { Effect } from "effect";
 
+import type { StartedNetwork } from "testcontainers";
+
 import { makeExecutor } from "#/command/Executor";
 import { makeConnection } from "#/connection/Connection";
 import { connect, layer } from "#/node";
@@ -30,10 +32,11 @@ export const moduleTarget = (fixture: (typeof moduleFixtures)[number]) => ({
 export const moduleBackend = Effect.fnUntraced(function* (
   fixture: (typeof moduleFixtures)[number],
   protocol: string,
-  options: { readonly aof?: boolean } = {},
+  options: { readonly aof?: boolean; readonly network?: StartedNetwork } = {},
 ) {
   const target = moduleTarget(fixture);
   const server = yield* (yield* allocateServer(target, {
+    ...(options.network === undefined ? {} : { network: options.network }),
     extraConfig: [
       ...fixture.loadModules.map((path) => `loadmodule ${path}`),
       ...(options.aof ? ["appendonly yes", "aof-use-rdb-preamble no", "dir /fixture"] : []),

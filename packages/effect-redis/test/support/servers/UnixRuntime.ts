@@ -1,4 +1,4 @@
-import { cp, mkdir, writeFile } from "node:fs/promises";
+import { cp, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,6 +6,7 @@ import { Effect, Redacted, Schema } from "effect";
 
 import { Wait } from "testcontainers";
 
+import { runtimeAssets } from "#test/support/runtime/Assets";
 import {
   containerRequest,
   FixtureContainer,
@@ -16,14 +17,13 @@ import { allocateServer } from "#test/support/servers/DockerServer";
 import type { ServerTarget } from "#test/support/servers/DockerServer";
 import { FixtureError } from "#test/support/servers/FixtureError";
 import { bunRuntimeImage, imageReference, runtimeImage } from "#test/support/servers/Targets";
-import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
 
 /** Shares a Linux Unix socket with an actual runtime, including on macOS Docker hosts. */
 export const unixRuntimeSmoke = Effect.fnUntraced(function* (
   target: ServerTarget,
   program: "bytes" | "connection" | "bun" = "bytes",
 ) {
-  const directory = yield* temporaryDirectory;
+  const directory = yield* runtimeAssets;
   const script =
     program === "bun"
       ? "unix-bun.ts"
@@ -34,26 +34,10 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
   yield* Effect.tryPromise({
     try: async () => {
       await mkdir(join(directory, "test/runners/probes"), { recursive: true });
-      await mkdir(join(directory, "node_modules/effect"), { recursive: true });
-      await cp(fileURLToPath(new URL("../../../dist", import.meta.url)), join(directory, "dist"), {
-        recursive: true,
-      });
-
-      const effect = new URL("../../../node_modules/effect/", import.meta.url);
-      await cp(
-        fileURLToPath(new URL("dist", effect)),
-        join(directory, "node_modules/effect/dist"),
-        { recursive: true },
-      );
-      await cp(
-        fileURLToPath(new URL("package.json", effect)),
-        join(directory, "node_modules/effect/package.json"),
-      );
       await cp(
         fileURLToPath(new URL(`../../runners/probes/${script}`, import.meta.url)),
         join(directory, `test/runners/probes/${script}`),
       );
-      await writeFile(join(directory, "package.json"), '{"type":"module"}');
     },
     catch: (cause) => new FixtureError({ stage: "unix-runtime-copy", cause: Redacted.make(cause) }),
   });

@@ -202,6 +202,23 @@ const runnable = Effect.gen(function* () {
 ```
 
 `get` returns strict UTF-8 `Option<string>`; `getBytes` returns `Option<Uint8Array>`.
+On Bun, compose the same program with its native transport:
+
+```ts
+import { layer as BunTransport } from "@envoy1084/effect-redis/bun";
+
+const bunRunnable = Effect.gen(function* () {
+  const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
+  const bunLive = Redis.layer.pipe(
+    Layer.provide(CommandExecutor.layer),
+    Layer.provide(Connection.layer(config)),
+    Layer.provide(BunTransport),
+  );
+
+  return yield* program.pipe(Effect.provide(bunLive));
+});
+```
+
 Text preserves a leading BOM and rejects malformed UTF-8. `incr` returns bigint.
 `zscore` returns `Option<number>` in the server's IEEE double domain;
 `zscoreToken` preserves the decimal token. No raw operation auto-serializes JSON.

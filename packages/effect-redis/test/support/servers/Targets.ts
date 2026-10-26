@@ -43,6 +43,7 @@ const requiredImage = (fixture: string) => {
 
 export const runtimeImage = requiredImage("node");
 export const bunRuntimeImage = requiredImage("bun");
+export const bunRuntimeRevision = native.find((fixture) => fixture.id === "bun")?.source.commit;
 export const reaperImage = requiredImage("ryuk");
 export const serverTargets = currentImages.flatMap((image) => {
   const fixture = native.find(

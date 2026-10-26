@@ -254,6 +254,10 @@ real-server conformance before making public compatibility promises.
   and writer. Writes snapshot input, enforce maxInFlightBytes, and send 64 KiB
   chunks with callback/drain backpressure. Interruption of an active write destroys
   that socket; it never resumes the remaining bytes on another connection.
+- The Bun adapter snapshots callback bytes, pauses native reads and bounds staging
+  by bytes and callback count. Its staging budget has a 64 KiB floor independently
+  of smaller protocol retention limits: a native chunk can contain many complete
+  replies. ReplyReader partitions that chunk to decoder capacity and drains replies.
 - Use `effect/http` HttpClient/FetchHttpClient for HTTP. Do not force stateless HTTP
   through the stateful TCP connection contract. Share command descriptors and codecs
   only when provider/transport semantics match.

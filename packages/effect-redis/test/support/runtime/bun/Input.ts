@@ -27,7 +27,15 @@ export const RuntimeInput = Schema.Union([
     profile: ModuleProfile,
   }),
   Schema.Struct({
-    scenario: Schema.Literals(["client", "sessions", "events", "auth-error", "smoke"]),
+    scenario: Schema.Literals([
+      "client",
+      "sessions",
+      "events",
+      "application",
+      "auth-error",
+      "smoke",
+      "small-buffer",
+    ]),
     config: Schema.Unknown,
   }),
   Schema.Struct({

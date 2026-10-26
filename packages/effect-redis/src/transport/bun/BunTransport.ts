@@ -16,7 +16,9 @@ export const connect = Effect.fnUntraced(function* (config: RedisConfig) {
     Effect.sync(() => {
       const acquiring = makePhysical(
         config.limits.maxInFlightBytes,
-        config.limits.maxBufferedBytes,
+        // One native callback can contain many completed replies. Staging it is
+        // independent of the decoder's smaller retained-wire budget.
+        Math.max(64 * 1024, config.limits.maxBufferedBytes),
         tls !== undefined,
         tls?.rejectUnauthorized && endpoint._tag === "Tcp"
           ? (tls.serverName ?? endpoint.host)

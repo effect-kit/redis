@@ -1,4 +1,4 @@
-import { Crypto, Effect, Option, Schema, Stream } from "effect";
+import { Crypto, Effect, Option, Result, Schema, Stream } from "effect";
 
 import { core, ensure, equalBytes } from "#test/runners/bun/Runtime";
 
@@ -24,6 +24,13 @@ export const client = Effect.fnUntraced(function* (input: unknown) {
   yield* redis.set(`${prefix}:bytes`, bytes);
   const saved = yield* redis.getBytes(`${prefix}:bytes`);
   ensure(Option.isSome(saved) && equalBytes(saved.value, bytes), "Binary value changed");
+  const large = new Uint8Array(2 * 1024 * 1024).fill(17);
+  yield* redis.set(`${prefix}:large`, large);
+  const largeReply = yield* redis.getBytes(`${prefix}:large`);
+  ensure(
+    Option.isSome(largeReply) && equalBytes(largeReply.value, large),
+    "Large reply lost byte ownership",
+  );
   ensure(
     (yield* Effect.flip(redis.get(`${prefix}:bytes`)))._tag === "ReplyError",
     "Invalid UTF-8 was coerced",
@@ -103,4 +110,20 @@ export const authError = Effect.fnUntraced(function* (input: unknown) {
   );
   ensure(failure._tag === "HandshakeError", "Authentication failure did not retain handshake type");
   return ["authentication-failure", "no-protocol-fallback"];
+});
+
+export const smallBuffer = Effect.fnUntraced(function* (input: unknown) {
+  const config = yield* core.decodeRedisConfig(input);
+  const sessions = yield* core.makeRedisSessions(config);
+  const payload = new Uint8Array(16).fill(17);
+  const results = yield* sessions.pipeline(
+    Array.from({ length: 64 }, () => core.Commands.echo(payload)),
+  );
+
+  ensure(
+    results.length === 64 &&
+      results.every((result) => Result.isSuccess(result) && equalBytes(result.success, payload)),
+    "Coalesced replies exceeded the protocol retention budget",
+  );
+  return ["small-protocol-budget", "coalesced-native-replies", "ordered-pipeline"];
 });

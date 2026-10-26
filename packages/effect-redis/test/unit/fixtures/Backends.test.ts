@@ -11,7 +11,7 @@ it("loads consistent pinned fixtures before preparing live resources", () => {
   expect(validateBackendManifest(manifest)).toEqual([]);
 });
 
-it.each(["valkey", "node", "ryuk"])(
+it.each(["valkey", "node", "bun", "ryuk"])(
   "rejects a missing %s image before fixture acquisition",
   (fixture) => {
     const manifest = loadBackendManifest();
@@ -24,6 +24,15 @@ it.each(["valkey", "node", "ryuk"])(
     ).toContain(`Missing fixture image: ${fixture}`);
   },
 );
+
+it("requires the Bun source revision before accepting runtime receipts", () => {
+  const manifest = loadBackendManifest();
+  const native = manifest.native.map((fixture) =>
+    fixture.id === "bun" ? { ...fixture, source: { ...fixture.source, commit: null } } : fixture,
+  );
+
+  expect(validateBackendManifest({ ...manifest, native })).toContain("Missing Bun source revision");
+});
 
 it("rejects an image tag that drifts from its native target", () => {
   const manifest = loadBackendManifest();
