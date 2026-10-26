@@ -35,6 +35,14 @@ Samples preserve bigint timestamps and floating values, including empty-bucket N
 Multi-range results retain binary labels and protocol-specific metadata. Label queries
 require an explicit Cluster node. `sessions.tsReadBlocking` leases its own connection;
 its server wait is finite because TS.READ BLOCK zero means no wait.
+Search builders include typed index fields, ordered aggregation steps, binary PARAMS,
+scored/payload replies, suggestions and explicit hybrid queries. Index names are
+server-owned state: target a node explicitly in Cluster. `RedisSearch.layer` captures
+`RedisSessions`; `makeRedisSearch(sessions).aggregate(...)` returns a lazy scoped Stream.
+A lease owns cursor creation, reads and cleanup, including early exit. Defaults are
+64 rows per page and 60 seconds of server cursor idle time. Cancellation waits for the
+bounded current receipt before cleanup; lost receipts are never replayed, and unknown
+cursor IDs can only expire on the server. Cleanup failures escape the Cause.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()

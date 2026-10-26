@@ -18,6 +18,7 @@ import { probabilisticFamily } from "#/commands/probabilistic/Family";
 import { pubsubFamily } from "#/commands/pubsub/Family";
 import { scanFamily } from "#/commands/scan/Family";
 import { scriptingFamily } from "#/commands/scripting/Family";
+import { searchFamily } from "#/commands/search/Family";
 import { setFamily } from "#/commands/sets/Family";
 import { sortedSetFamily } from "#/commands/sorted-sets/Family";
 import { streamFamily } from "#/commands/streams/Family";
@@ -36,6 +37,7 @@ export const makeRedis = (executor: RedisExecutor) => ({
   ...jsonFamily(executor),
   ...vectorFamily(executor),
   ...timeSeriesFamily(executor),
+  ...searchFamily(executor),
   ...scanFamily(executor),
   ...streamFamily(executor),
   ...stringFamily(executor),

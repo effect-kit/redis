@@ -269,3 +269,31 @@ export type {
 } from "#/commands/timeseries/index";
 
 export type { TimeSeriesPivotKey, TimeSeriesPivotOptions } from "#/commands/timeseries/Pivot";
+
+export type { SearchField, SearchVectorAttributes } from "#/commands/search/index/Fields";
+export type { SearchCreateOptions } from "#/commands/search/index/Lifecycle";
+export type { SearchLegacyAddOptions } from "#/commands/search/index/Legacy";
+export type {
+  SearchCommonOptions,
+  SearchOptions,
+  SearchReturnField,
+} from "#/commands/search/query/Options";
+export type {
+  SearchAggregateOptions,
+  SearchAggregateStep,
+  SearchReducer,
+  SearchCollectReducer,
+  SearchCursorOptions,
+} from "#/commands/search/query/Aggregate";
+export type { SearchHybridVector, SearchHybridOptions } from "#/commands/search/query/Hybrid";
+export type { SearchProfile } from "#/commands/search/query/Profile";
+export type { SearchResult, SearchDocument, SearchScore } from "#/commands/search/reply/Search";
+export type { SearchAggregateResult } from "#/commands/search/reply/Aggregate";
+export type { SearchFields } from "#/commands/search/reply/Fields";
+export type { SearchSuggestion, SearchSuggestionOptions } from "#/commands/search/Suggestions";
+export type { SearchSpelling, SearchSpellcheckOptions } from "#/commands/search/Spelling";
+
+export { RedisSearch, makeRedisSearch } from "#/search/RedisSearch";
+export type { RedisSearchClient } from "#/search/RedisSearch";
+
+export type { SearchConfiguration } from "#/commands/search/reply/Configuration";

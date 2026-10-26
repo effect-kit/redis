@@ -728,3 +728,12 @@ total is promised. Sources remain accessible without ignored research:
   floating/NaN values, binary labels and multi-aggregation columns. Label queries are
   server-owned state and need an explicit Cluster node. TS.READ blocking uses native
   scoped leases; BLOCK zero means no wait, so never encode forever as zero.
+
+- Search index names are server-owned identifiers, not Redis keys. Use Keyless
+  metadata for index/global operations and explicit Cluster nodes; suggestion
+  dictionaries are real keys. Bind search reply widths to prepared flags, retain
+  protocol-specific metadata/counts and keep HYBRID's envelope separate.
+- Search cursors own one native lease through cleanup. Protect bounded page receipt
+  acquisition and cursor-ID assignment from interruption, then restore cancellation
+  for row handoff and empty pages. Never replay uncertain reads. Unknown IDs expire
+  under the configured MAXIDLE; deletion failures must escape cleanup.
