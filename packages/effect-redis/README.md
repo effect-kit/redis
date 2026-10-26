@@ -201,7 +201,6 @@ const runnable = Effect.gen(function* () {
 });
 ```
 
-`get` returns strict UTF-8 `Option<string>`; `getBytes` returns `Option<Uint8Array>`.
 On Bun, compose the same program with its native transport:
 
 ```ts
@@ -219,6 +218,7 @@ const bunRunnable = Effect.gen(function* () {
 });
 ```
 
+`get` returns strict UTF-8 `Option<string>`; `getBytes` returns `Option<Uint8Array>`.
 Text preserves a leading BOM and rejects malformed UTF-8. `incr` returns bigint.
 `zscore` returns `Option<number>` in the server's IEEE double domain;
 `zscoreToken` preserves the decimal token. No raw operation auto-serializes JSON.

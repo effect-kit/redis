@@ -25,6 +25,9 @@ Redis/Valkey Sentinel discovery, role-verified data admission and future-work fa
 Phase 13 adds typed JSON, Search, TimeSeries, probabilistic and vector-set families,
 explicit Schema/FP32 codecs, leased Search cursors and separate pinned module fixtures.
 Module availability and dialects remain specific to the actual enabled versions.
+The `/bun` adapter adds scoped native TCP/TLS/Unix and Crypto with actual Bun host
+and pinned Linux runtime scenarios. Shared command, session and topology code stays
+runtime-neutral; record exact runtime/platform evidence before compatibility claims.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code
