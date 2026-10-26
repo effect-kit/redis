@@ -19,6 +19,8 @@ const ConfigInput = Schema.Struct({
   limits: Limits.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
 });
 
+export type RedisConfigInput = typeof ConfigInput.Encoded;
+
 export interface RedisConfig {
   readonly endpoint: Endpoint;
   readonly credentials?: typeof Credentials.Type;

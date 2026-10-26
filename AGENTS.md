@@ -112,6 +112,12 @@ Never describe planned command or server compatibility as implemented or verifie
   built-artifact probes and the root-owned CI policy test are boundary exceptions.
   Verify aliases with native Node tools, Vitest, TS7 and the packed build; generated
   JS/declarations must resolve independently of unshipped source files.
+- Prefer the ready `RedisNode`/`RedisBun`/`RedisUpstash` Layer constructors in consumer
+  examples. Preserve existing lower-level factories/exports for custom composition.
+  Native `layer`, `layerCluster`, `layerSentinel` and Config variants choose topology
+  explicitly; engines share native protocol composition. Reuse Layer values so helpers
+  share the ordinary engine and lease pool. Keep physical-session capabilities absent
+  from HTTP and topology-specific sessions bound to Cluster/Sentinel ownership.
 - Keep configuration boundaries explicit: tsconfig.json checks universal code without
   Node globals, tsconfig.node.json emits native declarations, and tsconfig.dev.json
   checks source/tests/configs including compile-only contracts. The native declaration

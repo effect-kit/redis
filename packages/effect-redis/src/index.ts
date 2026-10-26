@@ -1,6 +1,6 @@
 export type { RedisArgument } from "#/RedisArgument";
 export { decodeRedisConfig } from "#/RedisConfig";
-export type { RedisConfig } from "#/RedisConfig";
+export type { RedisConfig, RedisConfigInput } from "#/RedisConfig";
 
 export { RedisCluster, makeRedisCluster } from "#/cluster/RedisCluster";
 export type { RedisClusterClient } from "#/cluster/RedisCluster";

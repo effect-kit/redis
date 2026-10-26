@@ -49,6 +49,7 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
     backend("Transport"),
     backend("Connection"),
     backend("Recovery"),
+    backend("Layers"),
     commandFiles,
     sessionFiles,
     streamFiles,
@@ -62,7 +63,11 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
   ],
 };
 
-const containerFiles = engineFiles[selectedEngine] ?? [backend("Transport"), backend("Connection")];
+const containerFiles = engineFiles[selectedEngine] ?? [
+  backend("Transport"),
+  backend("Connection"),
+  backend("Layers"),
+];
 
 const nodeFiles =
   mode === "endpoint"

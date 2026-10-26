@@ -2,6 +2,54 @@
 
 A runtime-neutral Redis client foundation for Effect v4. The package remains private.
 
+Use a ready-to-use Layer for ordinary applications. Native Redis-compatible engines
+share the same constructor; the chosen server determines command availability:
+
+```ts
+import { Effect } from "effect";
+
+import { Redis } from "@envoy1084/effect-redis";
+import { RedisNode } from "@envoy1084/effect-redis/node";
+
+const readyRedisLive = RedisNode.layer({ url: "redis://localhost:6379" });
+const readyRedisProgram = Effect.gen(function* () {
+  const redis = yield* Redis;
+  yield* redis.set("greeting", "hello");
+  return yield* redis.get("greeting");
+}).pipe(Effect.provide(readyRedisLive));
+```
+
+`RedisBun` from `/bun` has the same constructors. Native `.layer` supplies Redis,
+CommandExecutor, BatchExecutor, RedisSessions, RedisStreams, RedisScripts, RedisPubSub,
+RedisAdmin and platform Crypto. Helpers share their ordinary engine and lazy lease
+pool; Pub/Sub owns a dedicated connection when used. Administration remains explicit.
+Transport stays internal. The existing `layer` transport export is preserved.
+
+Use `.layerCluster({ url, cluster: { seeds, addressMap } })` for client-side Cluster,
+or `.layerSentinel({ serviceName, sentinels: [{ endpoint: { host, port } }] })` for
+Sentinel. These provide Redis plus RedisCluster/RedisSentinel and BatchExecutor;
+their specialized services retain topology-aware session/event ownership. Each native
+constructor has a `*Config` counterpart accepting an Effect Config.
+
+HTTP's ready Layer supplies FetchHttpClient internally:
+
+```ts
+import { Config } from "effect";
+
+import { RedisUpstash } from "@envoy1084/effect-redis/upstash";
+
+const readyUpstashLive = RedisUpstash.layerConfig(
+  Config.all({
+    url: Config.String("UPSTASH_REDIS_REST_URL"),
+    token: Config.Redacted("UPSTASH_REDIS_REST_TOKEN"),
+  }),
+);
+```
+
+`RedisUpstash.layer({ url, token })` accepts concrete values. HTTP supplies Redis,
+CommandExecutor, BatchExecutor and UpstashEvents; physical RedisSessions remain a
+native capability. The lower-level factories below support custom infrastructure.
+
 The `/upstash` entrypoint provides an Effect HttpClient executor and acknowledged,
 scoped text SSE subscriptions/MONITOR. It shares ordinary command decoders and batch
 types. HTTP has explicit encoding and capability limits: physical sessions stay
