@@ -159,10 +159,13 @@ export const multiAggregationArguments = Effect.fnUntraced(function* (
   const args = yield* rangeArguments(from, to, range);
   const [first = "avg"] = aggregation.aggregators;
 
-  return [
-    ...args,
-    ...aggregationTokens({ ...aggregation, aggregator: first }, [
-      aggregation.aggregators.join(","),
-    ]),
-  ];
+  return {
+    width: aggregation.aggregators.length,
+    tokens: [
+      ...args,
+      ...aggregationTokens({ ...aggregation, aggregator: first }, [
+        aggregation.aggregators.join(","),
+      ]),
+    ],
+  };
 });

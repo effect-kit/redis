@@ -105,39 +105,43 @@ const query = (
   to: TimeSeriesBoundary,
   filters: readonly [RedisArgument, ...RedisArgument[]],
   options: TimeSeriesMultiRangeOptions,
-) =>
-  moduleKeyless(
-    "timeseries",
-    name,
-    multiRange,
-    Effect.gen(function* () {
-      const selected = yield* parse(
-        Schema.Struct({
-          ...RangeOptions.fields,
-          aggregation: Schema.optionalKey(Schema.Union([Aggregation, MultiAggregation])),
-          labels: Schema.optionalKey(Labels),
-          groupBy: Schema.optionalKey(Schema.Struct({ label: Argument, reducer: Aggregator })),
-          excludeEmpty: Schema.optionalKey(Schema.Boolean),
-        }),
-        options,
-      );
-      const {
-        labels: _labels,
-        groupBy: _groupBy,
-        excludeEmpty: _excludeEmpty,
-        aggregation,
-        ...range
-      } = selected;
-      const args =
-        aggregation !== undefined && "aggregators" in aggregation
-          ? yield* multiAggregationArguments(from, to, { ...range, aggregation })
-          : yield* rangeArguments(from, to, {
-              ...range,
-              ...(aggregation === undefined ? {} : { aggregation }),
-            });
-      const expressions = yield* parse(Arguments, filters);
+) => ({
+  prepare: Effect.gen(function* () {
+    const selected = yield* parse(
+      Schema.Struct({
+        ...RangeOptions.fields,
+        aggregation: Schema.optionalKey(Schema.Union([Aggregation, MultiAggregation])),
+        labels: Schema.optionalKey(Labels),
+        groupBy: Schema.optionalKey(Schema.Struct({ label: Argument, reducer: Aggregator })),
+        excludeEmpty: Schema.optionalKey(Schema.Boolean),
+      }),
+      options,
+    );
+    const {
+      labels: _labels,
+      groupBy: _groupBy,
+      excludeEmpty: _excludeEmpty,
+      aggregation,
+      ...range
+    } = selected;
+    const args =
+      aggregation !== undefined && "aggregators" in aggregation
+        ? (yield* multiAggregationArguments(from, to, { ...range, aggregation })).tokens
+        : yield* rangeArguments(from, to, {
+            ...range,
+            ...(aggregation === undefined ? {} : { aggregation }),
+          });
+    const expressions = yield* parse(Arguments, filters);
 
-      return [
+    const width =
+      aggregation !== undefined && "aggregators" in aggregation
+        ? aggregation.aggregators.length
+        : 1;
+    return yield* moduleKeyless(
+      "timeseries",
+      name,
+      multiRange(width),
+      Effect.succeed([
         ...args,
         ...labelTokens(selected.labels),
         ...(selected.excludeEmpty ? ["EXCLUDEEMPTY"] : []),
@@ -146,9 +150,11 @@ const query = (
         ...(selected.groupBy === undefined
           ? []
           : ["GROUPBY", selected.groupBy.label, "REDUCE", selected.groupBy.reducer]),
-      ];
-    }),
-  );
+      ]),
+    ).prepare;
+  }),
+});
+
 export const tsMrange = (
   from: TimeSeriesBoundary,
   to: TimeSeriesBoundary,

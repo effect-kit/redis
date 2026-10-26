@@ -16,7 +16,7 @@ import type {
   TimeSeriesBoundary,
   TimeSeriesRangeOptions,
 } from "#/commands/timeseries/Options";
-import { row } from "#/commands/timeseries/Reply";
+import { rowWithWidth } from "#/commands/timeseries/Reply";
 import type { RedisArgument } from "#/RedisArgument";
 
 export interface TimeSeriesPivotKey {
@@ -32,30 +32,31 @@ const pivot = (
   from: TimeSeriesBoundary,
   to: TimeSeriesBoundary,
   options: TimeSeriesPivotOptions,
-) =>
-  ordinary(
-    moduleMetadata("timeseries", name),
-    array(row),
-    Effect.gen(function* () {
-      const selected = yield* parse(
-        Schema.NonEmptyArray(
-          Schema.Struct({ key: Argument, aggregators: Schema.NonEmptyArray(Aggregator) }),
-        ),
-        keys,
-      );
-      const { aggregation, ...range } = options;
-      const bucket = yield* parse(
-        Schema.Struct({
-          bucketMillis: Aggregation.fields.bucketMillis,
-          align: Aggregation.fields.align,
-          bucketTimestamp: Aggregation.fields.bucketTimestamp,
-          empty: Aggregation.fields.empty,
-        }),
-        aggregation,
-      );
-      const args = yield* rangeArguments(from, to, range);
+) => ({
+  prepare: Effect.gen(function* () {
+    const selected = yield* parse(
+      Schema.NonEmptyArray(
+        Schema.Struct({ key: Argument, aggregators: Schema.NonEmptyArray(Aggregator) }),
+      ),
+      keys,
+    );
+    const { aggregation, ...range } = options;
+    const bucket = yield* parse(
+      Schema.Struct({
+        bucketMillis: Aggregation.fields.bucketMillis,
+        align: Aggregation.fields.align,
+        bucketTimestamp: Aggregation.fields.bucketTimestamp,
+        empty: Aggregation.fields.empty,
+      }),
+      aggregation,
+    );
+    const args = yield* rangeArguments(from, to, range);
 
-      return {
+    const width = selected.reduce((columns, entry) => columns + entry.aggregators.length, 0);
+    return yield* ordinary(
+      moduleMetadata("timeseries", name),
+      array(rowWithWidth(width)),
+      Effect.succeed({
         tokens: [
           name,
           String(selected.length),
@@ -70,9 +71,11 @@ const pivot = (
           selected.map((_, index) => index + 2),
           "read",
         ),
-      };
-    }),
-  );
+      }),
+    ).prepare;
+  }),
+});
+
 export const tsNrangeWithAggregations = (
   keys: readonly [TimeSeriesPivotKey, ...TimeSeriesPivotKey[]],
   from: TimeSeriesBoundary,

@@ -11,7 +11,7 @@ import type {
   TimeSeriesBoundary,
   TimeSeriesRangeOptions,
 } from "#/commands/timeseries/Options";
-import { optionalSample, row, sample } from "#/commands/timeseries/Reply";
+import { optionalSample, rowWithWidth, sample } from "#/commands/timeseries/Reply";
 import type { RedisArgument } from "#/RedisArgument";
 
 export const tsGet = (key: RedisArgument, options: { readonly latest?: boolean } = {}) =>
@@ -24,6 +24,7 @@ export const tsGet = (key: RedisArgument, options: { readonly latest?: boolean }
       Effect.map((selected) => (selected.latest ? ["LATEST"] : [])),
     ),
   );
+
 export const tsInfo = (key: RedisArgument, options: { readonly debug?: boolean } = {}) =>
   moduleKeyed(
     "timeseries",
@@ -34,12 +35,14 @@ export const tsInfo = (key: RedisArgument, options: { readonly debug?: boolean }
       Effect.map((selected) => (selected.debug ? ["DEBUG"] : [])),
     ),
   );
+
 export const tsRange = (
   key: RedisArgument,
   from: TimeSeriesBoundary,
   to: TimeSeriesBoundary,
   options: TimeSeriesRangeOptions = {},
 ) => moduleKeyed("timeseries", "TS.RANGE", key, array(sample), rangeArguments(from, to, options));
+
 export const tsRevrange = (
   key: RedisArgument,
   from: TimeSeriesBoundary,
@@ -54,33 +57,36 @@ const nrange = (
   from: TimeSeriesBoundary,
   to: TimeSeriesBoundary,
   options: TimeSeriesRangeOptions,
-) =>
-  ordinary(
-    moduleMetadata("timeseries", name),
-    array(row),
-    Effect.gen(function* () {
-      const selected = yield* parse(Arguments, keys);
-      const args = yield* rangeArguments(from, to, options);
-      // NRANGE has one aggregator token per key, even when every key selects the same aggregation.
-      const aggIndex = args.indexOf("AGGREGATION");
-      const aggregator = args[aggIndex + 1];
-      const tail =
-        aggIndex < 0 || aggregator === undefined
-          ? args
-          : [
-              ...args.slice(0, aggIndex + 1),
-              ...selected.map(() => aggregator),
-              ...args.slice(aggIndex + 2),
-            ];
-      return {
+) => ({
+  prepare: Effect.gen(function* () {
+    const selected = yield* parse(Arguments, keys);
+    const args = yield* rangeArguments(from, to, options);
+    // NRANGE has one aggregator token per key, even when every key selects the same aggregation.
+    const aggIndex = args.indexOf("AGGREGATION");
+    const aggregator = args[aggIndex + 1];
+    const tail =
+      aggIndex < 0 || aggregator === undefined
+        ? args
+        : [
+            ...args.slice(0, aggIndex + 1),
+            ...selected.map(() => aggregator),
+            ...args.slice(aggIndex + 2),
+          ];
+
+    return yield* ordinary(
+      moduleMetadata("timeseries", name),
+      array(rowWithWidth(selected.length)),
+      Effect.succeed({
         tokens: [name, String(selected.length), ...selected, ...tail],
         routing: keyIndexes(
           selected.map((_, index) => index + 2),
           "read",
         ),
-      };
-    }),
-  );
+      }),
+    ).prepare;
+  }),
+});
+
 export const tsNrange = (
   keys: readonly [RedisArgument, ...RedisArgument[]],
   from: TimeSeriesBoundary,
@@ -94,29 +100,35 @@ export const tsNrevrange = (
   options: TimeSeriesRangeOptions = {},
 ) => nrange("TS.NREVRANGE", keys, from, to, options);
 
+const aggregatedRange = (
+  name: string,
+  key: RedisArgument,
+  from: TimeSeriesBoundary,
+  to: TimeSeriesBoundary,
+  options: TimeSeriesMultiAggregationOptions,
+) => ({
+  prepare: Effect.gen(function* () {
+    const { width, tokens } = yield* multiAggregationArguments(from, to, options);
+    return yield* moduleKeyed(
+      "timeseries",
+      name,
+      key,
+      array(rowWithWidth(width)),
+      Effect.succeed(tokens),
+    ).prepare;
+  }),
+});
+
 export const tsRangeWithAggregations = (
   key: RedisArgument,
   from: TimeSeriesBoundary,
   to: TimeSeriesBoundary,
   options: TimeSeriesMultiAggregationOptions,
-) =>
-  moduleKeyed(
-    "timeseries",
-    "TS.RANGE",
-    key,
-    array(row),
-    multiAggregationArguments(from, to, options),
-  );
+) => aggregatedRange("TS.RANGE", key, from, to, options);
+
 export const tsRevrangeWithAggregations = (
   key: RedisArgument,
   from: TimeSeriesBoundary,
   to: TimeSeriesBoundary,
   options: TimeSeriesMultiAggregationOptions,
-) =>
-  moduleKeyed(
-    "timeseries",
-    "TS.REVRANGE",
-    key,
-    array(row),
-    multiAggregationArguments(from, to, options),
-  );
+) => aggregatedRange("TS.REVRANGE", key, from, to, options);

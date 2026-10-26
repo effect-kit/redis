@@ -156,3 +156,44 @@ it.effect(
       ).toBe("CommandInputError");
     }),
 );
+
+it.effect("TimeSeries column widths follow prepared keys and aggregation order", () =>
+  Effect.gen(function* () {
+    const aggregators: ["sum" | "count", ...Array<"sum" | "count">] = ["sum", "count"];
+    const command = yield* Commands.tsRangeWithAggregations("ts", 0, 100, {
+      aggregation: { aggregators, bucketMillis: 10 },
+    }).prepare;
+    aggregators.pop();
+    const incomplete: RespValue = {
+      _tag: "Array",
+      values: [{ _tag: "Array", values: [{ _tag: "Integer", value: 1n }, blob("2")] }],
+    };
+    expect((yield* Effect.flip(decodeReply(command, incomplete)))._tag).toBe("ReplyError");
+    const pivot = yield* Commands.tsNrange(["one", "two"], 0, 100).prepare;
+    const wrongWidth: RespValue = {
+      _tag: "Array",
+      values: [
+        {
+          _tag: "Array",
+          values: [
+            { _tag: "Integer", value: 1n },
+            { _tag: "Array", values: [blob("2")] },
+          ],
+        },
+      ],
+    };
+    expect((yield* Effect.flip(decodeReply(pivot, wrongWidth)))._tag).toBe("ReplyError");
+    const multiple = yield* Commands.tsMrange(0, 100, ["env=test"], {
+      aggregation: { aggregators: ["sum", "count"], bucketMillis: 10 },
+    }).prepare;
+    const mismatch = yield* Effect.flip(
+      decodeReply(multiple, {
+        _tag: "Array",
+        values: [
+          { _tag: "Array", values: [blob("ts"), { _tag: "Array", values: [] }, incomplete] },
+        ],
+      }),
+    );
+    expect(mismatch._tag).toBe("ReplyError");
+  }),
+);

@@ -41,6 +41,19 @@ export const row: ReplyDecoder<TimeSeriesRow> = (reply) => {
     Effect.map(([decodedTimestamp, values]) => ({ timestamp: decodedTimestamp, values })),
   );
 };
+
+/** Columns belong to the prepared key/aggregation order; accepting a different width would misattribute values. */
+export const rowWithWidth =
+  (width: number): ReplyDecoder<TimeSeriesRow> =>
+  (reply) =>
+    row(reply).pipe(
+      Effect.flatMap((decodedRow) =>
+        decodedRow.values.length === width
+          ? Effect.succeed(decodedRow)
+          : Effect.fail(mismatch("array-length", reply)),
+      ),
+    );
+
 export type TimeSeriesLabels = ReadonlyArray<readonly [Uint8Array, Option.Option<Uint8Array>]>;
 export interface TimeSeriesResult {
   readonly key: Uint8Array;
@@ -50,39 +63,41 @@ export interface TimeSeriesResult {
   readonly metadata: ReadonlyArray<RespValue>;
 }
 const labels = pairs(blob, nullable(blob));
-export const multiRange: ReplyDecoder<ReadonlyArray<TimeSeriesResult>> = (reply) => {
-  const value = undecorate(reply);
-  const entries: Array<readonly [RespValue, ReadonlyArray<RespValue>]> = [];
-  if (value._tag === "Map") {
-    for (const [key, body] of value.entries) {
-      if (body._tag !== "Array" || body.values.length < 2)
-        return Effect.fail(mismatch("array", reply));
-      entries.push([key, body.values]);
-    }
-  } else if (value._tag === "Array") {
-    for (const entry of value.values) {
-      if (entry._tag !== "Array" || entry.values.length !== 3)
-        return Effect.fail(mismatch("array", reply));
-      const [key, ...body] = entry.values;
-      if (key === undefined) return Effect.fail(mismatch("array", reply));
-      entries.push([key, body]);
-    }
-  } else return Effect.fail(mismatch("array", reply));
+export const multiRange =
+  (width: number): ReplyDecoder<ReadonlyArray<TimeSeriesResult>> =>
+  (reply) => {
+    const value = undecorate(reply);
+    const entries: Array<readonly [RespValue, ReadonlyArray<RespValue>]> = [];
+    if (value._tag === "Map") {
+      for (const [key, body] of value.entries) {
+        if (body._tag !== "Array" || body.values.length < 2)
+          return Effect.fail(mismatch("array", reply));
+        entries.push([key, body.values]);
+      }
+    } else if (value._tag === "Array") {
+      for (const entry of value.values) {
+        if (entry._tag !== "Array" || entry.values.length !== 3)
+          return Effect.fail(mismatch("array", reply));
+        const [key, ...body] = entry.values;
+        if (key === undefined) return Effect.fail(mismatch("array", reply));
+        entries.push([key, body]);
+      }
+    } else return Effect.fail(mismatch("array", reply));
 
-  return Effect.forEach(entries, ([key, body]) =>
-    Effect.gen(function* () {
-      const first = body[0];
-      const last = body[body.length - 1];
-      if (first === undefined || last === undefined) return yield* mismatch("array", reply);
-      return {
-        key: yield* blob(key),
-        labels: yield* labels(first),
-        samples: yield* array(row)(last),
-        metadata: body.slice(1, -1),
-      };
-    }),
-  );
-};
+    return Effect.forEach(entries, ([key, body]) =>
+      Effect.gen(function* () {
+        const first = body[0];
+        const last = body[body.length - 1];
+        if (first === undefined || last === undefined) return yield* mismatch("array", reply);
+        return {
+          key: yield* blob(key),
+          labels: yield* labels(first),
+          samples: yield* array(rowWithWidth(width))(last),
+          metadata: body.slice(1, -1),
+        };
+      }),
+    );
+  };
 
 export interface TimeSeriesGetResult {
   readonly key: Uint8Array;
