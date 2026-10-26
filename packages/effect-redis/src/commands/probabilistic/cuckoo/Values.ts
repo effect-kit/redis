@@ -12,18 +12,24 @@ import type { RedisArgument } from "#/RedisArgument";
 
 export const cfAdd = (key: RedisArgument, value: RedisArgument) =>
   moduleKeyed("probabilistic", "CF.ADD", key, boolean, Effect.succeed([value]), "read-write");
+
 export const cfAddnx = (key: RedisArgument, value: RedisArgument) =>
   moduleKeyed("probabilistic", "CF.ADDNX", key, boolean, Effect.succeed([value]), "read-write");
+
 export const cfExists = (key: RedisArgument, value: RedisArgument) =>
   moduleKeyed("probabilistic", "CF.EXISTS", key, boolean, Effect.succeed([value]));
+
 export const cfCount = (key: RedisArgument, value: RedisArgument) =>
   moduleKeyed("probabilistic", "CF.COUNT", key, unsigned, Effect.succeed([value]));
+
 export const cfDel = (key: RedisArgument, value: RedisArgument) =>
   moduleKeyed("probabilistic", "CF.DEL", key, boolean, Effect.succeed([value]), "read-write");
+
 export const cfInfo = (key: RedisArgument) => moduleKeyed("probabilistic", "CF.INFO", key, fields);
 
 export const cfDebug = (key: RedisArgument) =>
   moduleKeyed("probabilistic", "CF.DEBUG", key, simpleText);
+
 export const cfMexists = (
   key: RedisArgument,
   values: readonly [RedisArgument, ...RedisArgument[]],
@@ -39,10 +45,12 @@ export interface CuckooInsertOptions {
   readonly capacity?: Integer;
   readonly noCreate?: boolean;
 }
+
 const Options = Schema.Struct({
   capacity: Schema.optionalKey(Positive),
   noCreate: Schema.optionalKey(Schema.Boolean),
 });
+
 const insert = (
   name: "CF.INSERT" | "CF.INSERTNX",
   key: RedisArgument,
@@ -52,6 +60,7 @@ const insert = (
   prepare: Effect.gen(function* () {
     const selected = yield* parse(Options, options);
     const entries = yield* parse(Arguments, values);
+
     return yield* moduleKeyed(
       "probabilistic",
       name,
@@ -67,11 +76,13 @@ const insert = (
     ).prepare;
   }),
 });
+
 export const cfInsert = (
   key: RedisArgument,
   values: readonly [RedisArgument, ...RedisArgument[]],
   options: CuckooInsertOptions = {},
 ) => insert("CF.INSERT", key, values, options);
+
 export const cfInsertnx = (
   key: RedisArgument,
   values: readonly [RedisArgument, ...RedisArgument[]],

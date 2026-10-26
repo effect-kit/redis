@@ -20,12 +20,16 @@ type JsonArguments = readonly [RedisArgument, ...RedisArgument[]];
 
 export const jsonArrlen = (key: RedisArgument, path: JsonPath = "$") =>
   matching("JSON.ARRLEN", key, path, unsigned);
+
 export const jsonArrlenLegacy = (key: RedisArgument, path = ".") =>
   legacy("JSON.ARRLEN", key, path, unsigned);
+
 export const jsonArrappend = (key: RedisArgument, path: JsonPath, values: JsonArguments) =>
   matching("JSON.ARRAPPEND", key, path, unsigned, parse(Arguments, values), "read-write");
+
 export const jsonArrappendLegacy = (key: RedisArgument, path: string, values: JsonArguments) =>
   legacy("JSON.ARRAPPEND", key, path, unsigned, parse(Arguments, values), "read-write");
+
 export const jsonArrinsert = (
   key: RedisArgument,
   path: JsonPath,
@@ -42,6 +46,7 @@ export const jsonArrinsert = (
     ),
     "read-write",
   );
+
 export const jsonArrinsertLegacy = (
   key: RedisArgument,
   path: string,
@@ -58,6 +63,7 @@ export const jsonArrinsertLegacy = (
     ),
     "read-write",
   );
+
 export const jsonArrtrim = (key: RedisArgument, path: JsonPath, start: Integer, stop: Integer) =>
   matching(
     "JSON.ARRTRIM",
@@ -67,6 +73,7 @@ export const jsonArrtrim = (key: RedisArgument, path: JsonPath, start: Integer, 
     Effect.all([encodeInteger(start), encodeInteger(stop)]),
     "read-write",
   );
+
 export const jsonArrtrimLegacy = (
   key: RedisArgument,
   path: string,
@@ -95,11 +102,13 @@ const bounds = Effect.fnUntraced(function* (options: {
   );
   if (selected.stop !== undefined && selected.start === undefined)
     return yield* parse(Schema.Never, options);
+
   return [
     ...(selected.start === undefined ? [] : [String(selected.start)]),
     ...(selected.stop === undefined ? [] : [String(selected.stop)]),
   ];
 });
+
 export const jsonArrindex = (
   key: RedisArgument,
   path: JsonPath,
@@ -113,6 +122,7 @@ export const jsonArrindex = (
     integer,
     bounds(options).pipe(Effect.map((range) => [value, ...range])),
   );
+
 export const jsonArrindexLegacy = (
   key: RedisArgument,
   path: string,
@@ -137,6 +147,7 @@ export const jsonArrpop = (key: RedisArgument, path: JsonPath = "$", index: Inte
     encodeInteger(index).pipe(Effect.map((position) => [position])),
     "read-write",
   );
+
 export const jsonArrpopLegacy = (key: RedisArgument, path = ".", index: Integer = -1) =>
   legacy(
     "JSON.ARRPOP",
@@ -146,6 +157,7 @@ export const jsonArrpopLegacy = (key: RedisArgument, path = ".", index: Integer 
     encodeInteger(index).pipe(Effect.map((position) => [position])),
     "read-write",
   );
+
 export const jsonArrpopExpanded = (key: RedisArgument, path: JsonPath = "$", index: Integer = -1) =>
   moduleKeyed(
     "json",

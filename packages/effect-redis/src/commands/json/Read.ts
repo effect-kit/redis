@@ -76,6 +76,7 @@ export const jsonGetExpanded = (
       Effect.map((selected) => ["FORMAT", "EXPAND", ...selected]),
     ),
   );
+
 export const jsonGetExpandedOneLevel = (
   key: RedisArgument,
   paths: readonly [string, ...string[]] = ["$"],
@@ -94,6 +95,7 @@ export const jsonMget = (keys: readonly [RedisArgument, ...RedisArgument[]], pat
   prepare: Effect.gen(function* () {
     const selected = yield* parse(Arguments, keys);
     const selectedPath = yield* parse(Schema.NonEmptyString, path);
+
     return yield* ordinary(
       moduleMetadata("json", "JSON.MGET"),
       withLength(selected.length, array(nullable(blob))),
@@ -116,11 +118,13 @@ const typeMatches: ReplyDecoder<JsonMatches<string>> = (reply) => {
     first?._tag === "Array" || first?._tag === "Null" ? first : reply,
   );
 };
+
 const typeLegacy: ReplyDecoder<Option.Option<string>> = (reply) => {
   const value = undecorate(reply);
   const first = value._tag === "Array" && value.values.length === 1 ? value.values[0] : undefined;
   return nullable(simpleText)(first ?? reply);
 };
+
 export const jsonType = (key: RedisArgument, path: JsonPath = "$") =>
   moduleKeyed(
     "json",
@@ -129,6 +133,7 @@ export const jsonType = (key: RedisArgument, path: JsonPath = "$") =>
     typeMatches,
     parse(MatchPath, path).pipe(Effect.map((selected) => [selected])),
   );
+
 export const jsonTypeLegacy = (key: RedisArgument, path = ".") =>
   moduleKeyed(
     "json",
@@ -137,18 +142,25 @@ export const jsonTypeLegacy = (key: RedisArgument, path = ".") =>
     typeLegacy,
     parse(LegacyPath, path).pipe(Effect.map((selected) => [selected])),
   );
+
 export const jsonObjkeys = (key: RedisArgument, path: JsonPath = "$") =>
   matching("JSON.OBJKEYS", key, path, array(blob));
+
 export const jsonObjkeysLegacy = (key: RedisArgument, path = ".") =>
   legacy("JSON.OBJKEYS", key, path, array(blob));
+
 export const jsonObjlen = (key: RedisArgument, path: JsonPath = "$") =>
   matching("JSON.OBJLEN", key, path, unsigned);
+
 export const jsonObjlenLegacy = (key: RedisArgument, path = ".") =>
   legacy("JSON.OBJLEN", key, path, unsigned);
+
 export const jsonStrlen = (key: RedisArgument, path: JsonPath = "$") =>
   matching("JSON.STRLEN", key, path, unsigned);
+
 export const jsonStrlenLegacy = (key: RedisArgument, path = ".") =>
   legacy("JSON.STRLEN", key, path, unsigned);
+
 export const jsonResp = (key: RedisArgument, path: string = "$") =>
   moduleKeyed(
     "json",

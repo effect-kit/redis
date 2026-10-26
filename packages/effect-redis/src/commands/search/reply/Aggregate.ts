@@ -15,13 +15,16 @@ export interface SearchAggregateResult {
   readonly rows: ReadonlyArray<SearchFields>;
   readonly metadata: ReadonlyArray<readonly [string, RespValue]>;
 }
+
 const nativeRow: ReplyDecoder<SearchFields> = (reply) =>
   Effect.gen(function* () {
     const report = yield* fields(reply);
     const content = report.find(([key]) => key === "extra_attributes")?.[1];
     if (content === undefined) return yield* mismatch("custom", reply);
+
     return yield* searchFields(content);
   });
+
 export const aggregateResult: ReplyDecoder<SearchAggregateResult> = (reply) =>
   Effect.gen(function* () {
     const value = undecorate(reply);
@@ -30,6 +33,7 @@ export const aggregateResult: ReplyDecoder<SearchAggregateResult> = (reply) =>
       const total = report.find(([key]) => key === "total_results")?.[1];
       const rows = report.find(([key]) => key === "results")?.[1];
       if (total === undefined || rows === undefined) return yield* mismatch("custom", reply);
+
       return {
         total: yield* unsigned(total),
         rows: yield* array(nativeRow)(rows),
@@ -39,11 +43,13 @@ export const aggregateResult: ReplyDecoder<SearchAggregateResult> = (reply) =>
     if (value._tag !== "Array") return yield* mismatch("array", reply);
     const [total, ...rows] = value.values;
     if (total === undefined) return yield* mismatch("array", reply);
+
     return {
       total: yield* unsigned(total),
       rows: yield* Effect.forEach(rows, searchFields),
       metadata: [],
     };
   });
+
 export const aggregateCursor = (reply: RespValue) =>
   tuple(aggregateResult, unsigned)(reply).pipe(Effect.map(([page, cursor]) => ({ page, cursor })));

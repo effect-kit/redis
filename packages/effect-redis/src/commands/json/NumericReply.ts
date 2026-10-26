@@ -2,8 +2,7 @@ import { Effect, Option } from "effect";
 
 import type { ReplyDecoder } from "#/command/Command";
 import { array } from "#/command/reply/Collections";
-import { nullable } from "#/command/reply/Data";
-import { decimalToken } from "#/command/reply/Data";
+import { decimalToken, nullable } from "#/command/reply/Data";
 import { mismatch, text, undecorate } from "#/command/reply/Scalars";
 import type { JsonMatches } from "#/commands/json/Path";
 import type { RespValue } from "#/protocol/RespValue";
@@ -19,11 +18,13 @@ export const numericMatches: ReplyDecoder<JsonMatches<string>> = (reply) => {
   if (value._tag === "Null") return Effect.succeed(Option.none());
   if (value._tag === "Array")
     return array(nullable(numericToken))(value).pipe(Effect.map(Option.some));
+
   return text(reply).pipe(
     Effect.flatMap((encoded) => {
       const trimmed = encoded.trim();
       if (!trimmed.startsWith("[") || !trimmed.endsWith("]"))
         return Effect.fail(mismatch("array", reply));
+
       const body = trimmed.slice(1, -1).trim();
       return Effect.forEach(body === "" ? [] : body.split(","), (token) => {
         const selected = token.trim();

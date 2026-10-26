@@ -3,7 +3,6 @@ import { Effect, Schema } from "effect";
 import type { ReplyDecoder } from "#/command/Command";
 import type { CommandMetadata } from "#/command/Metadata";
 import { keyed, ordinary } from "#/commands/internal/Command";
-import { parse } from "#/commands/internal/Input";
 import type { CommandInputError } from "#/errors/CommandInputError";
 import type { RedisArgument } from "#/RedisArgument";
 
@@ -47,7 +46,6 @@ export const Probability = Schema.Number.check(
   Schema.isGreaterThan(0),
   Schema.isLessThan(1),
 );
-export const probability = (value: number) => parse(Probability, value).pipe(Effect.map(String));
 
 /** Label/index queries select server-owned state. Cluster execution requires an explicit node. */
 export const moduleKeyless = <A>(

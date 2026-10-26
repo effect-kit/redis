@@ -54,6 +54,7 @@ export interface VectorMatch {
   readonly score: number;
   readonly attributes: Option.Option<Uint8Array>;
 }
+
 const matches: ReplyDecoder<ReadonlyArray<VectorMatch>> = (reply) => {
   const value = undecorate(reply);
   if (value._tag === "Map")
@@ -75,6 +76,7 @@ const matches: ReplyDecoder<ReadonlyArray<VectorMatch>> = (reply) => {
       return Effect.fail(mismatch("array", reply));
     entries.push([element, score, attributes] as const);
   }
+
   return Effect.forEach(entries, ([element, score, attributes]) =>
     Effect.gen(function* () {
       return {
@@ -91,6 +93,7 @@ export const vsim = (
   query: VectorQuery,
   options: VectorSimilarityOptions = {},
 ) => moduleKeyed("vectorset", "VSIM", key, blobs, args(query, options, []));
+
 export const vsimWithScores = (
   key: RedisArgument,
   query: VectorQuery,
@@ -103,6 +106,7 @@ export const vsimWithScores = (
     pairs(blob, moduleDouble),
     args(query, options, ["WITHSCORES"]),
   );
+
 export const vsimWithAttributes = (
   key: RedisArgument,
   query: VectorQuery,
@@ -115,6 +119,7 @@ export const vsimWithAttributes = (
     pairs(blob, nullable(blob)),
     args(query, options, ["WITHATTRIBS"]),
   );
+
 export const vsimWithScoresAndAttributes = (
   key: RedisArgument,
   query: VectorQuery,

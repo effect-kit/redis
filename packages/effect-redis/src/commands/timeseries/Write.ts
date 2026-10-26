@@ -30,6 +30,7 @@ export const tsCreate = (key: RedisArgument, options: TimeSeriesCreateOptions = 
     parse(CreateOptions, options).pipe(Effect.map(creationTokens)),
     "read-write",
   );
+
 export const tsAlter = (key: RedisArgument, options: Omit<TimeSeriesCreateOptions, "encoding">) =>
   moduleKeyed(
     "timeseries",
@@ -52,6 +53,7 @@ export const tsAlter = (key: RedisArgument, options: Omit<TimeSeriesCreateOption
 export interface TimeSeriesAddOptions extends TimeSeriesCreateOptions {
   readonly onDuplicate?: DuplicatePolicy;
 }
+
 export const tsAdd = (
   key: RedisArgument,
   timestamp: TimeSeriesTimestamp,
@@ -95,6 +97,7 @@ export const tsMadd = (
       Schema.NonEmptyArray(Schema.Tuple([Argument, Timestamp, Finite])),
       entries,
     );
+
     return yield* ordinary(
       moduleMetadata("timeseries", "TS.MADD"),
       withLength(selected.length, array(unsigned)),

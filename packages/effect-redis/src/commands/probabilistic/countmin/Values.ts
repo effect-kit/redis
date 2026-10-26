@@ -21,6 +21,7 @@ export const cmsInitbydim = (key: RedisArgument, width: Integer, depth: Integer)
     ),
     "write",
   );
+
 export const cmsInitbyprob = (key: RedisArgument, error: number, probability: number) =>
   moduleKeyed(
     "probabilistic",
@@ -32,8 +33,10 @@ export const cmsInitbyprob = (key: RedisArgument, error: number, probability: nu
     ),
     "write",
   );
+
 export const cmsInfo = (key: RedisArgument) =>
   moduleKeyed("probabilistic", "CMS.INFO", key, fields);
+
 export const cmsQuery = (
   key: RedisArgument,
   values: readonly [RedisArgument, ...RedisArgument[]],
@@ -57,6 +60,7 @@ export const cmsIncrby = (
       Schema.NonEmptyArray(Schema.Tuple([Argument, NonNegative])),
       entries,
     );
+
     return yield* moduleKeyed(
       "probabilistic",
       "CMS.INCRBY",

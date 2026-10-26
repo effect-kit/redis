@@ -69,14 +69,14 @@ export type TimeSeriesAggregator = typeof Aggregator.Type;
 export interface TimeSeriesAggregation {
   readonly aggregator: TimeSeriesAggregator;
   readonly bucketMillis: Integer;
-  readonly align?: Integer | "-" | "+";
+  readonly align?: Integer | "-" | "+" | "start" | "end";
   readonly bucketTimestamp?: "start" | "end" | "mid" | "-" | "+" | "~";
   readonly empty?: boolean;
 }
 export const Aggregation = Schema.Struct({
   aggregator: Aggregator,
   bucketMillis: Positive,
-  align: Schema.optionalKey(Boundary),
+  align: Schema.optionalKey(Schema.Union([Boundary, Schema.Literals(["start", "end"])])),
   bucketTimestamp: Schema.optionalKey(Schema.Literals(["start", "end", "mid", "-", "+", "~"])),
   empty: Schema.optionalKey(Schema.Boolean),
 });

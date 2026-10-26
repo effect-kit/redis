@@ -13,12 +13,16 @@ import type { RedisArgument } from "#/RedisArgument";
 
 export const ftAliasadd = (alias: RedisArgument, index: RedisArgument) =>
   moduleKeyless("search", "FT.ALIASADD", status("OK"), Effect.succeed([alias, index]));
+
 export const ftAliasupdate = (alias: RedisArgument, index: RedisArgument) =>
   moduleKeyless("search", "FT.ALIASUPDATE", status("OK"), Effect.succeed([alias, index]));
+
 export const ftAliasdel = (alias: RedisArgument) =>
   moduleKeyless("search", "FT.ALIASDEL", status("OK"), Effect.succeed([alias]));
+
 export const ftAliaslist = (index: RedisArgument) =>
   moduleKeyless("search", "FT.ALIASLIST", members(blob), Effect.succeed([index]));
+
 export const ftDictadd = (
   dictionary: RedisArgument,
   terms: readonly [RedisArgument, ...RedisArgument[]],
@@ -29,6 +33,7 @@ export const ftDictadd = (
     unsigned,
     parse(Arguments, terms).pipe(Effect.map((selected) => [dictionary, ...selected])),
   );
+
 export const ftDictdel = (
   dictionary: RedisArgument,
   terms: readonly [RedisArgument, ...RedisArgument[]],
@@ -39,8 +44,10 @@ export const ftDictdel = (
     unsigned,
     parse(Arguments, terms).pipe(Effect.map((selected) => [dictionary, ...selected])),
   );
+
 export const ftDictdump = (dictionary: RedisArgument) =>
   moduleKeyless("search", "FT.DICTDUMP", members(blob), Effect.succeed([dictionary]));
+
 export const ftSynupdate = (
   index: RedisArgument,
   group: RedisArgument,
@@ -57,13 +64,17 @@ export const ftSynupdate = (
         options,
       );
       const entries = yield* parse(Arguments, terms);
+
       return [index, group, ...(selected.skipInitialScan ? ["SKIPINITIALSCAN"] : []), ...entries];
     }),
   );
+
 export const ftSyndump = (index: RedisArgument) =>
   moduleKeyless("search", "FT.SYNDUMP", pairs(blob, array(simpleText)), Effect.succeed([index]));
+
 export const ftTagvals = (index: RedisArgument, field: RedisArgument) =>
   moduleKeyless("search", "FT.TAGVALS", members(blob), Effect.succeed([index, field]));
+
 export const ftExplain = (index: RedisArgument, query: RedisArgument, dialect?: Integer) =>
   moduleKeyless(
     "search",
@@ -73,6 +84,7 @@ export const ftExplain = (index: RedisArgument, query: RedisArgument, dialect?: 
       ? Effect.succeed([index, query])
       : parse(NonNegative, dialect).pipe(Effect.map((n) => [index, query, "DIALECT", String(n)])),
   );
+
 export const ftExplaincli = (index: RedisArgument, query: RedisArgument, dialect?: Integer) =>
   moduleKeyless(
     "search",
@@ -82,15 +94,18 @@ export const ftExplaincli = (index: RedisArgument, query: RedisArgument, dialect
       ? Effect.succeed([index, query])
       : parse(NonNegative, dialect).pipe(Effect.map((n) => [index, query, "DIALECT", String(n)])),
   );
+
 /** Legacy document commands are explicit; modern indexing normally follows HASH/JSON writes. */
 export const ftGet = (index: RedisArgument, key: RedisArgument) =>
   moduleKeyless("search", "FT.GET", nullable(searchFields), Effect.succeed([index, key]));
+
 export const ftMget = (
   index: RedisArgument,
   keys: readonly [RedisArgument, ...RedisArgument[]],
 ) => ({
   prepare: Effect.gen(function* () {
     const selected = yield* parse(Arguments, keys);
+
     return yield* moduleKeyless(
       "search",
       "FT.MGET",
@@ -102,8 +117,10 @@ export const ftMget = (
 
 const configFields = (reply: RespValue) =>
   pairs(simpleText, nullable(simpleText))(reply).pipe(Effect.map(Redacted.make));
+
 export const ftConfigGet = (name: RedisArgument) =>
   moduleKeyless("search", "FT.CONFIG GET", configFields, Effect.succeed([name]));
+
 export const ftConfigSet = (name: RedisArgument, value: Redacted.Redacted<RedisArgument>) =>
   moduleKeyless(
     "search",

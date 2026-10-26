@@ -26,6 +26,7 @@ export const tdigestCreate = (
     ),
     "write",
   );
+
 export const tdigestReset = (key: RedisArgument) =>
   moduleKeyed(
     "probabilistic",
@@ -35,12 +36,16 @@ export const tdigestReset = (key: RedisArgument) =>
     Effect.succeed([]),
     "read-write",
   );
+
 export const tdigestInfo = (key: RedisArgument) =>
   moduleKeyed("probabilistic", "TDIGEST.INFO", key, fields);
+
 export const tdigestMin = (key: RedisArgument) =>
   moduleKeyed("probabilistic", "TDIGEST.MIN", key, moduleDouble);
+
 export const tdigestMax = (key: RedisArgument) =>
   moduleKeyed("probabilistic", "TDIGEST.MAX", key, moduleDouble);
+
 export const tdigestAdd = (key: RedisArgument, values: readonly [number, ...number[]]) =>
   moduleKeyed(
     "probabilistic",
@@ -61,6 +66,7 @@ export const tdigestQuantile = (key: RedisArgument, quantiles: readonly [number,
     ).pipe(Effect.map((entries) => entries.map(String))),
     array(moduleDouble),
   );
+
 export const tdigestCdf = (key: RedisArgument, values: readonly [number, ...number[]]) =>
   keyedVector(
     moduleMetadata("probabilistic", "TDIGEST.CDF"),
@@ -68,6 +74,7 @@ export const tdigestCdf = (key: RedisArgument, values: readonly [number, ...numb
     parse(Schema.NonEmptyArray(Finite), values).pipe(Effect.map((entries) => entries.map(String))),
     array(moduleDouble),
   );
+
 export const tdigestRank = (key: RedisArgument, values: readonly [number, ...number[]]) =>
   keyedVector(
     moduleMetadata("probabilistic", "TDIGEST.RANK"),
@@ -75,6 +82,7 @@ export const tdigestRank = (key: RedisArgument, values: readonly [number, ...num
     parse(Schema.NonEmptyArray(Finite), values).pipe(Effect.map((entries) => entries.map(String))),
     array(integer),
   );
+
 export const tdigestRevrank = (key: RedisArgument, values: readonly [number, ...number[]]) =>
   keyedVector(
     moduleMetadata("probabilistic", "TDIGEST.REVRANK"),
@@ -82,6 +90,7 @@ export const tdigestRevrank = (key: RedisArgument, values: readonly [number, ...
     parse(Schema.NonEmptyArray(Finite), values).pipe(Effect.map((entries) => entries.map(String))),
     array(integer),
   );
+
 export const tdigestByrank = (key: RedisArgument, ranks: readonly [Integer, ...Integer[]]) =>
   keyedVector(
     moduleMetadata("probabilistic", "TDIGEST.BYRANK"),
@@ -91,6 +100,7 @@ export const tdigestByrank = (key: RedisArgument, ranks: readonly [Integer, ...I
     ),
     array(moduleDouble),
   );
+
 export const tdigestByrevrank = (key: RedisArgument, ranks: readonly [Integer, ...Integer[]]) =>
   keyedVector(
     moduleMetadata("probabilistic", "TDIGEST.BYREVRANK"),
@@ -100,6 +110,7 @@ export const tdigestByrevrank = (key: RedisArgument, ranks: readonly [Integer, .
     ),
     array(moduleDouble),
   );
+
 export const tdigestTrimmedMean = (key: RedisArgument, low: number, high: number) =>
   moduleKeyed(
     "probabilistic",
@@ -110,6 +121,7 @@ export const tdigestTrimmedMean = (key: RedisArgument, low: number, high: number
       const bounds = yield* parse(Schema.Tuple([Finite, Finite]), [low, high]);
       if (bounds[0] < 0 || bounds[1] > 1 || bounds[0] >= bounds[1])
         return yield* parse(Schema.Never, bounds);
+
       return bounds.map(String);
     }),
   );

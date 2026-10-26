@@ -63,7 +63,7 @@ it.live.each(moduleCases)(
             aggregation: {
               aggregator: "sum",
               bucketMillis: 2000,
-              align: 0,
+              align: "start",
               bucketTimestamp: "start",
             },
           }),

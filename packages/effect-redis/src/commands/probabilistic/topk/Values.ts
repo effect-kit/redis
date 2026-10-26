@@ -33,6 +33,7 @@ export const topkReserve = (
         ),
         sketch,
       );
+
       return [
         String(size),
         ...(selected === undefined
@@ -51,6 +52,7 @@ export const topkAdd = (key: RedisArgument, values: readonly [RedisArgument, ...
     array(optional(blob)),
     { access: "read-write" },
   );
+
 export const topkQuery = (
   key: RedisArgument,
   values: readonly [RedisArgument, ...RedisArgument[]],
@@ -61,6 +63,7 @@ export const topkQuery = (
     parse(Arguments, values),
     array(boolean),
   );
+
 export const topkCount = (
   key: RedisArgument,
   values: readonly [RedisArgument, ...RedisArgument[]],
@@ -71,8 +74,10 @@ export const topkCount = (
     parse(Arguments, values),
     array(unsigned),
   );
+
 export const topkList = (key: RedisArgument) =>
   moduleKeyed("probabilistic", "TOPK.LIST", key, array(blob));
+
 export const topkListWithCount = (key: RedisArgument) =>
   moduleKeyed(
     "probabilistic",
@@ -81,6 +86,7 @@ export const topkListWithCount = (key: RedisArgument) =>
     pairs(blob, unsigned),
     Effect.succeed(["WITHCOUNT"]),
   );
+
 export const topkInfo = (key: RedisArgument) =>
   moduleKeyed("probabilistic", "TOPK.INFO", key, fields);
 
@@ -96,6 +102,7 @@ export const topkIncrby = (
       Schema.NonEmptyArray(Schema.Tuple([Argument, Positive])),
       entries,
     );
+
     return yield* moduleKeyed(
       "probabilistic",
       "TOPK.INCRBY",

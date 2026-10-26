@@ -12,6 +12,7 @@ import type { RedisArgument } from "#/RedisArgument";
 
 export const bfAdd = (key: RedisArgument, value: RedisArgument) =>
   moduleKeyed("probabilistic", "BF.ADD", key, boolean, Effect.succeed([value]), "read-write");
+
 export const bfExists = (key: RedisArgument, value: RedisArgument) =>
   moduleKeyed("probabilistic", "BF.EXISTS", key, boolean, Effect.succeed([value]));
 
@@ -23,6 +24,7 @@ export const bfMadd = (key: RedisArgument, values: readonly [RedisArgument, ...R
     array(boolean),
     { access: "read-write" },
   );
+
 export const bfMexists = (
   key: RedisArgument,
   values: readonly [RedisArgument, ...RedisArgument[]],

@@ -14,6 +14,7 @@ import type { RedisArgument } from "#/RedisArgument";
 export type TimeSeriesReadCursor = Integer | "-" | "+" | "$";
 const Cursor = Schema.Union([NonNegative, Schema.Literals(["-", "+", "$"])]);
 const ReadOptions = Schema.Struct({ maxCount: Schema.optionalKey(Positive) });
+
 export const tsRead = (
   key: RedisArgument,
   cursor: TimeSeriesReadCursor,
@@ -27,6 +28,7 @@ export const tsRead = (
     Effect.gen(function* () {
       const selected = yield* parse(ReadOptions, options);
       const timestamp = yield* parse(Cursor, cursor);
+
       return [
         String(timestamp),
         ...(selected.maxCount === undefined ? [] : ["MAX_COUNT", String(selected.maxCount)]),
@@ -40,6 +42,7 @@ export interface TimeSeriesBlockingReadOptions {
   readonly minCount?: Integer;
   readonly maxCount?: Integer;
 }
+
 export const tsReadBlocking = (
   key: RedisArgument,
   cursor: TimeSeriesReadCursor,

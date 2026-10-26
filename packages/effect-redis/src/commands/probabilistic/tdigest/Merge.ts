@@ -24,6 +24,7 @@ export const tdigestMerge = (
         }),
         options,
       );
+
       return {
         tokens: [
           "TDIGEST.MERGE",

@@ -17,6 +17,7 @@ export interface RawEmbedding {
   readonly norm: number;
   readonly quantizationRange?: number;
 }
+
 const rawEmbedding: ReplyDecoder<RawEmbedding> = (reply) => {
   const value = undecorate(reply);
   if (value._tag !== "Array" || (value.values.length !== 3 && value.values.length !== 4))
@@ -39,18 +40,26 @@ const rawEmbedding: ReplyDecoder<RawEmbedding> = (reply) => {
 
 export const vrem = (key: RedisArgument, element: RedisArgument) =>
   moduleKeyed("vectorset", "VREM", key, moduleBoolean, Effect.succeed([element]), "read-write");
+
 export const vismember = (key: RedisArgument, element: RedisArgument) =>
   moduleKeyed("vectorset", "VISMEMBER", key, moduleBoolean, Effect.succeed([element]));
+
 export const vdim = (key: RedisArgument) => moduleKeyed("vectorset", "VDIM", key, unsigned);
+
 export const vcard = (key: RedisArgument) => moduleKeyed("vectorset", "VCARD", key, unsigned);
+
 export const vinfo = (key: RedisArgument) =>
   moduleKeyed("vectorset", "VINFO", key, nullable(fields));
+
 export const vemb = (key: RedisArgument, element: RedisArgument) =>
   moduleKeyed("vectorset", "VEMB", key, nullable(array(moduleDouble)), Effect.succeed([element]));
+
 export const vembRaw = (key: RedisArgument, element: RedisArgument) =>
   moduleKeyed("vectorset", "VEMB", key, nullable(rawEmbedding), Effect.succeed([element, "RAW"]));
+
 export const vlinks = (key: RedisArgument, element: RedisArgument) =>
   moduleKeyed("vectorset", "VLINKS", key, nullable(array(blobs)), Effect.succeed([element]));
+
 export const vlinksWithScores = (key: RedisArgument, element: RedisArgument) =>
   moduleKeyed(
     "vectorset",
@@ -59,8 +68,10 @@ export const vlinksWithScores = (key: RedisArgument, element: RedisArgument) =>
     nullable(array(pairs(blob, moduleDouble))),
     Effect.succeed([element, "WITHSCORES"]),
   );
+
 export const vgetattr = (key: RedisArgument, element: RedisArgument) =>
   moduleKeyed("vectorset", "VGETATTR", key, nullable(blob), Effect.succeed([element]));
+
 /** Empty JSON bytes remove attributes; other payloads are already encoded by the caller. */
 export const vsetattr = (key: RedisArgument, element: RedisArgument, json: RedisArgument) =>
   moduleKeyed(
@@ -71,8 +82,10 @@ export const vsetattr = (key: RedisArgument, element: RedisArgument, json: Redis
     Effect.succeed([element, json]),
     "read-write",
   );
+
 export const vrandmember = (key: RedisArgument) =>
   moduleKeyed("vectorset", "VRANDMEMBER", key, nullable(blob));
+
 export const vrandmemberCount = (key: RedisArgument, count: Integer) =>
   moduleKeyed("vectorset", "VRANDMEMBER", key, blobs, integer(count).pipe(Effect.map((n) => [n])));
 

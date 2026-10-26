@@ -148,6 +148,7 @@ export const aggregateStepTokens = (steps: ReadonlyArray<SearchAggregateStep>) =
         switch (step._tag) {
           case "Load": {
             const fields = step.fields === "*" ? undefined : returnTokens(step.fields);
+
             return fields === undefined
               ? ["LOAD", "*"]
               : ["LOAD", String(fields.length), ...fields];
@@ -161,6 +162,7 @@ export const aggregateStepTokens = (steps: ReadonlyArray<SearchAggregateStep>) =
             ];
           case "SortBy": {
             const fields = sorts(step.fields);
+
             return [
               "SORTBY",
               String(fields.length),
