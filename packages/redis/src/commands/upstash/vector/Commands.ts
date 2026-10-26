@@ -2,10 +2,10 @@ import { Effect, Schema } from "effect";
 
 import { array } from "#/command/reply/Collections";
 import { boolean, nullable, tuple, unsigned } from "#/command/reply/Data";
-import { blob, mismatch, safeInteger } from "#/command/reply/Scalars";
+import { mismatch, safeInteger } from "#/command/reply/Scalars";
 import { parse } from "#/commands/internal/Input";
 import { command, Name, named } from "#/commands/upstash/Build";
-import { field, fields, finiteScore, literal } from "#/commands/upstash/Reply";
+import { extensionBytes, field, fields, finiteScore, literal } from "#/commands/upstash/Reply";
 import { vectorArguments } from "#/commands/upstash/vector/Input";
 import type { UpstashVectorInput } from "#/commands/upstash/vector/Input";
 import type { RedisArgument } from "#/RedisArgument";
@@ -99,7 +99,7 @@ export const vectorQuery = (
     return yield* command(
       "VECTOR.QUERY",
       (reply) =>
-        array(tuple(blob, finiteScore))(reply).pipe(
+        array(tuple(extensionBytes, finiteScore))(reply).pipe(
           Effect.flatMap((hits) => {
             if (hits.length > selected.topK || hits.some(([, score]) => score < 0 || score > 1))
               return Effect.fail(mismatch("custom", reply));

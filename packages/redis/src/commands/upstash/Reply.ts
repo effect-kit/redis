@@ -2,11 +2,17 @@ import { Effect, Schema } from "effect";
 
 import type { ReplyDecoder } from "#/command/Command";
 import { pairs, simpleText } from "#/command/reply/Data";
-import { mismatch } from "#/command/reply/Scalars";
+import { blob, mismatch, undecorate } from "#/command/reply/Scalars";
 import { moduleDouble } from "#/commands/modules/Reply";
 import type { RespValue } from "#/protocol/RespValue";
 
 export const fields = pairs(simpleText, Effect.succeed);
+
+/** Hosted extension replies use both RESP string forms for IDs and document fields. */
+export const extensionBytes: ReplyDecoder<Uint8Array> = (reply) => {
+  const value = undecorate(reply);
+  return value._tag === "SimpleString" ? Effect.succeed(value.value) : blob(reply);
+};
 
 export const field = (
   entries: ReadonlyArray<readonly [string, RespValue]>,

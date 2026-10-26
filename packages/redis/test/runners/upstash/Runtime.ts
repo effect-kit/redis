@@ -37,6 +37,7 @@ const program = Effect.gen(function* () {
     url: input.url,
     token: Redacted.make(input.token),
     allowInsecureLocalhost: true,
+    pipelineResponseFormat: "frames",
   });
   const redis = client.redis;
   const prefix = input.prefix;
@@ -111,6 +112,7 @@ const program = Effect.gen(function* () {
       http.RedisUpstash.layer({
         url: input.url,
         allowInsecureLocalhost: true,
+        pipelineResponseFormat: "frames",
         credentials: Effect.succeed({ password: Redacted.make(input.token) }),
       }),
     ),

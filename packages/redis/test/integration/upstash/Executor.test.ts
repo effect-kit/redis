@@ -1,5 +1,5 @@
 import { expect, it } from "@effect/vitest";
-import { Deferred, Effect, Fiber, Option, Redacted } from "effect";
+import { Deferred, Effect, Fiber, Option, Redacted, Result } from "effect";
 import { TestClock } from "effect/testing";
 
 import { Commands, Redis } from "#/index";
@@ -36,7 +36,7 @@ it.effect(
     Effect.gen(function* () {
       const fixture = controlledHttp((request) =>
         request.url.endsWith("/pipeline")
-          ? resp("+OK\r\n-WRONGTYPE private-payload\r\n:9007199254740993\r\n")
+          ? resp("*3\r\n+OK\r\n-WRONGTYPE private-payload\r\n:9007199254740993\r\n")
           : json('[{"result":"OK"},{"result":"OK"},{"result":9007199254740993}]'),
       );
       const client = yield* makeUpstash(httpConfig).pipe(Effect.provide(fixture.layer));
@@ -164,5 +164,23 @@ it.effect("HTTP lost batch responses retain indexed unknown evidence and never r
         { _tag: "Unknown", index: 1 },
       ]);
     expect(fixture.requests).toHaveLength(1);
+  }),
+);
+
+it.effect("a development proxy's concatenated pipeline dialect requires explicit selection", () =>
+  Effect.gen(function* () {
+    const fixture = controlledHttp(() => resp("*1\r\n$5\r\nvalue\r\n"));
+    const legacy = yield* makeUpstash({ ...httpConfig, pipelineResponseFormat: "frames" }).pipe(
+      Effect.provide(fixture.layer),
+    );
+    const hosted = yield* makeUpstash(httpConfig).pipe(Effect.provide(fixture.layer));
+
+    const result = yield* legacy.batches.pipeline([Commands.lrange("list", 0, -1)]);
+    expect(Result.getOrThrow(result[0])).toEqual([new TextEncoder().encode("value")]);
+    const incompatible = yield* hosted.batches.pipeline([Commands.lrange("list", 0, -1)]);
+    expect(Result.getFailure(incompatible[0])).toMatchObject({
+      _tag: "Some",
+      value: { _tag: "ReplyError" },
+    });
   }),
 );

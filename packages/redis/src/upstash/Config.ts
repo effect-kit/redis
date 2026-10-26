@@ -9,6 +9,10 @@ const defaulted = (value: number) =>
 const Settings = Schema.Struct({
   url: Schema.NonEmptyString,
   allowInsecureLocalhost: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
+  /** Hosted Upstash uses an array; some development proxies concatenate RESP frames. */
+  pipelineResponseFormat: Schema.Literals(["array", "frames"]).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed("array")),
+  ),
   requestTimeoutMillis: defaulted(30_000),
   streamHandshakeTimeoutMillis: defaulted(10_000),
   streamIdleTimeoutMillis: Schema.optionalKey(positive),

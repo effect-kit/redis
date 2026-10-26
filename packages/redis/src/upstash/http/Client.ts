@@ -7,7 +7,13 @@ import { UpstashError } from "#/errors/UpstashError";
 import type { CommandPolicy } from "#/profiles/Commands";
 import type { UpstashSettings } from "#/upstash/Config";
 import { encodeRequest } from "#/upstash/encoding/Request";
-import { decodeJsonBatch, decodeResp, envelope, responseJson } from "#/upstash/encoding/Response";
+import {
+  decodeJsonBatch,
+  decodeResp,
+  decodeRespPipeline,
+  envelope,
+  responseJson,
+} from "#/upstash/encoding/Response";
 import { jsonReplyPolicy } from "#/upstash/encoding/Status";
 import { checkStatus, exchange, readBody } from "#/upstash/http/Exchange";
 
@@ -149,7 +155,9 @@ export const makeHttpClient = Effect.fnUntraced(function* (
           });
         return {
           _tag: "Replies" as const,
-          replies: yield* decodeResp(bytes, commands.length, config),
+          replies: yield* mode === "pipeline" && config.pipelineResponseFormat === "array"
+            ? decodeRespPipeline(bytes, commands.length, config)
+            : decodeResp(bytes, commands.length, config),
         };
       }).pipe(
         Effect.timeoutOrElse({

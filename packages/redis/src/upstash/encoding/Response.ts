@@ -103,3 +103,13 @@ export const decodeResp = (bytes: Uint8Array, count: number, config: UpstashSett
     if (replies.length !== count) return yield* malformed();
     return replies;
   }).pipe(Effect.mapError(malformed));
+
+/** The REST pipeline wraps its command replies in one RESP array, including a one-command batch. */
+export const decodeRespPipeline = (bytes: Uint8Array, count: number, config: UpstashSettings) =>
+  decodeResp(bytes, 1, config).pipe(
+    Effect.flatMap(([reply]) =>
+      reply?._tag === "Array" && reply.values.length === count
+        ? Effect.succeed(reply.values)
+        : Effect.fail(malformed()),
+    ),
+  );

@@ -4,9 +4,33 @@ import { Effect, Result } from "effect";
 import { Commands } from "#/index";
 import { decodeUpstashConfig } from "#/upstash/Config";
 import { parseJson } from "#/upstash/encoding/Json";
-import { decodeJsonBatch, decodeResp } from "#/upstash/encoding/Response";
+import { decodeJsonBatch, decodeResp, decodeRespPipeline } from "#/upstash/encoding/Response";
 import { jsonReplyPolicy } from "#/upstash/encoding/Status";
 import { httpConfig } from "#test/support/upstash/Controlled";
+
+it.effect("hosted pipeline framing preserves array-valued commands and individual errors", () =>
+  Effect.gen(function* () {
+    const config = yield* decodeUpstashConfig(httpConfig);
+    const replies = yield* decodeRespPipeline(
+      new TextEncoder().encode("*3\r\n+OK\r\n-ERR synthetic\r\n*1\r\n$2\r\nOK\r\n"),
+      3,
+      config,
+    );
+
+    expect(replies.map((reply) => reply._tag)).toEqual(["SimpleString", "SimpleError", "Array"]);
+    expect(yield* decodeRespPipeline(new TextEncoder().encode("*1\r\n*0\r\n"), 1, config)).toEqual([
+      { _tag: "Array", values: [] },
+    ]);
+    for (const wire of ["+OK\r\n", "*0\r\n", "*1\r\n+OK\r\n+EXTRA\r\n"])
+      expect(
+        yield* Effect.flip(decodeRespPipeline(new TextEncoder().encode(wire), 1, config)),
+      ).toMatchObject({
+        _tag: "UpstashError",
+        reason: "malformed",
+        delivery: "unknown",
+      });
+  }),
+);
 
 it.effect.each([
   ['[{"result":"AA==="}]', "malformed"],

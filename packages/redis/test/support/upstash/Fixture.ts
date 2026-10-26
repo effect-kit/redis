@@ -56,7 +56,7 @@ export const upstashFixture = Effect.fnUntraced(function* (target: ServerTarget)
     protocol: "resp2",
   });
   return {
-    input: { url, token, allowInsecureLocalhost: true },
+    input: { url, token, allowInsecureLocalhost: true, pipelineResponseFormat: "frames" as const },
     nativeConfig,
     target,
     proxy: proxyFixture,

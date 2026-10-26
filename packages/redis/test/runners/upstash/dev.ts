@@ -33,7 +33,12 @@ process.once("SIGTERM", stop);
 const program = Effect.gen(function* () {
   const fixture = yield* upstashFixture(target);
   const prefix = `http-dev:${randomUUID()}`;
-  const connection = { url: fixture.input.url, token: Redacted.value(fixture.input.token), prefix };
+  const connection = {
+    url: fixture.input.url,
+    token: Redacted.value(fixture.input.token),
+    prefix,
+    pipelineResponseFormat: fixture.input.pipelineResponseFormat,
+  };
   const directory = new URL("../../results/", import.meta.url);
   const path = new URL(`upstash-dev-${randomUUID()}.json`, directory);
 

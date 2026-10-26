@@ -5,12 +5,12 @@ import { fromPreparation } from "#/command/Command";
 import type { ReplyDecoder } from "#/command/Command";
 import { array } from "#/command/reply/Collections";
 import { nullable, pairs, tuple } from "#/command/reply/Data";
-import { blob, mismatch, undecorate } from "#/command/reply/Scalars";
+import { mismatch, undecorate } from "#/command/reply/Scalars";
 import { parse, Finite } from "#/commands/internal/Input";
 import { command, Name } from "#/commands/upstash/Build";
 import { jsonArgument } from "#/commands/upstash/JsonArgument";
 import type { JsonObjectArgument } from "#/commands/upstash/JsonArgument";
-import { finiteScore } from "#/commands/upstash/Reply";
+import { extensionBytes, finiteScore } from "#/commands/upstash/Reply";
 import type { PayloadError } from "#/errors/PayloadError";
 import type { RespValue } from "#/protocol/RespValue";
 import type { RedisArgument } from "#/RedisArgument";
@@ -143,13 +143,13 @@ const contentHit: ReplyDecoder<SearchHit> = (reply: RespValue) =>
     const [key, relevance, content] = value.values;
     if (key === undefined || relevance === undefined) return yield* mismatch("array", reply);
 
-    const identity = { key: yield* blob(key), score: yield* finiteScore(relevance) };
+    const identity = { key: yield* extensionBytes(key), score: yield* finiteScore(relevance) };
     if (content === undefined) return yield* mismatch("array", reply);
-    return { ...identity, content: yield* pairs(blob, Effect.succeed)(content) };
+    return { ...identity, content: yield* pairs(extensionBytes, Effect.succeed)(content) };
   });
 
 const keyHit: ReplyDecoder<SearchKeyHit> = (reply) =>
-  tuple(blob, finiteScore)(reply).pipe(Effect.map(([key, score]) => ({ key, score })));
+  tuple(extensionBytes, finiteScore)(reply).pipe(Effect.map(([key, score]) => ({ key, score })));
 
 const queryResult = <A>(
   name: RedisArgument,
@@ -226,7 +226,7 @@ export const searchQueryWith = <A, RD, RE>(
                   return {
                     key: entry.key,
                     score: entry.score,
-                    value: yield* codec.decode(yield* blob(content[1])),
+                    value: yield* codec.decode(yield* extensionBytes(content[1])),
                   };
                 }),
               ).pipe(Effect.map(Option.some));

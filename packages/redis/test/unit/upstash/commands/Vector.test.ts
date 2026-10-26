@@ -124,6 +124,12 @@ it.effect(
       ).prepare;
       options.topK = 100;
       expect(
+        yield* decodeReply(
+          query,
+          array(array({ _tag: "SimpleString", value: new Uint8Array([255, 0]) }, blob("1"))),
+        ),
+      ).toEqual([{ id: new Uint8Array([255, 0]), score: 1 }]);
+      expect(
         yield* Effect.flip(decodeReply(query, array(array(blob("one"), blob("1.5"))))),
       ).toMatchObject({ _tag: "ReplyError" });
       expect(

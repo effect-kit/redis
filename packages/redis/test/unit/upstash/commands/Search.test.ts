@@ -178,6 +178,36 @@ it.effect(
         yield* decodeReply(keys, array(array(blob("doc:1"), { _tag: "Double", value: "1.25" }))),
       ).toEqual(Option.some([{ key: bytes("doc:1"), score: 1.25 }]));
       expect(yield* decodeReply(keys, missing)).toEqual(Option.none());
+      const simpleKey = { _tag: "SimpleString" as const, value: bytes("doc:1") };
+      expect(yield* decodeReply(keys, array(array(simpleKey, blob("1"))))).toEqual(
+        Option.some([{ key: bytes("doc:1"), score: 1 }]),
+      );
+      const query = yield* Commands.searchQuery("idx", {}).prepare;
+      expect(
+        yield* decodeReply(
+          query,
+          array(
+            array(
+              simpleKey,
+              blob("1"),
+              array(
+                array(
+                  { _tag: "SimpleString", value: bytes("$") },
+                  { _tag: "SimpleString", value: bytes("{}") },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ).toEqual(
+        Option.some([
+          {
+            key: bytes("doc:1"),
+            score: 1,
+            content: [[bytes("$"), { _tag: "SimpleString", value: bytes("{}") }]],
+          },
+        ]),
+      );
 
       for (const reply of [
         array(array(blob("key"))),
