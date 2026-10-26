@@ -22,6 +22,9 @@ public HIMPORT/BACKUP operations and isolated MONITOR/SHUTDOWN modes.
 Phase 11 adds native client-routed Redis/Valkey Cluster, node-bound sessions/scripts,
 bounded topology recovery and topology-bound event/cache lifetimes. Phase 12 adds native
 Redis/Valkey Sentinel discovery, role-verified data admission and future-work failover.
+Phase 13 adds typed JSON, Search, TimeSeries, probabilistic and vector-set families,
+explicit Schema/FP32 codecs, leased Search cursors and separate pinned module fixtures.
+Module availability and dialects remain specific to the actual enabled versions.
 Never describe planned command or server compatibility as implemented or verified.
 
 ## Read before changing code

@@ -49,6 +49,29 @@ A lease owns cursor creation, reads and cleanup, including early exit. Defaults 
 bounded current receipt before cleanup; lost receipts are never replayed, and unknown
 cursor IDs can only expire on the server. Cleanup failures escape the Cause.
 
+Module methods use the existing Redis service and command/session composition:
+
+```ts
+import { Effect, Schema } from "effect";
+
+import { PayloadCodec, Redis } from "@envoy1084/effect-redis";
+
+const moduleProgram = Effect.gen(function* () {
+  const redis = yield* Redis;
+  const user = PayloadCodec.json(Schema.Struct({ name: Schema.String }));
+
+  yield* redis.jsonSetWith("user:42", "$", { name: "Ada" }, user);
+  const saved = yield* redis.jsonGetWith("user:42", user);
+  const firstVisit = yield* redis.bfAdd("visitors", "42");
+
+  return { saved, firstVisit };
+});
+```
+
+These methods require enabled server modules. Pinned Redis/Stack/Valkey module
+profiles have separate RESP2/3 conformance tests; unsupported commands/options remain
+typed server errors. Module conformance does not certify every hosted deployment.
+
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
 to detect truncated input. Detailed architecture notes and progress reports stay in
