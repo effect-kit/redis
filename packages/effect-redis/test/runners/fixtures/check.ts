@@ -1,7 +1,8 @@
 import { loadBackendManifest } from "#test/support/fixtures/BackendManifest";
+import { loadModuleManifest } from "#test/support/modules/Manifest";
 
 const { native, images } = loadBackendManifest();
 
 process.stdout.write(
-  `${JSON.stringify({ nativeFixtures: native.length, images: images.length })}\n`,
+  `${JSON.stringify({ nativeFixtures: native.length, images: images.length, moduleFixtures: loadModuleManifest().length })}\n`,
 );

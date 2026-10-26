@@ -4,6 +4,7 @@ import { Effect } from "effect";
 
 import { getContainerRuntimeClient, ImageName } from "testcontainers";
 
+import { moduleFixtures } from "#test/support/modules/Manifest";
 import { currentImages, imageReference, selectEngine } from "#test/support/servers/Targets";
 
 const { values } = parseArgs({
@@ -34,6 +35,21 @@ await Effect.runPromise(
           repo: image.image.slice(0, image.image.lastIndexOf(":")),
           tag: image.image.slice(image.image.lastIndexOf(":") + 1),
         });
+      }),
+    { concurrency: 1 },
+  ),
+);
+
+await Effect.runPromise(
+  Effect.forEach(
+    moduleFixtures,
+    (fixture) =>
+      Effect.promise(async () => {
+        if (selectedEngine !== "all" && selectedEngine !== fixture.engine) return;
+        const reference = `${fixture.image}@${fixture.digest}`;
+        process.stdout.write(`Pulling module fixture ${reference}\n`);
+        await client.image.pull(ImageName.fromString(reference));
+        await client.image.inspect(ImageName.fromString(reference));
       }),
     { concurrency: 1 },
   ),

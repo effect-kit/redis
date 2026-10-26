@@ -2,6 +2,15 @@ import type { ServerTarget } from "#test/support/servers/Targets";
 
 /** Transport fixtures deliberately avoid optional module auto-loading entrypoints. */
 export const serverProfile = (target: ServerTarget) => {
+  if (target.fixture === "redis-stack")
+    return {
+      executable: "/opt/redis-stack/bin/redis-server",
+      port: 6379,
+      command: ["/fixture/server.conf"],
+      configuration: undefined,
+      version: ["/opt/redis-stack/bin/redis-server", "--version"],
+    };
+
   switch (target.product) {
     case "dragonfly":
       return {

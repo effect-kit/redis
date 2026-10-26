@@ -41,6 +41,12 @@ versions, architectures and actual modules come from `fixtures/backends/` and ar
 validated before image preparation/acquisition. Expected command metadata is reviewed
 separately in `fixtures/commands/` and checked against production descriptors.
 
+Module cases use `fixtures/modules/images.json` for digest-pinned Redis/Valkey module
+profiles with explicit load paths and exact module-version receipts. `fixtures:check`
+validates these before acquisition; `fixtures:pull` prepares the selected engine's
+module images too. Module versions are independent of server versions and can use
+different numeric encodings. Tests compare the actual receipts without guessing them.
+
 Ordinary command contracts are grouped under `unit/commands/core/`; `integration/commands/`
 checks executor composition and preparation snapshots. `e2e/commands/` uses the public
 client against seven pinned Redis/Valkey builds in RESP2/3, with an independent socket

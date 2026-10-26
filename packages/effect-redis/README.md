@@ -21,6 +21,8 @@ administration, native hash imports/backups and diagnostic modes are implemented
 Native Redis/Valkey Cluster adds slot routing, topology recovery and node-bound workflows.
 Native Redis/Valkey Sentinel adds verified discovery, generation-bound sessions and
 future-work failover.
+Typed Bloom, Cuckoo, Count-Min Sketch, TopK and t-digest builders require the
+corresponding server module; availability and numeric reply contracts remain explicit.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()

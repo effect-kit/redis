@@ -1,0 +1,105 @@
+[
+  {
+    "id": "redis-modules",
+    "engine": "redis",
+    "serverVersion": "8.10.2",
+    "image": "redis:8.10.2",
+    "digest": "sha256:97ec88159e6d7cfb5ddef9015386087d58a912de80112f06ebdfa78fa5989901",
+    "modules": {
+      "ReJSON": "81000",
+      "search": "81001",
+      "timeseries": "81001",
+      "vectorset": "1",
+      "bf": "81001"
+    },
+    "loadModules": [
+      "/usr/local/lib/redis/modules/rejson.so",
+      "/usr/local/lib/redis/modules/redisearch.so",
+      "/usr/local/lib/redis/modules/redistimeseries.so",
+      "/usr/local/lib/redis/modules/redisbloom.so"
+    ],
+    "sources": [
+      {
+        "repository": "https://github.com/redis/redis",
+        "ref": "8.10.2"
+      },
+      {
+        "repository": "https://github.com/RedisJSON/RedisJSON",
+        "ref": "v8.10.0"
+      },
+      {
+        "repository": "https://github.com/RediSearch/RediSearch",
+        "ref": "v8.10.1"
+      },
+      {
+        "repository": "https://github.com/RedisTimeSeries/RedisTimeSeries",
+        "ref": "v8.10.1"
+      },
+      {
+        "repository": "https://github.com/RedisBloom/RedisBloom",
+        "ref": "v8.10.1"
+      }
+    ]
+  },
+  {
+    "id": "redis-stack",
+    "engine": "redis",
+    "serverVersion": "7.4.7",
+    "image": "redis/redis-stack-server:7.4.0-v8",
+    "digest": "sha256:798ab84d9f266936b034ab11c4d04a2b8e4b441884c5aa7d17ac951eefdf742a",
+    "modules": {
+      "ReJSON": "20809",
+      "search": "21020",
+      "timeseries": "11206",
+      "bf": "20816"
+    },
+    "loadModules": [
+      "/opt/redis-stack/lib/rejson.so",
+      "/opt/redis-stack/lib/redisearch.so",
+      "/opt/redis-stack/lib/redistimeseries.so",
+      "/opt/redis-stack/lib/redisbloom.so"
+    ],
+    "sources": [
+      {
+        "repository": "https://github.com/redis-stack/redis-stack",
+        "ref": "v7.4.0-v8"
+      }
+    ]
+  },
+  {
+    "id": "valkey-modules",
+    "engine": "valkey",
+    "serverVersion": "9.1.2",
+    "image": "valkey/valkey-bundle:9.1.3",
+    "digest": "sha256:dd30c59c2b2a598e83308095220a31d6d93d64c40a839c702cb1e98c8e220660",
+    "modules": {
+      "json": "10003",
+      "search": "66049",
+      "bf": "10001",
+      "lua": "1"
+    },
+    "loadModules": [
+      "/usr/lib/valkey/libjson.so",
+      "/usr/lib/valkey/libsearch.so",
+      "/usr/lib/valkey/libvalkey_bloom.so"
+    ],
+    "sources": [
+      {
+        "repository": "https://github.com/valkey-io/valkey-bundle",
+        "ref": "d5b6592e3c510d477d2c6ea2789442ebb9de4f75"
+      },
+      {
+        "repository": "https://github.com/valkey-io/valkey-json",
+        "ref": "1.0.3"
+      },
+      {
+        "repository": "https://github.com/valkey-io/valkey-search",
+        "ref": "1.2.1"
+      },
+      {
+        "repository": "https://github.com/valkey-io/valkey-bloom",
+        "ref": "1.0.1"
+      }
+    ]
+  }
+]
