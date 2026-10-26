@@ -23,6 +23,9 @@ Native Redis/Valkey Sentinel adds verified discovery, generation-bound sessions 
 future-work failover.
 Typed Bloom, Cuckoo, Count-Min Sketch, TopK and t-digest builders require the
 corresponding server module; availability and numeric reply contracts remain explicit.
+Typed JSON builders preserve JSONPath multiplicity, legacy-path results and serialized
+bytes. `jsonSetWith`/`jsonGetWith` explicitly select a `PayloadCodec`; expanded
+RESP3 formats have separate methods and retain actual provider availability.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()

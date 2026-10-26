@@ -6,6 +6,9 @@ import { array } from "#/command/reply/Collections";
 import { boolean, nullable, simpleText, tuple, unsigned } from "#/command/reply/Data";
 import { blob, integer, mismatch, undecorate } from "#/command/reply/Scalars";
 import { score } from "#/command/reply/Score";
+import type { RespValue } from "#/protocol/RespValue";
+
+export const losslessValue: ReplyDecoder<RespValue> = Effect.succeed;
 
 /** New module builds use native RESP3 booleans where older builds return integer flags. */
 export const moduleBoolean: ReplyDecoder<boolean> = (reply) => {

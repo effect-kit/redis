@@ -36,3 +36,4 @@ export * from "#/commands/admin/index";
 export * from "#/commands/cluster/index";
 export * from "#/commands/sentinel/index";
 export * from "#/commands/probabilistic/index";
+export * from "#/commands/json/index";

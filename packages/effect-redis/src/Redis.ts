@@ -11,6 +11,7 @@ import { connectionFamily } from "#/commands/connection/Ping";
 import { geoFamily } from "#/commands/geo/Family";
 import { hashFamily } from "#/commands/hashes/Family";
 import { hyperloglogFamily } from "#/commands/hyperloglog/Family";
+import { jsonFamily } from "#/commands/json/Family";
 import { keyCommandFamily } from "#/commands/keys/Family";
 import { listFamily } from "#/commands/lists/Family";
 import { probabilisticFamily } from "#/commands/probabilistic/Family";
@@ -30,6 +31,7 @@ export const makeRedis = (executor: RedisExecutor) => ({
   ...scriptingFamily(executor),
   ...pubsubFamily(executor),
   ...probabilisticFamily(executor),
+  ...jsonFamily(executor),
   ...scanFamily(executor),
   ...streamFamily(executor),
   ...stringFamily(executor),

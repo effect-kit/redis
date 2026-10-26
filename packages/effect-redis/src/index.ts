@@ -68,6 +68,13 @@ export * as Commands from "#/commands/index";
 export * as Reply from "#/command/Reply";
 
 export * as PayloadCodec from "#/codecs/PayloadCodec";
+export type {
+  JsonPath,
+  JsonMatches,
+  JsonNumericLegacy,
+  JsonGetOptions,
+  JsonSetOptions,
+} from "#/commands/json/index";
 export * as RedisKey from "#/keys/RedisKey";
 
 export { expiryAfter } from "#/commands/strings/SetOptions";
