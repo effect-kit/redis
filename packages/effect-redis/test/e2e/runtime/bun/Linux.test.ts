@@ -54,6 +54,7 @@ it.live.each(bunTargets)(
 
       expect(receipt.platform).toBe("linux");
       expect(receipt.checks).toContain("native-crypto");
+      expect(receipt.checks).toContain("ready-layer");
       expect(receipt.checks).toContain("scoped-reader-cleanup");
       yield* recordFixture(`bun-linux-${target.fixture}`, {
         ...receipt,

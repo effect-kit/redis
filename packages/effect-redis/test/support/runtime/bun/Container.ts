@@ -27,6 +27,7 @@ export const runBunContainer = Effect.fnUntraced(function* (
     try: async () => {
       await mkdir(join(directory, "test/support/runtime/bun"), { recursive: true });
       await mkdir(join(directory, "test/support/networking"), { recursive: true });
+      await mkdir(join(directory, "test/support/client"), { recursive: true });
       await mkdir(join(directory, "test/runners"), { recursive: true });
       await cp(
         fileURLToPath(new URL("../../../runners/bun", import.meta.url)),
@@ -40,6 +41,10 @@ export const runBunContainer = Effect.fnUntraced(function* (
       await cp(
         fileURLToPath(new URL("../../networking/GatedTransport.ts", import.meta.url)),
         join(directory, "test/support/networking/GatedTransport.ts"),
+      );
+      await cp(
+        fileURLToPath(new URL("../../client/Input.ts", import.meta.url)),
+        join(directory, "test/support/client/Input.ts"),
       );
       await writeFile(join(directory, "input.json"), JSON.stringify(input), { mode: 0o600 });
     },
