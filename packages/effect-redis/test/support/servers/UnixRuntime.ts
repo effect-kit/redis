@@ -15,16 +15,21 @@ import {
 import { allocateServer } from "#test/support/servers/DockerServer";
 import type { ServerTarget } from "#test/support/servers/DockerServer";
 import { FixtureError } from "#test/support/servers/FixtureError";
-import { imageReference, runtimeImage } from "#test/support/servers/Targets";
+import { bunRuntimeImage, imageReference, runtimeImage } from "#test/support/servers/Targets";
 import { temporaryDirectory } from "#test/support/servers/TemporaryDirectory";
 
-/** Shares a Linux Unix socket with an actual Node process, including on macOS Docker hosts. */
+/** Shares a Linux Unix socket with an actual runtime, including on macOS Docker hosts. */
 export const unixRuntimeSmoke = Effect.fnUntraced(function* (
   target: ServerTarget,
-  program: "bytes" | "connection" = "bytes",
+  program: "bytes" | "connection" | "bun" = "bytes",
 ) {
   const directory = yield* temporaryDirectory;
-  const script = program === "bytes" ? "unix-bytes.ts" : "unix-connection.ts";
+  const script =
+    program === "bun"
+      ? "unix-bun.ts"
+      : program === "bytes"
+        ? "unix-bytes.ts"
+        : "unix-connection.ts";
 
   yield* Effect.tryPromise({
     try: async () => {
@@ -56,11 +61,17 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
   const volume = yield* sharedVolume;
   yield* (yield* allocateServer(target, { unixVolume: volume })).start;
 
-  const container = new FixtureContainer(imageReference(runtimeImage))
+  const container = new FixtureContainer(
+    imageReference(program === "bun" ? bunRuntimeImage : runtimeImage),
+  )
     .withNetworkMode("none")
     .withBindMounts([{ source: directory, target: "/client", mode: "ro" }])
     .sharedVolume(volume, "/socket")
-    .withCommand(["node", `/client/test/runners/probes/${script}`, "/socket/redis.sock"])
+    .withCommand([
+      ...(program === "bun" ? ["bun", "--no-env-file", "--no-install"] : ["node"]),
+      `/client/test/runners/probes/${script}`,
+      "/socket/redis.sock",
+    ])
     .withWaitStrategy(Wait.forOneShotStartup())
     .withStartupTimeout(15_000);
 
@@ -86,11 +97,21 @@ export const unixRuntimeSmoke = Effect.fnUntraced(function* (
   });
 
   return yield* Schema.decodeUnknownEffect(
-    Schema.Struct({
-      node: Schema.NonEmptyString,
-      transport: Schema.Literal("unix"),
-      exchanges: Schema.Literal(2),
-      engine: Schema.optionalKey(Schema.Literal(true)),
-    }),
+    Schema.Union([
+      Schema.Struct({
+        node: Schema.NonEmptyString,
+        transport: Schema.Literal("unix"),
+        exchanges: Schema.Literal(2),
+        engine: Schema.optionalKey(Schema.Literal(true)),
+      }),
+      Schema.Struct({
+        bun: Schema.Literal(bunRuntimeImage.version),
+        platform: Schema.Literal("linux"),
+        architecture: Schema.Literals(["arm64", "x64"]),
+        transport: Schema.Literal("unix"),
+        exchanges: Schema.Literal(2),
+        engine: Schema.Literal(true),
+      }),
+    ]),
   )(decoded).pipe(Effect.mapError(() => new FixtureError({ stage: "unix-runtime-result" })));
 });

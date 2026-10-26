@@ -21,6 +21,7 @@ leases and future-work failover. Broader runtime/provider certification remains 
 ## Development
 
 Use Node.js 24.22.0 or newer and pnpm 12.14.0 (pinned in `packageManager`).
+Live Bun scenarios also require Bun 1.4.4, pinned in `.bun-version`.
 
 ```sh
 pnpm install
@@ -43,8 +44,9 @@ Publint checking package exports.
 | `pnpm test:protocol:fuzz` | Build and run the watchdog protocol corpus                   |
 | `pnpm fixtures:check`     | Validate pinned backend test fixtures                        |
 | `pnpm fixtures:pull`      | Explicitly download pinned integration-test images           |
-| `pnpm test:node`          | Alias for the full live suite                                |
-| `pnpm test:live`          | Run live socket/fault and twelve server-version cases        |
+| `pnpm test:node`          | Run live cases through the Node adapter                      |
+| `pnpm test:bun`           | Run real Bun socket, backend and topology cases              |
+| `pnpm test:live`          | Run both runtimes against applicable live fixtures           |
 | `pnpm check`              | Formatting, lint, typecheck, test, and build                 |
 | `pnpm verify`             | Offline checks, fixture validation, fuzz and all live suites |
 
@@ -91,12 +93,14 @@ OpenSSL and explicitly prepared images. `pnpm check` stays offline.
 Run `pnpm verify` for the complete regular verification sequence. It runs offline
 checks, fixture validation, the protocol corpus and every live suite in order,
 stopping at the first failure. Prepare images once with `pnpm fixtures:pull`.
-The full live matrix currently takes about 15 minutes locally; allow it to finish.
+Topology and fault scenarios make this a long run; allow it to finish.
 
 ```sh
 pnpm fixtures:pull                     # or --engine valkey
 pnpm test:live                         # all engines and socket/fault tests
 pnpm test:live --engine valkey         # selected engine, all pinned versions
+pnpm test:bun --engine valkey          # Bun runtime, selected backend
+pnpm test:live --runtime node          # Node runtime only
 pnpm test:live --mode binary --engine redis --binary /absolute/path/redis-server
 # Explicit existing endpoint: set EFFECT_REDIS_TEST_URL privately in your shell.
 pnpm test:live --mode endpoint         # AUTH if needed, PING/ECHO only; no writes

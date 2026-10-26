@@ -1,5 +1,6 @@
 import { Effect, Fiber } from "effect";
 
+import type * as Physical from "#/transport/bun/Connection";
 import { core, native, ensure, equalBytes } from "#test/runners/bun/Runtime";
 import type { RuntimeInput } from "#test/support/runtime/bun/Input";
 
@@ -8,6 +9,41 @@ export const transport = Effect.fnUntraced(function* (
 ) {
   const config = yield* core.decodeRedisConfig(input.config);
   const checks: Array<string> = [];
+
+  if (input.operation === "late-open") {
+    const { makePhysical } = (yield* Effect.promise(
+      () => import(new URL("../../../dist/transport/bun/Connection.js", import.meta.url).href),
+    )) as typeof Physical;
+    const endpoint = config.endpoint;
+    ensure(endpoint._tag === "Tcp", "Late acquisition fixture requires TCP");
+    const physical = yield* Effect.acquireRelease(
+      Effect.sync(() => {
+        const acquiring = makePhysical(65536, 65536, false);
+        acquiring.start(
+          () =>
+            new Promise<Bun.Socket>((resolve, reject) => {
+              // Delay only acquisition initiation; the eventual socket and callbacks are native Bun.
+              setTimeout(() => {
+                Bun.connect({
+                  hostname: endpoint.host,
+                  port: endpoint.port,
+                  socket: acquiring.handlers,
+                }).then(resolve, reject);
+              }, 50);
+            }),
+        );
+        return acquiring;
+      }),
+      (owned) => owned.close,
+    );
+
+    yield* physical.close;
+    ensure(
+      (yield* Effect.flip(physical.ready)).reason === "closed",
+      "Late socket became ready after scope closure",
+    );
+    return ["late-open-terminated", "joined-acquisition"];
+  }
 
   if (input.operation === "open-error") {
     const failure = yield* Effect.flip(Effect.scoped(native.connect(config)));

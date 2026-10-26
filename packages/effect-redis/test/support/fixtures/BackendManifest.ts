@@ -58,7 +58,7 @@ export const validateBackendManifest = ({
       issues.push(`Missing KeyDB image architecture: ${architecture}`);
   }
 
-  for (const fixture of ["node", "ryuk"]) {
+  for (const fixture of ["node", "bun", "ryuk"]) {
     if (!images.some((image) => image.fixture === fixture))
       issues.push(`Missing fixture image: ${fixture}`);
   }
@@ -83,7 +83,13 @@ export const loadBackendManifest = (): BackendManifest => {
   );
 
   const manifest = { native, images };
-  const issues = validateBackendManifest(manifest);
+  const issues = [...validateBackendManifest(manifest)];
+  const bunVersion = readFileSync(
+    new URL("../../../../../.bun-version", import.meta.url),
+    "utf8",
+  ).trim();
+  if (native.find((fixture) => fixture.id === "bun")?.version !== bunVersion)
+    issues.push("Bun fixture differs from .bun-version");
   if (issues.length !== 0) throw new Error(issues.join("\n"));
 
   return manifest;

@@ -19,7 +19,7 @@
   "scripts": {
     "build": "turbo run build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "verify": "pnpm check && pnpm fixtures:check && pnpm test:protocol:fuzz && pnpm test:node",
+    "verify": "pnpm check && pnpm fixtures:check && pnpm test:protocol:fuzz && pnpm test:live --runtime all",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "pnpm lint:root && turbo run lint",
@@ -31,6 +31,7 @@
     "prepare": "lefthook install",
     "test:protocol:fuzz": "pnpm build && pnpm --filter @envoy1084/effect-redis test:protocol:fuzz",
     "test:node": "pnpm --filter @envoy1084/effect-redis test:node",
+    "test:bun": "pnpm --filter @envoy1084/effect-redis test:bun",
     "fixtures:pull": "pnpm --filter @envoy1084/effect-redis fixtures:pull",
     "test:live": "pnpm --filter @envoy1084/effect-redis test:live",
     "fixtures:check": "pnpm --filter @envoy1084/effect-redis fixtures:check"

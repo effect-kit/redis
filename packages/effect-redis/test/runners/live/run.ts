@@ -3,6 +3,7 @@ import { rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { liveOptions } from "#test/runners/live/Options";
+import { bunRuntimeImage } from "#test/support/servers/Targets";
 
 const options = liveOptions(
   process.argv.slice(2).filter((arg) => arg !== "--"),
@@ -13,8 +14,15 @@ const env = {
   ...process.env,
   EFFECT_REDIS_TEST_ENGINE: options.engine,
   EFFECT_REDIS_TEST_MODE: options.mode,
+  EFFECT_REDIS_TEST_RUNTIME: options.runtime,
   ...(options.binary === undefined ? {} : { EFFECT_REDIS_TEST_BINARY: options.binary }),
 };
+
+if (options.runtime !== "node") {
+  const version = spawnSync("bun", ["--version"], { encoding: "utf8", timeout: 5000 });
+  if (version.error || version.status !== 0 || version.stdout.trim() !== bunRuntimeImage.version)
+    throw new Error(`Live Bun tests require Bun ${bunRuntimeImage.version}; check .bun-version`);
+}
 
 rmSync(new URL("../../results/", import.meta.url), { recursive: true, force: true });
 

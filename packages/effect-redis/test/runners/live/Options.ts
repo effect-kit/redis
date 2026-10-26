@@ -1,6 +1,7 @@
 import { isAbsolute } from "node:path";
 import { parseArgs } from "node:util";
 
+import { selectRuntime } from "#test/support/runtime/Selection";
 import { selectEngine } from "#test/support/servers/Targets";
 
 export const liveOptions = (args: ReadonlyArray<string>, env: NodeJS.ProcessEnv) => {
@@ -10,6 +11,7 @@ export const liveOptions = (args: ReadonlyArray<string>, env: NodeJS.ProcessEnv)
       engine: { type: "string" },
       mode: { type: "string", default: "containers" },
       binary: { type: "string" },
+      runtime: { type: "string" },
     },
     strict: true,
   });
@@ -31,5 +33,9 @@ export const liveOptions = (args: ReadonlyArray<string>, env: NodeJS.ProcessEnv)
   if (mode !== "binary" && values.binary !== undefined)
     throw new Error("--binary requires binary mode");
 
-  return { mode, engine, binary: values.binary };
+  const runtime = selectRuntime(
+    values.runtime ?? env.EFFECT_REDIS_TEST_RUNTIME ?? (mode === "containers" ? "all" : "node"),
+  );
+
+  return { mode, engine, runtime, binary: values.binary };
 };

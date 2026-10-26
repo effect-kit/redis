@@ -73,7 +73,8 @@
     "test:unit": "vitest run --config test/vitest.config.ts test/unit",
     "test:protocol:fuzz": "node test/runners/fuzz/run.ts",
     "prepack": "pnpm run build",
-    "test:node": "pnpm run test:live",
+    "test:node": "pnpm run test:live --runtime node",
+    "test:bun": "pnpm run test:live --runtime bun",
     "fixtures:pull": "node test/runners/fixtures/pull.ts",
     "test:live": "node test/runners/live/run.ts",
     "fixtures:check": "node test/runners/fixtures/check.ts"

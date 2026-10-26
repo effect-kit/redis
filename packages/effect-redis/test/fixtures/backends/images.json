@@ -60,6 +60,13 @@
     "version": "24.22.0"
   },
   {
+    "fixture": "bun",
+    "image": "oven/bun:1.4.4-debian",
+    "variant": "debian",
+    "digest": "sha256:93d5032fe06d163427822dc1598f420363759bb18155c9cc90eb1be05a64a19e",
+    "version": "1.4.4"
+  },
+  {
     "fixture": "dragonfly",
     "image": "docker.dragonflydb.io/dragonflydb/dragonfly:v2.0.2",
     "version": "2.0.2",

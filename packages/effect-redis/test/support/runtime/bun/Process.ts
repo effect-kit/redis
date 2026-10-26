@@ -5,9 +5,10 @@ import { Effect, Redacted, Schema } from "effect";
 
 import type { RuntimeInput } from "#test/support/runtime/bun/Input";
 import { FixtureError } from "#test/support/servers/FixtureError";
+import { bunRuntimeImage } from "#test/support/servers/Targets";
 
 const Receipt = Schema.Struct({
-  bun: Schema.Literal("1.4.4"),
+  bun: Schema.Literal(bunRuntimeImage.version),
   platform: Schema.NonEmptyString,
   architecture: Schema.NonEmptyString,
   scenario: Schema.NonEmptyString,

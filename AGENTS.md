@@ -157,6 +157,10 @@ Never describe planned command or server compatibility as implemented or verifie
   use separate checkouts for independent artifact verification.
 - `pnpm test:live --engine redis|valkey|dragonfly|keydb|redict|garnet|kvrocks|core`
   selects a live suite. Default `all` runs every engine and socket/fault case.
+  Runtime selection is independent: `--runtime node|bun|all`, with both runtimes
+  selected by default for container mode. `test:node` and `test:bun` select one.
+  Bun scenarios use compiled entrypoints in real pinned Bun processes, plus Linux
+  container probes. Validate `.bun-version` and fixture metadata before acquisition.
   `--mode binary --engine redis|valkey --binary /absolute/path` owns a temporary native
   server process. `--mode endpoint` requires explicit `EFFECT_REDIS_TEST_URL` and uses
   connection-only AUTH plus read-only PING/ECHO; optional `EFFECT_REDIS_TEST_CA` supplies
@@ -176,7 +180,7 @@ Never describe planned command or server compatibility as implemented or verifie
   to validate backend pins before live acquisition; never depend on ignored research. Report skipped
   checks and their reason.
 - Use `pnpm verify` for the full regular sequence: `check`, `fixtures:check`,
-  `test:protocol:fuzz`, then `test:node`. It stops on failure and keeps builds ahead
+  `test:protocol:fuzz`, then `test:live --runtime all`. It stops on failure and keeps builds ahead
   of live mounts. Docker, OpenSSL and explicitly prepared images are required.
   Artifact-consumer and research-free phase checks remain separate distribution gates.
 - Check emitted artifacts and package contents before a release. Never include

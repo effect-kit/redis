@@ -39,3 +39,18 @@ it.live("BUN-SOCKET: clean EOF retains a fragmented large payload", () =>
     expect(receipt.checks).toContain("drain-before-eof");
   }),
 );
+
+it.live("BUN-SOCKET: acquisition cleanup joins late native sockets and refused connections", () =>
+  Effect.gen(function* () {
+    const peer = yield* loopback((socket) => socket.resume());
+    const config = { endpoint: { host: "127.0.0.1", port: peer.port } };
+
+    const late = yield* runBun({ scenario: "transport", operation: "late-open", config });
+    expect(late.checks).toContain("joined-acquisition");
+    expect(peer.counts()).toEqual({ accepted: 1, closed: 1 });
+    yield* peer.close;
+
+    const refused = yield* runBun({ scenario: "transport", operation: "open-error", config });
+    expect(refused.checks).toContain("open-failure");
+  }),
+);

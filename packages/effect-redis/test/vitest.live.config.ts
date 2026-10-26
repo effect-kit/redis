@@ -2,9 +2,11 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "vitest/config";
 
+import { selectRuntime } from "#test/support/runtime/Selection";
 import { selectedEngine } from "#test/support/servers/Targets";
 
 const mode = process.env.EFFECT_REDIS_TEST_MODE ?? "containers";
+const runtime = selectRuntime(process.env.EFFECT_REDIS_TEST_RUNTIME);
 if (!["containers", "binary", "endpoint"].includes(mode))
   throw new Error("Unknown live test mode; use pnpm test:live for validated options");
 
@@ -17,7 +19,6 @@ const subscriptionFiles = "test/e2e/subscriptions/*.test.ts";
 const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
   all: [
     "test/integration/transport/node/*.test.ts",
-    "test/integration/transport/bun/*.test.ts",
     "test/integration/backends/*.test.ts",
     commandFiles,
     sessionFiles,
@@ -30,7 +31,7 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
     "test/e2e/sentinel/*.test.ts",
     "test/e2e/modules/*.test.ts",
   ],
-  core: ["test/integration/transport/node/*.test.ts", "test/integration/transport/bun/*.test.ts"],
+  core: ["test/integration/transport/node/*.test.ts"],
   redis: [
     "test/integration/backends/*.test.ts",
     commandFiles,
@@ -63,12 +64,27 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
 
 const containerFiles = engineFiles[selectedEngine] ?? [backend("Transport"), backend("Connection")];
 
-const include =
+const nodeFiles =
   mode === "endpoint"
     ? ["test/e2e/smoke/Endpoint.test.ts"]
     : mode === "binary"
       ? ["test/e2e/smoke/Binary.test.ts"]
       : containerFiles;
+
+const bunFiles =
+  mode === "endpoint"
+    ? ["test/e2e/smoke/BunEndpoint.test.ts"]
+    : mode === "binary"
+      ? ["test/e2e/smoke/BunBinary.test.ts"]
+      : selectedEngine === "core"
+        ? ["test/integration/transport/bun/*.test.ts"]
+        : selectedEngine === "all"
+          ? ["test/integration/transport/bun/*.test.ts", "test/e2e/runtime/bun/*.test.ts"]
+          : ["redis", "valkey"].includes(selectedEngine)
+            ? ["test/e2e/runtime/bun/*.test.ts"]
+            : ["test/e2e/runtime/bun/Smoke.test.ts"];
+
+const include = [...(runtime === "bun" ? [] : nodeFiles), ...(runtime === "node" ? [] : bunFiles)];
 
 export default defineConfig({
   root: fileURLToPath(new URL("../", import.meta.url)),

@@ -23,7 +23,7 @@ await Effect.runPromise(
       Effect.promise(async () => {
         if (
           selectedEngine !== "all" &&
-          ![selectedEngine, "node", "ryuk"].includes(image.fixture.split("-")[0] ?? "")
+          ![selectedEngine, "node", "bun", "ryuk"].includes(image.fixture.split("-")[0] ?? "")
         )
           return;
 

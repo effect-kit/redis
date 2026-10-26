@@ -4,9 +4,22 @@ import { liveOptions } from "#test/runners/live/Options";
 
 describe("explicit live execution modes", () => {
   it("defaults to disposable containers and accepts a reviewed engine", () => {
-    expect(liveOptions([], {})).toEqual({ mode: "containers", engine: "all", binary: undefined });
+    expect(liveOptions([], {})).toEqual({
+      mode: "containers",
+      engine: "all",
+      runtime: "all",
+      binary: undefined,
+    });
     expect(liveOptions(["--engine", "valkey"], {}).engine).toBe("valkey");
     expect(() => liveOptions(["--engine", "unknown"], {})).toThrow();
+  });
+
+  it("selects runtime independently from backend and rejects unknown runtimes", () => {
+    expect(liveOptions(["--runtime", "bun", "--engine", "valkey"], {}).runtime).toBe("bun");
+    expect(liveOptions(["--runtime", "node"], { EFFECT_REDIS_TEST_RUNTIME: "bun" }).runtime).toBe(
+      "node",
+    );
+    expect(() => liveOptions(["--runtime", "other"], {})).toThrow();
   });
 
   it("requires explicit endpoint input and keeps it out of parsed options", () => {

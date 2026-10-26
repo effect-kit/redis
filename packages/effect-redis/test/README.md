@@ -30,6 +30,8 @@ Run from the workspace root:
 - `pnpm fixtures:pull --engine valkey`: explicitly prepare pinned images.
 - `pnpm test:live`: native/backend integration and e2e via `vitest.live.config.ts`.
 - `pnpm test:live --engine valkey`: select the engine's applicable live cases.
+- `pnpm test:bun --engine valkey`: run the selected backend through actual Bun processes.
+- `pnpm test:live --runtime node|bun|all`: select the runtime independently of the engine.
 - `pnpm test:protocol:fuzz`: built codec corpus in a worker with an external deadline.
 - `pnpm typecheck`: includes `types/`; Vitest never executes those contracts.
 
@@ -40,6 +42,13 @@ OpenSSL plus prepared images; no automatic downloads or container reuse. Engine
 versions, architectures and actual modules come from `fixtures/backends/` and are
 validated before image preparation/acquisition. Expected command metadata is reviewed
 separately in `fixtures/commands/` and checked against production descriptors.
+
+Bun scenarios load compiled entrypoints in bounded, awaited child processes.
+`integration/transport/bun` owns native socket/TLS/fault cases; `e2e/runtime/bun`
+owns real application/module/topology scenarios and pinned Linux Unix probes.
+Fixture metadata and `.bun-version` must agree before acquisition. Explicit binary
+and endpoint modes default to Node and accept `--runtime bun|all`; endpoint probes
+send only connection AUTH and read-only PING/ECHO in either runtime.
 
 Module cases use `fixtures/modules/images.json` for digest-pinned Redis/Valkey module
 profiles with explicit load paths and exact module-version receipts. `fixtures:check`

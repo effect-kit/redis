@@ -154,5 +154,17 @@
       "refUrl": "https://nodejs.org/dist/v24.22.0/SHASUMS256.txt"
     },
     "configuration": "Node 24 baseline; runtime matrix below"
+  },
+  {
+    "id": "bun",
+    "kind": "runtime",
+    "product": "bun",
+    "version": "1.4.4",
+    "source": {
+      "repository": "https://github.com/oven-sh/bun",
+      "commit": "38afee6c84fcf48c0edb2466aa4b27d287a59c30",
+      "refUrl": "https://api.github.com/repos/oven-sh/bun/git/ref/tags/bun-v1.4.4"
+    },
+    "configuration": "native TCP/TLS/Unix; exact runtime receipt; no Redis SDK"
   }
 ]

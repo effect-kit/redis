@@ -101,10 +101,12 @@ Run from the workspace root:
 - `pnpm verify`: offline checks, fixture validation, protocol corpus and all live suites.
 
 Default tests require no Redis process, credentials or network access. `pnpm test:live`
-(`test:node` alias) uses scoped Testcontainers fixtures for twelve versions across
+selects both runtimes; `test:node` and `test:bun` select one. Live tests use scoped
+Testcontainers fixtures for twelve versions across
 Redis, Valkey, Dragonfly, KeyDB, Redict, Garnet and Kvrocks. Prepare digest-pinned
 images explicitly with `pnpm fixtures:pull`; tests require a local Docker-compatible
-daemon and OpenSSL. `--engine valkey` selects an engine. Explicit `--mode binary`
+daemon and OpenSSL. Bun cases require the `.bun-version` runtime; CI installs it.
+`--runtime node|bun|all` and `--engine valkey` select independent dimensions. Explicit `--mode binary`
 owns a supplied Redis/Valkey executable; `--mode endpoint` reads
 `EFFECT_REDIS_TEST_URL` and runs read-only PING/ECHO, with connection-only AUTH when
 needed. Optional `EFFECT_REDIS_TEST_CA` names a custom CA file. See the workspace
