@@ -20,6 +20,7 @@ export default defineConfig({
       "test/integration/cluster/**/*.test.ts",
       "test/integration/sentinel/**/*.test.ts",
       "test/integration/search/**/*.test.ts",
+      "test/integration/upstash/**/*.test.ts",
     ],
     passWithNoTests: false,
     testTimeout: 5000,

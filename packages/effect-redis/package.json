@@ -61,6 +61,10 @@
     "./bun": {
       "types": "./dist/bun.d.ts",
       "default": "./dist/bun.js"
+    },
+    "./upstash": {
+      "types": "./dist/upstash.d.ts",
+      "default": "./dist/upstash.js"
     }
   },
   "publishConfig": {

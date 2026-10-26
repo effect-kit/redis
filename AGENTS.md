@@ -264,6 +264,13 @@ real-server conformance before making public compatibility promises.
 - Use `effect/http` HttpClient/FetchHttpClient for HTTP. Do not force stateless HTTP
   through the stateful TCP connection contract. Share command descriptors and codecs
   only when provider/transport semantics match.
+- HTTP execution lives behind `/upstash`. Keep bearer credentials Redacted, redirects
+  manual, request spans free of payload-bearing paths, buffers/concurrency bounded and
+  fetch workers owned by both service Scope and caller cancellation. JSON-only batches
+  preserve number lexemes and snapshot command-dependent response policies. Reject raw,
+  custom and scripting transaction replies whose erased RESP types cannot be recovered.
+  Reuse Effect's bounded Sse decoder; readiness requires provider acknowledgment and
+  EOF/retry/overflow exposes a gap/failure without automatic replay or reconnection.
 - Keep command families in separate modules/files (strings, hashes, lists, sets,
   sorted sets, streams, keys, Pub/Sub, scripting, administration, module families).
   Keep research catalogs split into category files under each backend's folder too.

@@ -1,6 +1,12 @@
 # @envoy1084/effect-redis
 
 A runtime-neutral Redis client foundation for Effect v4. The package remains private.
+
+The `/upstash` entrypoint provides an Effect HttpClient executor and acknowledged,
+scoped text SSE subscriptions/MONITOR. It shares ordinary command decoders and batch
+types. HTTP has explicit encoding and capability limits: physical sessions stay
+native, and JSON-only transactions reject raw/custom/script replies whose RESP types
+cannot be reconstructed losslessly. Hosted Upstash certification remains pending.
 The public API includes configuration decoding, binary `encodeCommand`, incremental
 `makeRespDecoder`, lossless `RespValue`/`RespPairs`, `RedisArgument`/`RedisCommand`,
 codec limits and typed errors. The Node-only `/node` entrypoint exports `connect`,

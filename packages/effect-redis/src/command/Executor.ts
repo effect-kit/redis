@@ -12,6 +12,7 @@ import type { SentinelError } from "#/errors/SentinelError";
 import type { ServerError } from "#/errors/ServerError";
 import type { SessionError } from "#/errors/SessionError";
 import { UnsupportedCommandError } from "#/errors/UnsupportedCommandError";
+import type { UpstashError } from "#/errors/UpstashError";
 
 export type RedisError =
   | ExecutionError
@@ -21,7 +22,8 @@ export type RedisError =
   | SessionError
   | ClusterError
   | SentinelError
-  | UnsupportedCommandError;
+  | UnsupportedCommandError
+  | UpstashError;
 
 export interface RedisExecutor {
   readonly execute: <A, E, RD, RE>(
