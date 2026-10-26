@@ -14,6 +14,9 @@ export interface TransportConnection {
 
   /** Idempotent close wakes pending operations; acquisition also registers scoped cleanup. */
   readonly close: Effect.Effect<void, TransportError>;
+
+  /** Optional local retirement signal, not a remote liveness probe. Prevents admission after deliberate closure. */
+  readonly isRetired?: () => boolean;
 }
 
 export class Transport extends Context.Service<

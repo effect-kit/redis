@@ -313,7 +313,12 @@ export const makeGeneration = Effect.fnUntraced(function* (
     takePush,
     enqueue,
     retire,
-    isReady: () => ready && !stopped,
+    isReady: () => {
+      // Credential rotation can settle native close before the reader fiber observes its wakeup.
+      // Fence new admission synchronously; replacement still joins this generation's full cleanup.
+      if (transport.isRetired?.() === true) retire("transport");
+      return ready && !stopped;
+    },
     failure: () => failure,
     fatal: () => fatal,
     pushBytes: () => pushBytes,

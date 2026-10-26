@@ -57,6 +57,7 @@ export const makeCredentialBindings = (transport: Transport["Service"]) =>
       );
 
       return {
+        isRetired: () => closed || physical.isRetired?.() === true,
         read: Effect.suspend(() =>
           closed
             ? expired("read")
