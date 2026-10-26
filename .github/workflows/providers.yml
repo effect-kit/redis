@@ -1,8 +1,6 @@
 name: Hosted providers
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       provider:
@@ -43,7 +41,7 @@ jobs:
         with:
           bun-version-file: .bun-version
       - run: pnpm install --frozen-lockfile
-      - if: github.event_name == 'push' || inputs.runtime == 'all' || inputs.runtime == 'deno'
+      - if: inputs.runtime == 'all' || inputs.runtime == 'deno'
         run: pnpm providers:prepare
       - run: pnpm test:providers --env --provider "$PROVIDER_SELECTION" --runtime "$RUNTIME_SELECTION"
         env:

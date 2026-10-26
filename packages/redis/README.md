@@ -198,7 +198,7 @@ keys use unique prefixes and exact-key cleanup; no shared database flush occurs.
 Credentials travel through stdin or secret bindings. Fresh, runtime/build-bound JSON
 and JUnit evidence stays in ignored `test/results/providers/<run-id>/`.
 
-The **Hosted providers** GitHub workflow runs on main pushes and manual default-branch dispatch, uses
+The **Hosted providers** GitHub workflow runs only through manual default-branch dispatch, uses
 the `providers` environment's corresponding secrets and serializes Worker deployments.
 It never exposes provider secrets to PR jobs. Container CI keeps its existing main-push
 and authorized PR-trigger policy; hosted CI execution requires repository configuration.

@@ -879,6 +879,6 @@ total is promised. Sources remain accessible without ignored research:
 - Native credential wrappers expose local `isRetired` state. Generation admission
   must observe deliberate closure before asynchronous reader retirement, and replacement
   must still join cleanup. Never retry a command to hide a rotation race.
-- Hosted GitHub CI runs on main pushes/manual default-branch dispatch with a `providers` environment and
+- Hosted GitHub CI runs only through manual default-branch dispatch with a `providers` environment and
   serialized deployments. PR jobs receive no hosted credentials; missing prerequisites
   fail explicitly. Do not claim remote CI passed until an actual run is observed.
