@@ -52,7 +52,8 @@ export const functionList = (options: FunctionListOptions = {}) =>
 export const functionLoad = (source: RedisArgument, replace = false) =>
   command(
     "LOAD",
-    text,
+    // Kvrocks acknowledges loading with an empty simple string; preserve it instead of inventing a name.
+    simpleText,
     parse(Schema.Tuple([Argument, Schema.Boolean]), [source, replace]).pipe(
       Effect.map(([body, overwrite]) => [...(overwrite ? ["REPLACE"] : []), body]),
     ),

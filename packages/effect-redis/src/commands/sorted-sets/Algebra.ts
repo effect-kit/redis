@@ -1,8 +1,9 @@
 import { Effect, Schema } from "effect";
 
+import type { ReplyDecoder } from "#/command/Command";
 import { array } from "#/command/reply/Collections";
 import { nullable, pairs, tuple } from "#/command/reply/Data";
-import { blob, integer } from "#/command/reply/Scalars";
+import { blob, integer, mismatch, undecorate } from "#/command/reply/Scalars";
 import { scoreToken } from "#/command/reply/Score";
 import { keyIndexes, ordinary } from "#/commands/internal/Command";
 import { Arguments, NonNegative, parse, Positive } from "#/commands/internal/Input";
@@ -115,8 +116,23 @@ const difference = (keys: SortedKeys, withScores: boolean) =>
     })),
   );
 
+const differenceMembers: ReplyDecoder<ReadonlyArray<Uint8Array>> = (reply) => {
+  const value = undecorate(reply);
+  if (value._tag !== "Array") return array(blob)(reply);
+  if (!value.values.some((entry) => entry._tag === "Array")) return array(blob)(reply);
+
+  // Dragonfly RESP3 wraps each member in a one-element row without WITHSCORES.
+  const members = [];
+  for (const row of value.values) {
+    if (row._tag !== "Array" || row.values.length !== 1 || row.values[0] === undefined)
+      return Effect.fail(mismatch("array-length", reply));
+    members.push(row.values[0]);
+  }
+  return array(blob)({ _tag: "Array", values: members });
+};
+
 export const zdiff = (keys: SortedKeys) =>
-  ordinary(catalog.ZDIFF, array(blob), difference(keys, false));
+  ordinary(catalog.ZDIFF, differenceMembers, difference(keys, false));
 
 export const zdiffWithScores = (keys: SortedKeys) =>
   ordinary(catalog.ZDIFF, pairs(blob, scoreToken), difference(keys, true));

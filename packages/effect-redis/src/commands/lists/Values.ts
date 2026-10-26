@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import { array } from "#/command/reply/Collections";
-import { nullable } from "#/command/reply/Data";
+import { nullable, unsigned } from "#/command/reply/Data";
 import { blob, integer, optional, status } from "#/command/reply/Scalars";
 import { keyed } from "#/commands/internal/Command";
 import {
@@ -139,5 +139,6 @@ export const lposCount = (
     Effect.gen(function* () {
       return [value, "COUNT", yield* nonNegative(count), ...(yield* positionTokens(options))];
     }),
-    array(integer),
+    // Kvrocks encodes counted positions as decimal bulk strings, including positions above 2^53.
+    array(unsigned),
   );

@@ -1,8 +1,9 @@
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 
+import type { ReplyDecoder } from "#/command/Command";
 import { array } from "#/command/reply/Collections";
 import { nullable, pairs, tuple } from "#/command/reply/Data";
-import { blob, integer, optional } from "#/command/reply/Scalars";
+import { blob, integer, mismatch, optional, undecorate } from "#/command/reply/Scalars";
 import { scoreToken } from "#/command/reply/Score";
 import { keyed } from "#/commands/internal/Command";
 import {
@@ -133,8 +134,20 @@ export const zpopmax = (key: RedisArgument, count: Integer = 1) =>
     "read-write",
   );
 
+const randomMember: ReplyDecoder<Option.Option<Uint8Array>> = (reply) => {
+  const value = undecorate(reply);
+  if (value._tag !== "Array") return optional(blob)(reply);
+
+  // Dragonfly wraps the uncounted result in an array; never discard unexpected extra members.
+  if (value.values.length === 0) return Effect.succeed(Option.none());
+  const member = value.values[0];
+  return value.values.length === 1 && member !== undefined
+    ? blob(member).pipe(Effect.map(Option.some))
+    : Effect.fail(mismatch("array-length", reply));
+};
+
 export const zrandmember = (key: RedisArgument) =>
-  keyed(catalog.ZRANDMEMBER, key, Effect.succeed([]), optional(blob));
+  keyed(catalog.ZRANDMEMBER, key, Effect.succeed([]), randomMember);
 
 export const zrandmemberCount = (key: RedisArgument, count: Integer) =>
   keyed(catalog.ZRANDMEMBER, key, inputInteger(count).pipe(Effect.map((n) => [n])), array(blob));

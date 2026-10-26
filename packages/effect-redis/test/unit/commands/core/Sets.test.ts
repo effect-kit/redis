@@ -92,6 +92,14 @@ commandCases("CORE-SETS", [
     keys: [1],
   },
   {
+    label: "SRANDMEMBER Dragonfly RESP3 repeated entries",
+    command: C.srandmemberCount("k", -2),
+    tokens: ["SRANDMEMBER", "k", "-2"],
+    reply: { _tag: "Set", values: [blob("a"), blob("a")] },
+    expected: [bytes("a"), bytes("a")],
+    keys: [1],
+  },
+  {
     label: "SMOVE two keys",
     command: C.smove("a", "b", "member"),
     tokens: ["SMOVE", "a", "b", "member"],

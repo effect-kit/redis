@@ -149,6 +149,14 @@ commandCases("CORE-LISTS", [
     keys: [1],
   },
   {
+    label: "LPOS Kvrocks decimal bulk positions",
+    command: C.lposCount("k", "a", 0),
+    tokens: ["LPOS", "k", "a", "COUNT", "0"],
+    reply: array(blob("0"), blob("9007199254740993")),
+    expected: [0n, 9007199254740993n],
+    keys: [1],
+  },
+  {
     label: "LMOVE keys",
     command: C.lmove("a", "b", "LEFT", "RIGHT"),
     tokens: ["LMOVE", "a", "b", "LEFT", "RIGHT"],

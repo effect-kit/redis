@@ -45,7 +45,8 @@ export const srandmember = (key: RedisArgument) =>
   keyed(catalog.SRANDMEMBER, key, Effect.succeed([]), optional(blob));
 
 export const srandmemberCount = (key: RedisArgument, count: Integer) =>
-  keyed(catalog.SRANDMEMBER, key, inputInteger(count).pipe(Effect.map((n) => [n])), array(blob));
+  // Dragonfly uses a RESP3 set even for negative counts; preserve every wire entry, including repeats.
+  keyed(catalog.SRANDMEMBER, key, inputInteger(count).pipe(Effect.map((n) => [n])), members(blob));
 
 export const smove = (source: RedisArgument, destination: RedisArgument, value: RedisArgument) =>
   ordinary(
