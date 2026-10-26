@@ -88,3 +88,27 @@ it.effect(
         expect((yield* Effect.flip(command.prepare))._tag).toBe("CommandInputError");
     }),
 );
+
+it.effect("INFO-CACHE preserves signed clock ages and missing INFO", () =>
+  Effect.gen(function* () {
+    const prepared = yield* Commands.sentinelInfoCache(["cache"]).prepare;
+    expect(prepared.tokens).toEqual(["SENTINEL", "INFO-CACHE", "cache"]);
+
+    const reply = array(
+      blob("cache"),
+      array(
+        array({ _tag: "Integer", value: -100n }, blob("info")),
+        array({ _tag: "Integer", value: 0n }, { _tag: "Null", kind: "bulk" }),
+      ),
+    );
+    expect(yield* decodeReply(prepared, reply)).toEqual([
+      [
+        "cache",
+        [
+          [-100n, Option.some("info")],
+          [0n, Option.none()],
+        ],
+      ],
+    ]);
+  }),
+);

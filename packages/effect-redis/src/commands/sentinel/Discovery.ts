@@ -2,7 +2,7 @@ import { Effect, Option } from "effect";
 
 import { array } from "#/command/reply/Collections";
 import { nullable, pairs, simpleText, tuple, unsigned } from "#/command/reply/Data";
-import { mismatch } from "#/command/reply/Scalars";
+import { integer, mismatch } from "#/command/reply/Scalars";
 import { fields } from "#/commands/admin/Build";
 import { name, names, sentinelCommand } from "#/commands/sentinel/Build";
 
@@ -38,10 +38,10 @@ export const sentinelSlaves = (service: string) =>
 export const sentinelSentinels = (service: string) =>
   sentinelCommand("SENTINELS", array(fields), name(service));
 
-/** Cached INFO remains ordered and may be absent; ages retain exact integer milliseconds. */
+/** Cached INFO can be absent; wall-clock adjustments can produce signed millisecond ages. */
 export const sentinelInfoCache = (services: readonly [string, ...string[]]) =>
   sentinelCommand(
     "INFO-CACHE",
-    pairs(simpleText, pairs(unsigned, nullable(simpleText))),
+    pairs(simpleText, pairs(integer, nullable(simpleText))),
     names(services),
   );
