@@ -89,7 +89,11 @@ const bunFiles =
             ? ["test/e2e/runtime/bun/*.test.ts"]
             : ["test/e2e/runtime/bun/Smoke.test.ts"];
 
-const include = [...(runtime === "bun" ? [] : nodeFiles), ...(runtime === "node" ? [] : bunFiles)];
+const include = [
+  ...(mode === "containers" && selectedEngine !== "core" ? ["test/e2e/conformance/*.test.ts"] : []),
+  ...(runtime === "bun" ? [] : nodeFiles),
+  ...(runtime === "node" ? [] : bunFiles),
+];
 
 const httpOnly = process.env.EFFECT_REDIS_TEST_HTTP_ONLY === "1";
 if (httpOnly && mode !== "containers")
