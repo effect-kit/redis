@@ -173,6 +173,9 @@ catalogs:
     '@effect/vitest':
       specifier: ^4.0.6
       version: 4.0.6
+    '@types/bun':
+      specifier: '>=1.4.4 <1.4.5'
+      version: 1.4.4
     '@types/node':
       specifier: ^24.19.2
       version: 24.19.2
@@ -260,6 +263,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.6(effect@4.0.6)(vitest@5.0.5(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1)))
+      '@types/bun':
+        specifier: 'catalog:'
+        version: 1.4.4
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
@@ -851,6 +857,9 @@ packages:
     cpu: [arm64]
     os: [win32]
 
+  '@types/bun@1.4.4':
+    resolution: {integrity: sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ==}
+
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
@@ -1208,6 +1217,9 @@ packages:
   buildcheck@0.0.7:
     resolution: {integrity: sha512-lHblz4ahamxpTmnsk+MNTRWsjYKv965MwOrSJyeD588rR3Jcu7swE+0wN5F+PbL5cjgu/9ObkhfzEPuofEMwLA==}
     engines: {node: '>=10.0.0'}
+
+  bun-types@1.4.4:
+    resolution: {integrity: sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ==}
 
   byline@5.0.0:
     resolution: {integrity: sha512-s6webAy+R4SR8XVuJWt2V2rGvhnrhxN+9S15GNuTK3wKPOXFF6RNc+8ug2XhH+2s4f+uudG4kUVYmYOQWL2g0Q==}
@@ -2645,6 +2657,10 @@ snapshots:
   '@turbo/windows-arm64@2.11.10':
     optional: true
 
+  '@types/bun@1.4.4':
+    dependencies:
+      bun-types: 1.4.4
+
   '@types/chai@5.2.3':
     dependencies:
       '@types/deep-eql': 4.0.2
@@ -2917,6 +2933,11 @@ snapshots:
 
   buildcheck@0.0.7:
     optional: true
+
+  bun-types@1.4.4:
+    dependencies:
+      '@types/node': 24.19.2
+      undici-types: 7.24.6
 
   byline@5.0.0: {}
 

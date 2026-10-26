@@ -6,6 +6,12 @@ The public API includes configuration decoding, binary `encodeCommand`, incremen
 codec limits and typed errors. The Node-only `/node` entrypoint exports `connect`,
 `layer`, `Transport` and `TransportConnection` for scoped TCP/TLS/Unix byte I/O,
 plus an optional `cryptoLayer` for Effect Crypto.
+The `/bun` entrypoint supplies the same `connect`, `layer` and optional `cryptoLayer`
+using native Bun sockets and hashing. Development pins Bun 1.4.4 in `.bun-version`.
+Choose its Layer when composing a Bun application; command APIs remain shared.
+Before TCP establishment Bun exposes no abort handle: scope cleanup joins native
+settlement and closes any late socket, so cleanup can outlast the readiness timeout.
+Established sockets and pending TLS handshakes can be terminated directly.
 The universal entrypoint also exports `makeConnection`, the `Connection` service and
 its scoped Layer, connection options/snapshots, and typed admission/handshake/connection
 failures. The engine executes caller-declared ordinary single-reply commands. `Redis`,

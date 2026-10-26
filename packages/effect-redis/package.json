@@ -56,6 +56,10 @@
     "./node": {
       "types": "./dist/node.d.ts",
       "default": "./dist/node.js"
+    },
+    "./bun": {
+      "types": "./dist/bun.d.ts",
+      "default": "./dist/bun.js"
     }
   },
   "publishConfig": {
@@ -76,6 +80,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "effect": "catalog:",
     "klarity": "catalog:",

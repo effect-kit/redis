@@ -17,6 +17,7 @@ const subscriptionFiles = "test/e2e/subscriptions/*.test.ts";
 const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
   all: [
     "test/integration/transport/node/*.test.ts",
+    "test/integration/transport/bun/*.test.ts",
     "test/integration/backends/*.test.ts",
     commandFiles,
     sessionFiles,
@@ -29,7 +30,7 @@ const engineFiles: Readonly<Record<string, ReadonlyArray<string>>> = {
     "test/e2e/sentinel/*.test.ts",
     "test/e2e/modules/*.test.ts",
   ],
-  core: ["test/integration/transport/node/*.test.ts"],
+  core: ["test/integration/transport/node/*.test.ts", "test/integration/transport/bun/*.test.ts"],
   redis: [
     "test/integration/backends/*.test.ts",
     commandFiles,

@@ -1,6 +1,7 @@
 {
   "extends": "klarity/tsconfig/app/node",
   "compilerOptions": {
+    "types": ["node", "bun"],
     "allowImportingTsExtensions": true,
     "allowJs": true,
     "checkJs": true

@@ -61,6 +61,11 @@ Never describe planned command or server compatibility as implemented or verifie
   Bun.RedisClient, Upstash SDKs, RESP parsers, or unrelated runtime libraries.
 - Development tools are allowed. Prefer installed tools and platform APIs; explain
   any necessary addition. Klarity supplies configuration, not the compiler binaries.
+- Bun development uses `.bun-version` and matching `@types/bun` 1.4.4. Keep native
+  type declarations within the tested patch until API compatibility is reviewed.
+  Bun's `/bun` entrypoint owns native sockets/Crypto; universal code imports neither
+  runtime adapter. Before TCP establishment native Bun has no abort handle, so join
+  acquisition settlement and close late sockets rather than abandoning them.
 - Start in `packages/effect-redis`; create packages only for a real consumer, runtime,
   dependency, or ownership boundary. Keep universal exports free of Node/Bun imports.
   Node transport lives behind `@envoy1084/effect-redis/node`; keep the universal
@@ -103,7 +108,8 @@ Never describe planned command or server compatibility as implemented or verifie
   JS/declarations must resolve independently of unshipped source files.
 - Keep configuration boundaries explicit: tsconfig.json checks universal code without
   Node globals, tsconfig.node.json emits native declarations, and tsconfig.dev.json
-  checks source/tests/configs including compile-only contracts. Keep two Vitest configs
+  checks source/tests/configs including compile-only contracts. The native declaration
+  config includes Node/Bun types; universal checking excludes both adapters. Keep two Vitest configs
   under test/: the default offline lane and an explicitly selected live lane. Do not
   create a config per folder, engine or version.
 - Keep handwritten source and test files below 500 physical lines; review splitting

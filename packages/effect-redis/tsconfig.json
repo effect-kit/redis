@@ -9,5 +9,12 @@
     "lib": ["ES2022", "DOM"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/node.ts", "src/transport/node/**/*.ts", "src/platform/node/**/*.ts"]
+  "exclude": [
+    "src/node.ts",
+    "src/bun.ts",
+    "src/transport/node/**/*.ts",
+    "src/transport/bun/**/*.ts",
+    "src/platform/node/**/*.ts",
+    "src/platform/bun/**/*.ts"
+  ]
 }
