@@ -97,6 +97,38 @@ it.effect("PUSH: a slow listener fails without blocking another listener", () =>
   }),
 );
 
+it.effect(
+  "PUSH: a close arriving during another release waits for its own unsubscribe receipt",
+  () =>
+    Effect.gen(function* () {
+      const fixture = yield* pubsubFixture();
+      const opening = yield* Effect.forkChild(fixture.pubsub.subscribe(["c"]));
+      yield* sent(fixture.primary, ["SUBSCRIBE", "c"], acknowledgment("subscribe"));
+      const first = yield* Fiber.join(opening);
+      const next = yield* Effect.forkChild(fixture.pubsub.subscribe(["d"]));
+      yield* sent(fixture.primary, ["SUBSCRIBE", "d"], acknowledgment("subscribe", "d", 2));
+      const second = yield* Fiber.join(next);
+      const completed = yield* Deferred.make<void>();
+
+      const closing = yield* Effect.forkChild(
+        first
+          .close()
+          .pipe(
+            Effect.andThen(second.close()),
+            Effect.andThen(Deferred.succeed(completed, undefined)),
+          ),
+      );
+      yield* sent(fixture.primary, ["UNSUBSCRIBE", "c"], acknowledgment("unsubscribe", "c", 1));
+      yield* sent(fixture.primary, ["UNSUBSCRIBE", "d"]);
+
+      expect(yield* Deferred.isDone(completed)).toBe(false);
+      yield* fixture.primary.receive(bytes(acknowledgment("unsubscribe", "d", 0)));
+      yield* Fiber.join(closing);
+      expect(yield* fixture.pubsub.snapshot).toMatchObject({ listeners: 0, interests: 0 });
+      yield* fixture.finish;
+    }),
+);
+
 it.effect("PUSH: retained byte limits fail a single oversized delivery", () =>
   Effect.gen(function* () {
     const fixture = yield* pubsubFixture({ maxBytes: 16 });

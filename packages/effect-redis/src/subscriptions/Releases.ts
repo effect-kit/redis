@@ -33,6 +33,8 @@ export const makeSubscriptionReleases = (state: {
   };
 
   const prune = Effect.gen(function* () {
+    // Closing scopes yields: requests arriving later need their own interest-pruning pass before release.
+    const releasing = [...retiring];
     for (const [key, interest] of state.interests) {
       if (interest.listeners.size > 0) continue;
       const wire = state.current();
@@ -48,7 +50,7 @@ export const makeSubscriptionReleases = (state: {
       state.interests.delete(key);
     }
 
-    for (const listener of retiring) {
+    for (const listener of releasing) {
       retiring.delete(listener);
       Deferred.doneUnsafe(listener.released, Effect.void);
       yield* Scope.close(listener.scope, Exit.void);
