@@ -115,3 +115,22 @@ it.effect("exclusive scaling choices and invalid probabilities fail during prepa
     ]);
   }),
 );
+
+it.effect(
+  "Valkey Bloom extensions preserve opaque load bytes and reject contradictory scaling",
+  () =>
+    Effect.gen(function* () {
+      const payload = new Uint8Array([1, 0, 255]);
+      const command = yield* Commands.bfLoad("filter", payload).prepare;
+      expect(command.tokens).toEqual(["BF.LOAD", "filter", payload]);
+      expect(command.routing).toEqual({ _tag: "Keys", keys: [{ index: 1, access: "write" }] });
+      expect(command.metadata.provenance).toEqual([
+        { source: "https://github.com/valkey-io/valkey-bloom", revision: "1.0.1" },
+      ]);
+      expect(
+        (yield* Effect.flip(
+          Commands.bfInsert("filter", ["a"], { validateScaleTo: 1000, nonScaling: true }).prepare,
+        ))._tag,
+      ).toBe("CommandInputError");
+    }),
+);

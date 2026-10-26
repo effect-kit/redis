@@ -2,6 +2,14 @@ import type { RedisExecutor } from "#/command/Executor";
 import * as Commands from "#/commands/probabilistic/index";
 
 export const probabilisticFamily = (executor: RedisExecutor) => ({
+  bfLoad: (...args: Parameters<typeof Commands.bfLoad>) =>
+    executor.execute(Commands.bfLoad(...args)),
+  bfInfoErrorRate: (...args: Parameters<typeof Commands.bfInfoErrorRate>) =>
+    executor.execute(Commands.bfInfoErrorRate(...args)),
+  bfInfoTightening: (...args: Parameters<typeof Commands.bfInfoTightening>) =>
+    executor.execute(Commands.bfInfoTightening(...args)),
+  bfInfoMaxScaledCapacity: (...args: Parameters<typeof Commands.bfInfoMaxScaledCapacity>) =>
+    executor.execute(Commands.bfInfoMaxScaledCapacity(...args)),
   bfAdd: (...args: Parameters<typeof Commands.bfAdd>) => executor.execute(Commands.bfAdd(...args)),
 
   bfCard: (...args: Parameters<typeof Commands.bfCard>) =>

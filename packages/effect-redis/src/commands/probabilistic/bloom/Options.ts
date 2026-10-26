@@ -15,6 +15,7 @@ const Scaling = Schema.Struct({
   nonScaling: Schema.optionalKey(Schema.Boolean),
 });
 const Insert = Schema.Struct({
+  validateScaleTo: Schema.optionalKey(Positive),
   ...Scaling.fields,
   capacity: Schema.optionalKey(Positive),
   errorRate: Schema.optionalKey(Probability),
@@ -25,6 +26,8 @@ export interface BloomScaling {
   readonly nonScaling?: boolean;
 }
 export interface BloomInsertOptions extends BloomScaling {
+  /** Valkey Bloom INSERT extension; unavailable on the pinned RedisBloom builds. */
+  readonly validateScaleTo?: Integer;
   readonly capacity?: Integer;
   readonly errorRate?: number;
   readonly noCreate?: boolean;
@@ -69,6 +72,8 @@ export const bfInsert = (
   prepare: Effect.gen(function* () {
     const selected = yield* parse(Insert, options);
     const entries = yield* parse(Arguments, values);
+    if (selected.nonScaling && selected.validateScaleTo !== undefined)
+      return yield* parse(Schema.Never, selected);
     const flags = yield* scaling({
       ...(selected.expansion === undefined ? {} : { expansion: selected.expansion }),
       ...(selected.nonScaling === undefined ? {} : { nonScaling: selected.nonScaling }),
@@ -83,6 +88,9 @@ export const bfInsert = (
         ...(selected.errorRate === undefined ? [] : ["ERROR", String(selected.errorRate)]),
         ...flags,
         ...(selected.noCreate ? ["NOCREATE"] : []),
+        ...(selected.validateScaleTo === undefined
+          ? []
+          : ["VALIDATESCALETO", String(selected.validateScaleTo)]),
         "ITEMS",
         ...entries,
       ]),

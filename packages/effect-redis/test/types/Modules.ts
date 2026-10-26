@@ -28,6 +28,8 @@ const searched = redis.ftSearch("idx", "hello", { withScores: true });
 const aggregated = redis.ftAggregate("idx", "hello");
 const profiled = redis.ftProfileSearch("idx", "hello");
 const suggestions = redis.ftSuggetWithScoresAndPayloads("suggest", "he");
+const restored = redis.bfLoad("b", new Uint8Array());
+const bloomErrorRate = redis.bfInfoErrorRate("b");
 const bloom = redis.bfExists("b", "member");
 const counts = redis.cmsQuery("c", ["member"]);
 const median = redis.tdigestQuantile("t", [0.5]);
@@ -44,6 +46,8 @@ type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 type Assert<T extends true> = T;
 export type ModuleContracts = [
+  Assert<Equal<Effect.Success<typeof restored>, void>>,
+  Assert<Equal<Effect.Success<typeof bloomErrorRate>, number>>,
   Assert<Equal<Effect.Success<typeof searched>, SearchResult>>,
   Assert<Equal<Effect.Success<typeof aggregated>, SearchAggregateResult>>,
   Assert<Equal<Effect.Success<typeof profiled>, SearchProfile<SearchResult>>>,
@@ -100,3 +104,8 @@ redis.ftSearch("idx", "hello", { params: [["vec", [1, 2]]] });
 redis.ftHybrid("idx", "hello", { field: "@v", vector: "$vec" }, { dialect: 2 });
 // @ts-expect-error Ordered aggregation steps require aliases for APPLY results.
 redis.ftAggregate("idx", "hello", { steps: [{ _tag: "Apply", expression: "1+1" }] });
+
+// @ts-expect-error BF.LOAD consumes opaque Valkey serialization, never an implicitly encoded string.
+redis.bfLoad("b", "serialized");
+// @ts-expect-error Valkey's capacity validation belongs to INSERT, not RESERVE.
+redis.bfReserve("b", 0.01, 100, { validateScaleTo: 1000 });

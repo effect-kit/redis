@@ -23,6 +23,8 @@ Native Redis/Valkey Sentinel adds verified discovery, generation-bound sessions 
 future-work failover.
 Typed Bloom, Cuckoo, Count-Min Sketch, TopK and t-digest builders require the
 corresponding server module; availability and numeric reply contracts remain explicit.
+Valkey Bloom adds `bfLoad` for its opaque versioned serialization, extra INFO selectors
+and INSERT capacity validation. Its load bytes differ from Redis DUMP/SCANDUMP data.
 Typed JSON builders preserve JSONPath multiplicity, legacy-path results and serialized
 bytes. `jsonSetWith`/`jsonGetWith` explicitly select a `PayloadCodec`; expanded
 RESP3 formats have separate methods and retain actual provider availability.

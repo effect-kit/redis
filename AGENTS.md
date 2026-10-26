@@ -746,3 +746,9 @@ total is promised. Sources remain accessible without ignored research:
   and use actual module Cluster fixtures. FT._LIST WITHCLUSTERSTATE has a separate
   structured builder. FT.CURSOR GC is a real public operation even without docs
   metadata; its signed no-collection sentinel must remain visible.
+
+- BF.LOAD is a public Valkey Bloom operation, absent from the pinned RedisBloom
+  builds. Its bytes are opaque versioned module serialization, separate from Redis
+  DUMP and SCANDUMP. Verify loading with actual module AOF output. Valkey Bloom's
+  VALIDATESCALETO belongs to BF.INSERT; SEED/TIGHTENING mutation flags are documented
+  upstream as replication internals and have no invented application wrappers.

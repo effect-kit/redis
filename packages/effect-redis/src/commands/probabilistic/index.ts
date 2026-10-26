@@ -8,3 +8,10 @@ export * from "#/commands/probabilistic/countmin/Merge";
 export * from "#/commands/probabilistic/topk/Values";
 export * from "#/commands/probabilistic/tdigest/Values";
 export * from "#/commands/probabilistic/tdigest/Merge";
+
+export {
+  bfLoad,
+  bfInfoErrorRate,
+  bfInfoTightening,
+  bfInfoMaxScaledCapacity,
+} from "#/commands/probabilistic/bloom/Valkey";

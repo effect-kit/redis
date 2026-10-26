@@ -24,7 +24,12 @@ export const moduleMetadata = (family: ModuleFamily, name: string): CommandMetad
   execution: "ordinary",
   replay: "never",
   scenarios: name.endsWith(".SCANDUMP") ? ["MODULE", "MODULE-DUMP"] : ["MODULE"],
-  provenance: [{ source: sources[family][0], revision: sources[family][1] }],
+  provenance: [
+    { source: sources[family][0], revision: sources[family][1] },
+    ...(name.startsWith("BF.")
+      ? [{ source: "https://github.com/valkey-io/valkey-bloom", revision: "1.0.1" }]
+      : []),
+  ],
   availability: [`Requires the ${family} command surface; reviewed source ${sources[family][1]}`],
 });
 

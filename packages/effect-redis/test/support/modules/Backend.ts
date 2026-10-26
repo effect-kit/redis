@@ -30,10 +30,15 @@ export const moduleTarget = (fixture: (typeof moduleFixtures)[number]) => ({
 export const moduleBackend = Effect.fnUntraced(function* (
   fixture: (typeof moduleFixtures)[number],
   protocol: string,
+  options: { readonly aof?: boolean } = {},
 ) {
   const target = moduleTarget(fixture);
   const server = yield* (yield* allocateServer(target, {
-    extraConfig: fixture.loadModules.map((path) => `loadmodule ${path}`),
+    extraConfig: [
+      ...fixture.loadModules.map((path) => `loadmodule ${path}`),
+      ...(options.aof ? ["appendonly yes", "aof-use-rdb-preamble no", "dir /fixture"] : []),
+    ],
+    ...(options.aof ? { writableConfiguration: true } : {}),
   })).start;
   const config = yield* decodeRedisConfig({
     endpoint: { host: "127.0.0.1", port: server.port },
