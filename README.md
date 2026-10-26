@@ -119,14 +119,14 @@ pnpm test:live --mode endpoint         # AUTH if needed, PING/ECHO only; no writ
 
 The matrix pins Redis 6.2.19/7.2.11/7.4.6/8.10.2, Valkey 7.2.11/8.0.3/9.1.2,
 Dragonfly 2.0.2, KeyDB 6.3.4, Redict 7.3.6, Garnet 2.2.4 and Kvrocks 2.17.0.
-All seven engines have transport and isolated binary state smoke tests. Ordinary
-command-family conformance runs on the seven pinned Redis/Valkey builds in RESP2/3,
-including explicit errors for unavailable commands/options. Cluster suites own three
+Shared command scenarios run against all seven current engines in RESP2/3 with Node
+and Bun, including separate Linux runtime containers and explicit unsupported/different
+outcomes. Older Redis/Valkey builds retain their dedicated regression suites. Cluster suites own three
 primaries and three replicas, including resharding, promotion, partitions and TLS.
 Sentinel suites own three data servers and three Sentinels, covering discovery on every
 primary baseline and current-build promotion, partitions, separate credentials and mTLS.
-Full engine, module and hosted-provider certification remains pending. Bun is a runtime, rather
-than a server fixture. Endpoint mode also accepts `EFFECT_REDIS_TEST_CA` for a custom
+Evidence covers exact executed configurations and scenarios; hosted-provider certification
+remains pending. Bun is a runtime, rather than a server fixture. Endpoint mode also accepts `EFFECT_REDIS_TEST_CA` for a custom
 CA file; it never downloads images or starts/stops the external server.
 
 HTTP cases use the current Redis/Valkey fixtures and digest-pinned Uprest 0.5.0.

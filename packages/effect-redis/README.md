@@ -431,9 +431,10 @@ The standalone executor rejects nonordinary modes and explicit-node routing. The
 contracts do not bypass session ownership, topology routing or provider capabilities.
 
 The development typecheck includes compile-only public inference and codec service
-contracts. Live ordinary-family conformance covers the seven pinned Redis/Valkey
-builds in RESP2/3, including older-server errors. Other engines have transport/state
-smoke tests; full command, runtime and backend certification remain pending.
+contracts. Shared live command scenarios cover seven current native engines with Node
+and Bun in RESP2/3, including separate Linux runtimes and explicit unsupported/different
+outcomes. Older Redis/Valkey builds retain dedicated regressions. Evidence covers exact
+executed scenarios; hosted-provider certification remains pending.
 
 Development uses `#/` source imports and `#test/` imports for all test-owned modules.
 Node resolves them through package imports; tsdown rewrites built module references.
