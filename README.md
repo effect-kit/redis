@@ -61,10 +61,10 @@ Publint checking package exports.
 
 ## Workspace
 
-- `packages/effect-redis`: the private `@envoy1084/effect-redis` library foundation.
+- `packages/redis`: the private `@effect-kit/redis` library foundation.
 - `pnpm-workspace.yaml`: shared compatible dependency ranges in the default pnpm catalog.
 - `AGENTS.md`: engineering policy and architecture guidance for contributors and agents.
-- [Tests](packages/effect-redis/test/README.md): unit/integration/e2e suites, fixtures and runners.
+- [Tests](packages/redis/test/README.md): unit/integration/e2e suites, fixtures and runners.
 - `research/`: ignored local docs, plans, phase reports and investigations.
   These files are private and never required by the build, tests or CI.
 
@@ -95,7 +95,7 @@ our compiler. Use frozen installs in CI and review lockfile updates.
 
 Licensed under [Apache-2.0](LICENSE). The library remains private during development.
 
-Node networking is exposed through `@envoy1084/effect-redis/node`. Default live tests
+Node networking is exposed through `@effect-kit/redis/node`. Default live tests
 use disposable Testcontainers fixtures and require a local Docker-compatible daemon,
 OpenSSL and explicitly prepared images. `pnpm check` stays offline.
 

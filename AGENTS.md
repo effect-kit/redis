@@ -51,7 +51,7 @@ records, not to an engine family or its COMMAND listing.
    beta examples or assume that `effect/unstable/*` imports still exist.
 3. Read this guide's architecture decisions before adding protocol or transport code.
    Keep detailed docs, research and phase reports under ignored `/research/`.
-   Test-required data and runners stay tracked under `packages/effect-redis/test/`. Builds, tests, CI and
+   Test-required data and runners stay tracked under `packages/redis/test/`. Builds, tests, CI and
    published artifacts must never require research. Use Oxfmt/Oxlint configuration;
    do not add `.editorconfig`.
 
@@ -79,9 +79,9 @@ records, not to an engine family or its COMMAND listing.
   Bun's `/bun` entrypoint owns native sockets/Crypto; universal code imports neither
   runtime adapter. Before TCP establishment native Bun has no abort handle, so join
   acquisition settlement and close late sockets rather than abandoning them.
-- Start in `packages/effect-redis`; create packages only for a real consumer, runtime,
+- Start in `packages/redis`; create packages only for a real consumer, runtime,
   dependency, or ownership boundary. Keep universal exports free of Node/Bun imports.
-  Node transport lives behind `@envoy1084/effect-redis/node`; keep the universal
+  Node transport lives behind `@effect-kit/redis/node`; keep the universal
   typecheck free of Node globals and verify both entrypoints from a packed artifact.
 - The package remains private until publishing is explicitly in scope. Do not add
   release automation or publish packages as part of routine implementation.
@@ -229,7 +229,7 @@ records, not to an engine family or its COMMAND listing.
 - User preference: keep detailed docs and all phase records in ignored `/research/`.
   Never commit or force-add them, or recreate a tracked root docs directory.
   Keep actual test inputs, reviewed command expectations and fixture pins under
-  tracked `packages/effect-redis/test/fixtures/`. Store descriptive scenario catalogs,
+  tracked `packages/redis/test/fixtures/`. Store descriptive scenario catalogs,
   future command/backend/release inventories, phase ownership,
   pass/fail history and progress in ignored research, even if a validator could read
   them. Do not create tests merely to justify committing planning documents. Root/package READMEs and
