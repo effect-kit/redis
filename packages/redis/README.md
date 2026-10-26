@@ -102,8 +102,10 @@ routing/authentication mode; proxy routing uses `.layer`, client Cluster uses
 `.layerCluster`. Profiles enforce reviewed TLS, database, command and module limits.
 Omitted module selection leaves availability to the server; `modules: []` disables
 known module families explicitly. Unknown commands still reach the server.
-All managed-service profiles have certification pending. Local fixtures do not
-certify hosted products. For discovered endpoints, `network.allowedHosts` and optional
+Hosted tests cover isolated Upstash, Aiven Valkey and Redis Cloud Free configurations,
+plus Upstash HTTP under Node/Bun/Deno and actual Cloudflare Workers. Evidence is
+configuration-specific; profiles are policy builders, not blanket compatibility badges.
+Other hosted providers remain deferred. For discovered endpoints, `network.allowedHosts` and optional
 `allowedServerNames` apply after address translation and before credentials; IAM/Entra
 Cluster/Sentinel profiles require this explicit trust list. It is a hostname policy,
 not a DNS/IP firewall. TLS trust and server-name verification remain active.
@@ -112,7 +114,7 @@ The `/upstash` entrypoint provides an Effect HttpClient executor and acknowledge
 scoped text SSE subscriptions/MONITOR. It shares ordinary command decoders and batch
 types. HTTP has explicit encoding and capability limits: physical sessions stay
 native, and JSON-only transactions reject raw/custom/script replies whose RESP types
-cannot be reconstructed losslessly. Hosted Upstash certification remains pending.
+cannot be reconstructed losslessly.
 
 Supply an Effect HttpClient to the HTTP Layer. Load the redacted bearer token from
 your application's secret configuration:
@@ -147,7 +149,9 @@ const upstashRunnable = upstashProgram.pipe(Effect.provide(upstashLive));
 require a Scope and return acknowledged subscriptions with a `messages` Stream and
 a `close` Effect. One UTF-8 channel is bound per request; commas, CR/LF, NUL and URL
 dot-segment names fail before sending. Text messages preserve commas. SSE does not
-promise arbitrary binary/multiline payloads or transparent reconnection: EOF/retry
+promise arbitrary binary/multiline payloads or transparent reconnection. Hosted tests
+observe newline truncation at the provider boundary and explicit invalid-UTF8 failures;
+use native Pub/Sub for lossless payloads. EOF/retry
 exposes a gap. A bounded handoff backpressures each dedicated HTTP reader.
 
 Ordinary requests and pipelines use lossless RESP2 responses. JSON-only transactions
@@ -170,6 +174,34 @@ Run `pnpm fixtures:pull --engine redis` then `pnpm test:upstash` from the worksp
 for local Redis/Valkey proxy and actual Node/Bun fetch tests. `pnpm dev:upstash`
 checks a disposable fixture and keeps it alive until Ctrl+C, with connection details
 in an owned private file under ignored test results. No Upstash account is required.
+Hosted pipeline replies use one enclosing RESP array. The pinned Uprest development
+proxy instead concatenates frames: its connection file selects
+`pipelineResponseFormat: "frames"` explicitly; hosted/default configuration uses `"array"`.
+
+`pnpm providers:prepare` installs checksum-pinned Deno. Run
+`pnpm test:providers --credentials-file .env.providers.local` for the opt-in hosted
+matrix, or select `--provider upstash-native|upstash-http|aiven|redis-cloud-free|workers`
+and `--runtime node|bun|deno|all`. Repeated `--case <id>` narrows a rerun. Missing
+credentials fail before acquisition; default tests never load env files. Native tests
+use password-authenticated RESP2/3 on Node/Bun. Deno/Workers cover HTTP only. Redis Cloud
+Free requires `RedisProfiles.redisCloud({ plan: "free", routing: "proxy", authentication: "password" })`
+to admit its plaintext endpoint; default/paid profiles still require verified TLS.
+
+Provide `EFFECT_REDIS_TEST_UPSTASH_REST_URL`, `EFFECT_REDIS_TEST_UPSTASH_REST_TOKEN`,
+`EFFECT_REDIS_TEST_UPSTASH_REDIS_URL`, `EFFECT_REDIS_TEST_AIVEN_URL` and
+`EFFECT_REDIS_TEST_REDIS_CLOUD_URL`; optional `EFFECT_REDIS_TEST_AIVEN_CA_FILE` is an
+absolute CA path. Workers additionally needs `CLOUDFLARE_ACCOUNT_ID`,
+`CLOUDFLARE_API_TOKEN`, `EFFECT_REDIS_TEST_WORKER_NAME` and `EFFECT_REDIS_TEST_WORKER_URL`.
+Use isolated test databases and a dedicated empty Worker: tests temporarily replace
+its code, then verify restoration and removal of temporary secret bindings. Synthetic
+keys use unique prefixes and exact-key cleanup; no shared database flush occurs.
+Credentials travel through stdin or secret bindings. Fresh, runtime/build-bound JSON
+and JUnit evidence stays in ignored `test/results/providers/<run-id>/`.
+
+The **Hosted providers** GitHub workflow runs on main pushes and manual default-branch dispatch, uses
+the `providers` environment's corresponding secrets and serializes Worker deployments.
+It never exposes provider secrets to PR jobs. Container CI keeps its existing main-push
+and authorized PR-trigger policy; hosted CI execution requires repository configuration.
 
 The public API includes configuration decoding, binary `encodeCommand`, incremental
 `makeRespDecoder`, lossless `RespValue`/`RespPairs`, `RedisArgument`/`RedisCommand`,

@@ -36,7 +36,9 @@
     "dev:upstash": "pnpm --filter @effect-kit/redis dev:upstash",
     "fixtures:pull": "pnpm --filter @effect-kit/redis fixtures:pull",
     "test:live": "pnpm --filter @effect-kit/redis test:live",
-    "fixtures:check": "pnpm --filter @effect-kit/redis fixtures:check"
+    "fixtures:check": "pnpm --filter @effect-kit/redis fixtures:check",
+    "test:providers": "pnpm --filter @effect-kit/redis test:providers",
+    "providers:prepare": "pnpm --filter @effect-kit/redis providers:prepare"
   },
   "dependencies": {
     "effect": "catalog:"

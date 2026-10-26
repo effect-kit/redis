@@ -1,6 +1,7 @@
 export { redis, valkey, dragonfly, keydb, redict, garnet, kvrocks } from "#/profiles/Engines";
 export { elasticache, memorydb } from "#/profiles/providers/Aws";
 export { redisCloud, redisSoftware } from "#/profiles/providers/Redis";
+export type { RedisCloudOptions } from "#/profiles/providers/Redis";
 export {
   memorystoreRedis,
   memorystoreRedisCluster,

@@ -33,8 +33,9 @@ SSE, plus separate provider Search/Vector/ACL descriptors. Controlled provider c
 and owned local Uprest fixtures are distinct from hosted certification (Phase 18).
 Never describe planned command or server compatibility as implemented or verified.
 Phase 16 adds ready runtime/topology Layers, deployment-scoped credential refresh,
-explicit socket/request rotation and managed-service policies. Hosted certification
-remains pending; official profile metadata and local fixtures do not close phase 18.
+explicit socket/request rotation and managed-service policies. Phase 18 adds actual
+free-service and Deno/Workers HTTP scenarios; its scope and deferred provider rules
+appear below. Official profile metadata and local fixtures alone do not certify hosting.
 Engine conformance uses shared built-artifact Node/Bun scenarios across seven pinned
 native engines, with separate host/Linux and enabled-Garnet-Lua configurations.
 Compatibility belongs to exact image/build/configuration/runtime/protocol/scenario
@@ -848,3 +849,36 @@ total is promised. Sources remain accessible without ignored research:
   DUMP and SCANDUMP. Verify loading with actual module AOF output. Valkey Bloom's
   VALIDATESCALETO belongs to BF.INSERT; SEED/TIGHTENING mutation flags are documented
   upstream as replication internals and have no invented application wrappers.
+
+### Hosted provider verification
+
+- Phase 18's user-approved scope is the configured free Upstash, Aiven Valkey,
+  Redis Cloud Free and Cloudflare services, including Deno/Workers HTTP. Other hosted
+  products, paid topologies and IAM/Entra/mTLS certification are explicitly deferred;
+  profile builders do not establish blanket service compatibility.
+- Run `pnpm providers:prepare` once for checksum-pinned `.deno-version` assets, then
+  `pnpm test:providers --credentials-file .env.providers.local`. `--env` is the explicit
+  CI alternative. Provider/runtime/case filters narrow reruns. Never auto-load env
+  files, print secrets, or send credential values through argv/bundle definitions.
+- Provider scenarios use public built entrypoints, independent native state checks,
+  unique prefixes, exact-key/index cleanup, bounded requests and no mutation retries.
+  The runner preserves UUID-bound evidence and rejects missing/stale/runtime/build
+  drift. Regular live cleanup must preserve `test/results/providers/`.
+- Deno has explicit host-only network permission and no npm/remote import resolution.
+  Workers uses an actual dedicated empty deployment with pinned compatibility date
+  and no Node compatibility flags. Snapshot code before replacement, register cleanup
+  before upload, restore module file parts, explicitly delete retained secret bindings,
+  and verify original code plus zero bindings. Never use a populated application Worker.
+- Hosted Upstash pipelines enclose replies in one RESP array. Pinned local Uprest
+  concatenates frames; select `pipelineResponseFormat: "frames"` only for that reviewed
+  dialect. Avoid framing heuristics that confuse a single array-valued command.
+  Extension IDs/document fields may be simple or bulk strings; preserve bytes in both.
+- Hosted SSE truncates newline-containing messages; invalid UTF8 fails explicitly.
+  Native Pub/Sub is required for lossless payloads. Record such limits as limits,
+  never silently turn a provider error into a passing unsupported result.
+- Native credential wrappers expose local `isRetired` state. Generation admission
+  must observe deliberate closure before asynchronous reader retirement, and replacement
+  must still join cleanup. Never retry a command to hide a rotation race.
+- Hosted GitHub CI runs on main pushes/manual default-branch dispatch with a `providers` environment and
+  serialized deployments. PR jobs receive no hosted credentials; missing prerequisites
+  fail explicitly. Do not claim remote CI passed until an actual run is observed.

@@ -6,15 +6,27 @@ interface RedisEnterpriseOptions extends ProfileOptions {
   readonly authentication: "password" | "mtls";
 }
 
-export const redisCloud = (options: RedisEnterpriseOptions) =>
+export type RedisCloudOptions =
+  | (RedisEnterpriseOptions & { readonly plan?: "essentials" | "pro" })
+  | (ProfileOptions & {
+      readonly plan: "free";
+      readonly routing: "proxy";
+      readonly authentication: "password";
+    });
+
+export const redisCloud = (options: RedisCloudOptions) =>
   profile({
-    id: "redis-cloud",
+    id: options.plan === "free" ? "redis-cloud.free" : "redis-cloud",
     routing: options.routing,
-    tls: "required",
+    // The free Essentials plan has no TLS endpoint; paid/default profiles retain verified TLS admission.
+    tls: options.plan === "free" ? "optional" : "required",
     authentication: options.authentication,
     database: "zero",
     restrictedCommands: [],
-    sources: ["https://redis.io/docs/latest/operate/rc/databases/configuration/clustering/"],
+    sources: [
+      "https://redis.io/docs/latest/operate/rc/databases/configuration/clustering/",
+      "https://redis.io/docs/latest/operate/rc/security/database-security/tls-ssl/",
+    ],
     ...selectedModules(options),
   });
 

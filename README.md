@@ -20,7 +20,9 @@ leases and future-work failover. Broader runtime/provider certification remains 
 The `/upstash` entrypoint adds scoped Effect HTTP execution, pipelines, JSON
 transactions and acknowledged text SSE. Typed provider Search/Vector/ACL extensions
 remain distinct from Redis modules. Local tests use an owned Uprest proxy; they do
-not certify the hosted provider.
+not certify the hosted provider. Separate opt-in tests exercise actual Upstash,
+Aiven Valkey and Redis Cloud Free, plus HTTP on Node/Bun/Deno and Cloudflare Workers.
+These prove the recorded configurations and scenarios; other cloud providers remain deferred.
 Seven-engine native tests share Node/Bun scenarios and retain exact host/Linux,
 protocol, configuration and module evidence. Their generated records describe tested
 operations and explicit differences, rather than universal Redis compatibility.
@@ -40,24 +42,26 @@ Commitlint, and Git hook conventions. TypeScript 7 checks types;
 tsdown uses Klarity’s library preset to build unbundled ESM and declarations, with
 Publint checking package exports.
 
-| Command                   | Purpose                                                      |
-| ------------------------- | ------------------------------------------------------------ |
-| `pnpm build`              | Build workspace packages through Turborepo                   |
-| `pnpm typecheck`          | Check source, tests and public type contracts                |
-| `pnpm lint`               | Lint root configs, source and tests                          |
-| `pnpm format`             | Format tracked project files with Oxfmt                      |
-| `pnpm format:check`       | Check formatting                                             |
-| `pnpm test`               | Run offline unit and controlled integration tests            |
-| `pnpm test:protocol:fuzz` | Build and run the watchdog protocol corpus                   |
-| `pnpm fixtures:check`     | Validate pinned backend test fixtures                        |
-| `pnpm fixtures:pull`      | Explicitly download pinned integration-test images           |
-| `pnpm test:node`          | Run live cases through the Node adapter                      |
-| `pnpm test:bun`           | Run real Bun socket, backend and topology cases              |
-| `pnpm test:live`          | Run both runtimes against applicable live fixtures           |
-| `pnpm test:upstash`       | Run local HTTP/proxy, fault and Node/Bun consumer tests      |
-| `pnpm dev:upstash`        | Keep an owned HTTP fixture running for interactive use       |
-| `pnpm check`              | Formatting, lint, typecheck, test, and build                 |
-| `pnpm verify`             | Offline checks, fixture validation, fuzz and all live suites |
+| Command                                                       | Purpose                                                           |
+| ------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `pnpm build`                                                  | Build workspace packages through Turborepo                        |
+| `pnpm typecheck`                                              | Check source, tests and public type contracts                     |
+| `pnpm lint`                                                   | Lint root configs, source and tests                               |
+| `pnpm format`                                                 | Format tracked project files with Oxfmt                           |
+| `pnpm format:check`                                           | Check formatting                                                  |
+| `pnpm test`                                                   | Run offline unit and controlled integration tests                 |
+| `pnpm test:protocol:fuzz`                                     | Build and run the watchdog protocol corpus                        |
+| `pnpm fixtures:check`                                         | Validate pinned backend test fixtures                             |
+| `pnpm fixtures:pull`                                          | Explicitly download pinned integration-test images                |
+| `pnpm test:node`                                              | Run live cases through the Node adapter                           |
+| `pnpm test:bun`                                               | Run real Bun socket, backend and topology cases                   |
+| `pnpm test:live`                                              | Run both runtimes against applicable live fixtures                |
+| `pnpm test:upstash`                                           | Run local HTTP/proxy, fault and Node/Bun consumer tests           |
+| `pnpm dev:upstash`                                            | Keep an owned HTTP fixture running for interactive use            |
+| `pnpm providers:prepare`                                      | Install checksum-pinned Deno for hosted HTTP tests                |
+| `pnpm test:providers --credentials-file .env.providers.local` | Run the isolated hosted-provider matrix with explicit credentials |
+| `pnpm check`                                                  | Formatting, lint, typecheck, test, and build                      |
+| `pnpm verify`                                                 | Offline checks, fixture validation, fuzz and all live suites      |
 
 ## Workspace
 

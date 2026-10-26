@@ -87,7 +87,9 @@
     "dev:upstash": "pnpm run build && node --experimental-transform-types test/runners/upstash/dev.ts",
     "fixtures:pull": "node test/runners/fixtures/pull.ts",
     "test:live": "node test/runners/live/run.ts",
-    "fixtures:check": "node test/runners/fixtures/check.ts"
+    "fixtures:check": "node test/runners/fixtures/check.ts",
+    "test:providers": "node test/runners/providers/run.ts",
+    "providers:prepare": "node test/runners/providers/prepare.ts"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",

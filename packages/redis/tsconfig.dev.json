@@ -4,7 +4,13 @@
     "types": ["node", "bun"],
     "allowImportingTsExtensions": true,
     "allowJs": true,
-    "checkJs": true
+    "checkJs": true,
+    "paths": {
+      "@effect-kit/redis": ["./src/index.ts"],
+      "@effect-kit/redis/node": ["./src/node.ts"],
+      "@effect-kit/redis/bun": ["./src/bun.ts"],
+      "@effect-kit/redis/upstash": ["./src/upstash.ts"]
+    }
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "*.config.ts"]
 }

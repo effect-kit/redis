@@ -5,6 +5,25 @@ import { prepareNative } from "#/client/Input";
 import { RedisProfiles } from "#/index";
 
 const credentials = { password: Redacted.make("synthetic") };
+
+it.effect("Redis Cloud Free explicitly admits its password-authenticated plaintext endpoint", () =>
+  Effect.gen(function* () {
+    const profile = RedisProfiles.redisCloud({
+      plan: "free",
+      routing: "proxy",
+      authentication: "password",
+    });
+
+    const prepared = yield* prepareNative({ url: "redis://localhost", credentials, profile });
+
+    expect(profile.id).toBe("redis-cloud.free");
+    expect(prepared.config.database).toBe(0);
+    expect(yield* Effect.flip(prepareNative({ url: "redis://localhost", profile }))).toMatchObject({
+      _tag: "ProfileError",
+      reason: "identity",
+    });
+  }),
+);
 const cases = [
   {
     name: "Redis Cloud",

@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { rmSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { liveOptions } from "#test/runners/live/Options";
@@ -26,7 +26,11 @@ if (options.runtime !== "node") {
     throw new Error(`Live Bun tests require Bun ${bunRuntimeImage.version}; check .bun-version`);
 }
 
-rmSync(new URL("../../results/", import.meta.url), { recursive: true, force: true });
+const results = new URL("../../results/", import.meta.url);
+mkdirSync(results, { recursive: true });
+// Hosted runs own immutable UUID directories; regular live cleanup must preserve their evidence.
+for (const entry of readdirSync(results))
+  if (entry !== "providers") rmSync(new URL(entry, results), { recursive: true, force: true });
 
 for (const args of [
   ["run", "build"],

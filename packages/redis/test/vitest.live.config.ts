@@ -2,10 +2,28 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "vitest/config";
 
+import { selectedProviderCases } from "#test/support/providers/Matrix";
 import { selectRuntime } from "#test/support/runtime/Selection";
 import { selectedEngine } from "#test/support/servers/Targets";
 
 const mode = process.env.EFFECT_REDIS_TEST_MODE ?? "containers";
+const providersOnly = process.env.EFFECT_REDIS_TEST_PROVIDERS === "1";
+const providerFiles = providersOnly
+  ? [
+      ...new Set(
+        selectedProviderCases().map((scenario) =>
+          scenario.provider === "workers"
+            ? "test/e2e/providers/Workers.test.ts"
+            : scenario.scenario === "native"
+              ? "test/e2e/providers/Native.test.ts"
+              : "test/e2e/providers/Http.test.ts",
+        ),
+      ),
+    ]
+  : [];
+const results = providersOnly
+  ? `test/results/providers/${process.env.EFFECT_REDIS_PROVIDER_RUN_ID}`
+  : "test/results";
 const runtime = selectRuntime(process.env.EFFECT_REDIS_TEST_RUNTIME);
 if (!["containers", "binary", "endpoint"].includes(mode))
   throw new Error("Unknown live test mode; use pnpm test:live for validated options");
@@ -124,12 +142,12 @@ export default defineConfig({
   envDir: false,
   test: {
     environment: "node",
-    include: httpOnly ? httpFiles : [...include, ...httpFiles],
+    include: providersOnly ? providerFiles : httpOnly ? httpFiles : [...include, ...httpFiles],
     passWithNoTests: false,
     testTimeout: 45_000,
     hookTimeout: 45_000,
     fileParallelism: false,
     reporters: ["default", "junit", "json"],
-    outputFile: { junit: "test/results/live.xml", json: "test/results/live.json" },
+    outputFile: { junit: `${results}/live.xml`, json: `${results}/live.json` },
   },
 });
