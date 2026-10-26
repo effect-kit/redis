@@ -37,7 +37,10 @@ require an explicit Cluster node. `sessions.tsReadBlocking` leases its own conne
 its server wait is finite because TS.READ BLOCK zero means no wait.
 Search builders include typed index fields, ordered aggregation steps, binary PARAMS,
 scored/payload replies, suggestions and explicit hybrid queries. Index names are
-server-owned state: target a node explicitly in Cluster. `RedisSearch.layer` captures
+server-owned state: target a node explicitly in Cluster and follow the module's
+index/prefix hash-tag constraints. `ftListWithClusterState` returns structured status
+reports separately from ordinary index names. `ftCursorGc` preserves the server's
+signed count, including its -1 no-collection sentinel. `RedisSearch.layer` captures
 `RedisSessions`; `makeRedisSearch(sessions).aggregate(...)` returns a lazy scoped Stream.
 A lease owns cursor creation, reads and cleanup, including early exit. Defaults are
 64 rows per page and 60 seconds of server cursor idle time. Cancellation waits for the

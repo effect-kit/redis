@@ -297,3 +297,5 @@ export { RedisSearch, makeRedisSearch } from "#/search/RedisSearch";
 export type { RedisSearchClient } from "#/search/RedisSearch";
 
 export type { SearchConfiguration } from "#/commands/search/reply/Configuration";
+
+export type { SearchIndexState } from "#/commands/search/index/State";

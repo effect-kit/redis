@@ -2,6 +2,9 @@ import type { RedisExecutor } from "#/command/Executor";
 import * as Commands from "#/commands/search/index";
 
 export const searchFamily = (executor: RedisExecutor) => ({
+  ftCursorGc: (...args: Parameters<typeof Commands.ftCursorGc>) =>
+    executor.execute(Commands.ftCursorGc(...args)),
+  ftListWithClusterState: () => executor.execute(Commands.ftListWithClusterState()),
   ftConfigHelp: (...args: Parameters<typeof Commands.ftConfigHelp>) =>
     executor.execute(Commands.ftConfigHelp(...args)),
 

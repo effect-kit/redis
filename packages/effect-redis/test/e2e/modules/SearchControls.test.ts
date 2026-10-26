@@ -97,6 +97,10 @@ it.live.each(moduleCases)(
         expect(yield* redis.ftSugdel(suggestion, "hello")).toBe(true);
 
         if (fixture.id === "redis-modules") {
+          expect(yield* redis.ftCursorGc(index)).toBeGreaterThanOrEqual(-1n);
+          expect((yield* redis.ftListWithClusterState())[0]?.index).toEqual(
+            new TextEncoder().encode(index),
+          );
           const options = {
             params: [["vec", vector]] as const,
             combine: { _tag: "RRF" as const, window: 10 },

@@ -737,3 +737,12 @@ total is promised. Sources remain accessible without ignored research:
   acquisition and cursor-ID assignment from interruption, then restore cancellation
   for row handoff and empty pages. Never replay uncertain reads. Unknown IDs expire
   under the configured MAXIDLE; deletion failures must escape cleanup.
+
+- SCANDUMP chunks describe physical filter layout: keep BF/CF dump reads on primaries
+  under Cluster/Sentinel replica preferences. CF.COMPACT also remains primary-bound
+  despite the server's readonly flag. Bloom INFO selectors normalize only their
+  reviewed scalar/one-element/one-field wrappers.
+- Index/prefix hash-tag requirements vary by module/version; preserve server errors
+  and use actual module Cluster fixtures. FT._LIST WITHCLUSTERSTATE has a separate
+  structured builder. FT.CURSOR GC is a real public operation even without docs
+  metadata; its signed no-collection sentinel must remain visible.

@@ -23,7 +23,7 @@ export const moduleMetadata = (family: ModuleFamily, name: string): CommandMetad
   family,
   execution: "ordinary",
   replay: "never",
-  scenarios: ["MODULE"],
+  scenarios: name.endsWith(".SCANDUMP") ? ["MODULE", "MODULE-DUMP"] : ["MODULE"],
   provenance: [{ source: sources[family][0], revision: sources[family][1] }],
   availability: [`Requires the ${family} command surface; reviewed source ${sources[family][1]}`],
 });

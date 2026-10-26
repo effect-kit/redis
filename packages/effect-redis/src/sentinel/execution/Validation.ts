@@ -11,6 +11,7 @@ export const replicaEligible = (command: PreparedCommand<unknown, unknown, unkno
   command.metadata.execution === "ordinary" &&
   command.metadata.family !== "scripting" &&
   !command.metadata.scenarios.includes("SCAN") &&
+  !command.metadata.scenarios.includes("MODULE-DUMP") &&
   !["SCAN", "HSCAN", "SSCAN", "ZSCAN", "CLUSTERSCAN"].includes(commandToken(command.tokens[0])) &&
   command.routing._tag === "Keys" &&
   command.routing.keys.every((key) => key.access === "read");

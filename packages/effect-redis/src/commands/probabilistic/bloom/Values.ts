@@ -7,6 +7,7 @@ import { parse, Arguments } from "#/commands/internal/Input";
 import { keyedVector } from "#/commands/internal/Vector";
 import { moduleKeyed, moduleMetadata } from "#/commands/modules/Build";
 import { moduleBoolean as boolean } from "#/commands/modules/Reply";
+import { bloomInfoField } from "#/commands/probabilistic/bloom/InfoReply";
 import type { RedisArgument } from "#/RedisArgument";
 
 export const bfAdd = (key: RedisArgument, value: RedisArgument) =>
@@ -36,7 +37,13 @@ export const bfMexists = (
 export const bfInfo = (key: RedisArgument) => moduleKeyed("probabilistic", "BF.INFO", key, fields);
 
 export const bfInfoExpansion = (key: RedisArgument) =>
-  moduleKeyed("probabilistic", "BF.INFO", key, nullable(unsigned), Effect.succeed(["EXPANSION"]));
+  moduleKeyed(
+    "probabilistic",
+    "BF.INFO",
+    key,
+    bloomInfoField("Expansion rate", nullable(unsigned)),
+    Effect.succeed(["EXPANSION"]),
+  );
 
 export const bfDebug = (key: RedisArgument) =>
   moduleKeyed("probabilistic", "BF.DEBUG", key, array(simpleText));

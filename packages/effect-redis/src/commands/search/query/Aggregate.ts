@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { status } from "#/command/reply/Scalars";
+import { integer, status } from "#/command/reply/Scalars";
 import { Argument, Arguments, NonNegative, Positive, parse } from "#/commands/internal/Input";
 import type { Integer } from "#/commands/internal/Input";
 import { moduleKeyless } from "#/commands/modules/Build";
@@ -252,3 +252,7 @@ export const ftCursorDel = (index: RedisArgument, cursor: Integer) =>
     status("OK"),
     parse(Positive, cursor).pipe(Effect.map((id) => [index, String(id)])),
   );
+
+/** The pinned coordinator requires a fourth compatibility token; GC collects expired cursors server-wide. */
+export const ftCursorGc = (index: RedisArgument) =>
+  moduleKeyless("search", "FT.CURSOR GC", integer, Effect.succeed([index, "0"]));

@@ -7,6 +7,7 @@ import { Arguments, parse, Positive } from "#/commands/internal/Input";
 import type { Integer } from "#/commands/internal/Input";
 import { moduleKeyed, Probability } from "#/commands/modules/Build";
 import { moduleBoolean as boolean } from "#/commands/modules/Reply";
+import { bloomInfoField } from "#/commands/probabilistic/bloom/InfoReply";
 import type { RedisArgument } from "#/RedisArgument";
 
 const Scaling = Schema.Struct({
@@ -97,7 +98,15 @@ export const bfInfoValue = (key: RedisArgument, field: "CAPACITY" | "SIZE" | "FI
     "probabilistic",
     "BF.INFO",
     key,
-    unsigned,
+    bloomInfoField(
+      {
+        CAPACITY: "Capacity",
+        SIZE: "Size",
+        FILTERS: "Number of filters",
+        ITEMS: "Number of items inserted",
+      }[field],
+      unsigned,
+    ),
     parse(Schema.Literals(["CAPACITY", "SIZE", "FILTERS", "ITEMS"]), field).pipe(
       Effect.map((value) => [value]),
     ),

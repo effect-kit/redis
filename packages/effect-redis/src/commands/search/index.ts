@@ -24,6 +24,7 @@ export {
   ftAggregate,
   ftAggregateWithCursor,
   ftCursorRead,
+  ftCursorGc,
   ftCursorDel,
 } from "#/commands/search/query/Aggregate";
 export { ftProfileSearch, ftProfileAggregate } from "#/commands/search/query/Profile";
@@ -38,3 +39,5 @@ export {
   ftSuggetWithPayloads,
   ftSuggetWithScoresAndPayloads,
 } from "#/commands/search/Suggestions";
+
+export { ftListWithClusterState } from "#/commands/search/index/State";

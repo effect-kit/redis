@@ -36,6 +36,7 @@ export const clusterFixture = Effect.fnUntraced(function* (
     readonly database?: number;
     readonly cluster?: ClusterOptions;
     readonly proxy?: boolean;
+    readonly loadModules?: ReadonlyArray<string>;
   } = {},
 ) {
   if (protocol !== "resp2" && protocol !== "resp3")
@@ -52,6 +53,7 @@ export const clusterFixture = Effect.fnUntraced(function* (
           networkAlias: `node-${index}`,
           ...(options.tls === undefined ? {} : { tls: options.tls }),
           extraConfig: [
+            ...(options.loadModules ?? []).map((path) => `loadmodule ${path}`),
             "cluster-enabled yes",
             "cluster-config-file nodes.conf",
             "cluster-node-timeout 1000",

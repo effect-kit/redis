@@ -129,12 +129,4 @@ export const ftDropindex = (
   );
 export const ftInfo = (index: RedisArgument) =>
   moduleKeyless("search", "FT.INFO", fields, Effect.succeed([index]));
-export const ftList = (options: { readonly withClusterState?: boolean } = {}) =>
-  moduleKeyless(
-    "search",
-    "FT._LIST",
-    members(simpleText),
-    parse(Schema.Struct({ withClusterState: Schema.optionalKey(Schema.Boolean) }), options).pipe(
-      Effect.map((selected) => (selected.withClusterState ? ["WITHCLUSTERSTATE"] : [])),
-    ),
-  );
+export const ftList = () => moduleKeyless("search", "FT._LIST", members(simpleText));

@@ -58,6 +58,7 @@ export const commandSlot = Effect.fnUntraced(function* (
 
 export const replicaEligible = (command: PreparedCommand<unknown, unknown, unknown>): boolean =>
   command.metadata.execution === "ordinary" &&
+  !command.metadata.scenarios.includes("MODULE-DUMP") &&
   command.routing._tag === "Keys" &&
   command.routing.keys.every((key) => key.access === "read") &&
   !["scripting", "pubsub"].includes(command.metadata.family);
