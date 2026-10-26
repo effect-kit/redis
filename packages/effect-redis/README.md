@@ -26,6 +26,10 @@ corresponding server module; availability and numeric reply contracts remain exp
 Typed JSON builders preserve JSONPath multiplicity, legacy-path results and serialized
 bytes. `jsonSetWith`/`jsonGetWith` explicitly select a `PayloadCodec`; expanded
 RESP3 formats have separate methods and retain actual provider availability.
+Vector-set builders distinguish members, scored/attribute matches, graph links and
+raw quantized embeddings. `encodeFloat32` uses an explicit byte order (little endian
+by default); match the server CPU for Redis's native FP32 layout. Repeat nondefault
+quantization and connection-count settings on subsequent `vadd` operations.
 
 The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
 Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()

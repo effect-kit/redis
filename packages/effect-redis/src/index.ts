@@ -234,3 +234,13 @@ export type {
   ShutdownConnectionOptions,
 } from "#/diagnostics/RedisShutdown";
 export { DiagnosticError } from "#/errors/DiagnosticError";
+
+export { encodeFloat32 } from "#/codecs/vector/Float32";
+export type {
+  VectorInput,
+  VectorQuery,
+  VectorAddOptions,
+  VectorSimilarityOptions,
+  VectorMatch,
+  RawEmbedding,
+} from "#/commands/vectors/index";
