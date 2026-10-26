@@ -41,6 +41,16 @@ const moduleOf = (name: string): Module | undefined => {
   return undefined;
 };
 
+const requestsNoScores = (command: RedisCommand) => {
+  for (let index = 3; index < command.length;) {
+    const option = commandToken(command[index]);
+    if (option === "NOSCORES") return true;
+    if (option !== "MATCH" && option !== "COUNT") return false;
+    index += 2;
+  }
+  return false;
+};
+
 export const commandPolicy = (profile?: DeploymentProfile): CommandPolicy => {
   if (profile === undefined) return () => undefined;
   const restricted = new Set(profile.restrictedCommands);
@@ -50,6 +60,9 @@ export const commandPolicy = (profile?: DeploymentProfile): CommandPolicy => {
 
   return (command) => {
     const name = commandToken(command[0]);
+    // Garnet 2.2.4 ignores this flag, making score tokens indistinguishable from members in typed replies.
+    if (profile.id === "garnet" && name === "ZSCAN" && requestsNoScores(command))
+      return new ProfileError({ delivery: "unsent", reason: "restricted-command" });
     if (restricted.has(name) || restricted.has(`${name} ${commandToken(command[1])}`))
       return new ProfileError({ delivery: "unsent", reason: "restricted-command" });
     const module = moduleOf(name);

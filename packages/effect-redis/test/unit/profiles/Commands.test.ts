@@ -3,6 +3,20 @@ import { expect, it } from "vitest";
 import { RedisProfiles } from "#/index";
 import { commandPolicy } from "#/profiles/Commands";
 
+it("Garnet rejects ignored NOSCORES flags without mistaking keys or MATCH values for options", () => {
+  const policy = commandPolicy(RedisProfiles.garnet());
+  expect(policy(["ZSCAN", "key", "0", "NOSCORES"])).toMatchObject({
+    _tag: "ProfileError",
+    delivery: "unsent",
+    reason: "restricted-command",
+  });
+  expect(
+    policy(["zscan", "key", "0", "COUNT", "5", new TextEncoder().encode("noscores")])?.reason,
+  ).toBe("restricted-command");
+  expect(policy(["ZSCAN", "NOSCORES", "0", "MATCH", "NOSCORES"])).toBeUndefined();
+  expect(commandPolicy(RedisProfiles.valkey())(["ZSCAN", "key", "0", "NOSCORES"])).toBeUndefined();
+});
+
 it("two-token restrictions preserve permitted sibling operations and binary token spelling", () => {
   const policy = commandPolicy(
     RedisProfiles.memorystoreValkey({
