@@ -8,6 +8,7 @@ Review and merge it, then dispatch again to validate and publish the exact packa
 archive through npm trusted publishing with provenance.
 
 Release runs fast offline and package checks. Backend conformance has its own
-manual workflow.
+manual workflow. CI runs the full artifact suite; Release verifies the exact
+archive being published.
 
 Releases are manual. Keep the generated archive unchanged after verification.
