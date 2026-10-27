@@ -3,11 +3,16 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 
 import { Context, Effect, Layer, Redacted, Schema, Schedule } from "effect";
 
+import { deploymentHeader } from "#test/runners/providers/WorkerResponse";
 import { environment } from "#test/support/providers/Case";
 import { requiredSetting } from "#test/support/providers/Configuration";
 import type { HttpInput } from "#test/support/providers/Contract";
 import { ProviderTestError } from "#test/support/providers/Failures";
 import { cloudflareApi } from "#test/support/providers/workers/Api";
+import {
+  checkWorkerBoundary,
+  waitForWorkerBoundary,
+} from "#test/support/providers/workers/Boundary";
 import { restorationBody } from "#test/support/providers/workers/Multipart";
 
 const Settings = Schema.Struct({
@@ -71,6 +76,9 @@ const fixture = Effect.fnUntraced(function* () {
     codeHash.update(module.name).update(module.bytes);
   const bundleSha256 = codeHash.digest("hex");
   const runKey = randomBytes(32).toString("hex");
+  // This public cache nonce is deliberately independent of the bearer key.
+  const probeNonce = randomBytes(16).toString("hex");
+  const endpoint = (path: string) => `${url.origin}${path}?fixture=${probeNonce}`;
   const expires = Date.now() + policy.runLifetimeMillis;
   const runId = process.env.EFFECT_REDIS_PROVIDER_RUN_ID;
   const output = new URL(`../../../results/providers/${runId}/`, import.meta.url);
@@ -159,7 +167,7 @@ const fixture = Effect.fnUntraced(function* () {
   const invoke = (path: string, input?: unknown) =>
     Effect.tryPromise({
       try: async (signal) => {
-        const result = await fetch(url.origin + path, {
+        const result = await fetch(endpoint(path), {
           method: input === undefined ? "GET" : "POST",
           signal,
           redirect: "error",
@@ -188,37 +196,66 @@ const fixture = Effect.fnUntraced(function* () {
     Effect.retry({ schedule: Schedule.spaced(200), times: 30 }),
     Effect.timeout(15_000),
   );
-  yield* Effect.tryPromise({
-    try: async (signal) => {
-      const requests = [
-        { headers: {}, body: undefined, expected: 403 },
-        {
-          headers: { authorization: `Bearer ${runKey}` },
-          body: '{"scenario":"data","prefix":"shared:"}',
-          expected: 400,
-        },
-        {
-          headers: { authorization: `Bearer ${runKey}` },
-          body: "x".repeat(policy.requestBytes + 1),
-          expected: 413,
-        },
-      ];
-      await Promise.all(
-        requests.map(async (test) => {
-          const result = await fetch(url.origin + (test.body === undefined ? "/ready" : "/test"), {
+  const probes = [
+    { id: "unauthorized", headers: {}, body: undefined, expected: 403 },
+    {
+      id: "prefix",
+      headers: { authorization: `Bearer ${runKey}` },
+      body: '{"scenario":"data","prefix":"shared:"}',
+      expected: 400,
+    },
+    {
+      id: "size",
+      headers: { authorization: `Bearer ${runKey}` },
+      body: "x".repeat(policy.requestBytes + 1),
+      expected: 413,
+    },
+  ];
+  const observations: {
+    id: string;
+    expected: number;
+    status: number;
+    deploymentMatches: boolean;
+  }[] = [];
+  yield* Effect.forEach(
+    probes,
+    (test) =>
+      Effect.tryPromise({
+        try: async (signal) => {
+          const result = await fetch(endpoint(test.body === undefined ? "/ready" : "/test"), {
             method: test.body === undefined ? "GET" : "POST",
             signal,
             redirect: "error",
+            cache: "no-store",
             headers: test.headers,
             ...(test.body === undefined ? {} : { body: test.body }),
           });
           await result.body?.cancel();
-          if (result.status !== test.expected) throw failure("worker-access-boundary");
-        }),
-      );
-    },
-    catch: () => failure("worker-access-boundary"),
-  }).pipe(Effect.timeout(10_000));
+          if (observations.length < 256)
+            observations.push({
+              id: test.id,
+              expected: test.expected,
+              status: result.status,
+              deploymentMatches: result.headers.get(deploymentHeader) === ready.version,
+            });
+          return result;
+        },
+        catch: () => failure(`worker-access-${test.id}-network`),
+      }).pipe(
+        Effect.flatMap((result) => checkWorkerBoundary(ready.version, test, result)),
+        waitForWorkerBoundary,
+      ),
+    { concurrency: 3, discard: true },
+  ).pipe(
+    Effect.ensuring(
+      Effect.promise(async () => {
+        await mkdir(output, { recursive: true });
+        await writeFile(new URL("worker-boundary.json", output), JSON.stringify(observations), {
+          mode: 0o600,
+        });
+      }),
+    ),
+  );
   yield* Effect.promise(async () => {
     await mkdir(output, { recursive: true });
     await writeFile(

@@ -139,3 +139,9 @@ Immutable evidence stays under `results/hardening/<run-id>/` and `results/artifa
 The **Release hardening** workflow is manual dispatch; hosted providers remain a
 separate dispatch-only workflow with isolated secrets. No performance gate implicitly
 contacts a real hosted database or loads a local credentials file.
+
+Hosted Worker control responses carry deployment identity and `no-store`; a public
+per-run URL nonce is independent of its bearer key. Access probes wait only for the
+selected deployment. A wrong access status from that deployment fails immediately;
+Redis mutation scenarios are never retried. Each hosted run verifies restoration of
+the original Worker code and zero remaining bindings, including failed setup.

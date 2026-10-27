@@ -908,3 +908,7 @@ total is promised. Sources remain accessible without ignored research:
 - Hosted-provider CI remains manual default-branch workflow dispatch only. Offline
   CI also verifies deterministic artifacts; local container conformance retains its
   main-push and authorized PR policy. Publication remains a separate explicit action.
+- Worker control probes must match the selected deployment and use uncached URLs
+  with a public nonce independent of the bearer key. Retry only convergence probes;
+  an access-boundary failure from the current deployment fails immediately. Never
+  apply deployment-readiness retries to Redis commands or mutation scenarios.
