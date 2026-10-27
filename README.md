@@ -117,6 +117,10 @@ CI, PR-title checks, Changeset summaries, releases, and registry smoke checks re
 [EffectKit's shared workflows](https://github.com/effect-kit/.github). Runtime versions
 and package-specific checks stay in this repository's scripts.
 
+PR titles follow Conventional Commits, for example `fix: preserve binary values`.
+Changeset release impact appears in the Actions job summary; documentation-only PRs
+do not need a Changeset.
+
 Changesets manages package versions and changelogs. Add a Changeset with public API
 changes, commit it with the code, and dispatch **Release** on `main` with `dry-run` disabled
 to create or update the version PR. After reviewing and merging that PR, dispatch **Release**
