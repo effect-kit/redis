@@ -23,11 +23,10 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         with:
-          node-version-file: .node-version
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+          bun: "false"
+          ignore-scripts: "true"
       - id: changesets
         uses: changesets/action/select-mode@v2
 
@@ -45,11 +44,10 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         with:
-          node-version-file: .node-version
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+          bun: "false"
+          ignore-scripts: "true"
       - uses: changesets/action/version@v2
         with:
           script: pnpm version-packages
@@ -71,13 +69,7 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
+      - uses: ./.github/actions/setup
       - name: Reserve 0.0.0 for manual bootstrap
         run: |
           node --input-type=module -e '
@@ -85,7 +77,6 @@ jobs:
             const { version } = JSON.parse(readFileSync("packages/redis/package.json", "utf8"));
             if (version === "0.0.0") throw new Error("Publish the bootstrap version manually");
           '
-      - run: pnpm install --frozen-lockfile
       - run: pnpm fixtures:pull
       - run: pnpm verify
       - run: pnpm test:artifacts
@@ -123,14 +114,9 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         with:
-          node-version-file: .node-version
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+          ignore-scripts: "true"
       - name: Publish verified tarballs with OIDC and provenance
         uses: changesets/action/publish@v2
         with:

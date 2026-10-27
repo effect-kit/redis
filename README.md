@@ -60,6 +60,10 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
+See [.env.example](.env.example) for application and optional provider-test settings.
+Default tests need no env file; hosted tests load only the file passed through
+`--credentials-file`.
+
 The pnpm/Turborepo workspace uses TypeScript 7, tsdown, Klarity, Oxfmt, Oxlint,
 Lefthook and Commitlint. Shared dependency ranges live in the pnpm catalog;
 the lockfile records exact tool and runtime versions.
@@ -107,7 +111,7 @@ Changesets manages package versions and changelogs. Add a Changeset with public 
 changes, commit it with the code, and dispatch **Release** on `main` to create or
 update the version PR. After reviewing and merging that PR, dispatch **Release**
 again to validate and publish the packed package with npm trusted publishing and
-provenance. See [release setup and bootstrap commands](.changeset/README.md).
+provenance. See [the release guide](.changeset/README.md).
 
 Release automation never publishes on a PR or ordinary push. npm organization
 membership and trusted-publisher configuration are maintained by package owners.

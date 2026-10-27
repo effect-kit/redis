@@ -133,7 +133,7 @@ native/HTTP cases against owned current Redis/Valkey fixtures. Prepare both engi
 images first. `pnpm release:smoke` performs the same checks after downloading the
 published registry archive and matching its integrity. Neither verification command
 publishes. The manual release workflow also requires provenance metadata in the
-registry receipt. See the root release guide for bootstrap/trusted-publisher setup.
+registry receipt. See the root release guide for the versioning workflow.
 
 `runners/hardening/` owns measured Redis/Valkey TCP/TLS/local HTTP workloads, five-minute
 native and sustained-HTTP Node/Bun cleanup soaks and 100 fresh fixture startups plus

@@ -10,18 +10,13 @@ is its only runtime peer dependency.
 ## Install
 
 ```sh
-pnpm add @effect-kit/redis effect
-```
-
-```sh
 npm install @effect-kit/redis effect
-# or
+pnpm add @effect-kit/redis effect
 bun add @effect-kit/redis effect
+yarn add @effect-kit/redis effect
 ```
 
-This is an ESM package for Effect `^4.0.6`. Native adapters are tested on Node.js
-24.22.0 and Bun 1.4.4. The HTTP adapter also runs on Deno and Cloudflare Workers;
-those runtimes do not use the native socket adapters.
+Requires Effect `^4.0.6` and ESM. Tested native runtimes: Node.js 24.22.0 and Bun 1.4.4.
 
 ## Quick start
 
@@ -52,16 +47,13 @@ const result = await Effect.runPromise(program.pipe(Effect.provide(RedisLive)));
 console.log(result);
 ```
 
-The Layer owns connection startup and shutdown. Reuse the same Layer value across
-your application's service composition. Native Layers also supply sessions,
-Streams, scripts, Pub/Sub and administration services with their own scoped
-connection ownership. For a host that calls Effects repeatedly,
-keep a single Effect `ManagedRuntime` and await `runtime.dispose()` during shutdown.
+The Layer owns connection startup and shutdown. Reuse it across your services.
+For repeated calls from a non-Effect host, use one `ManagedRuntime` and await
+`runtime.dispose()` at shutdown.
 
 ### Configuration and Bun
 
-Load connection settings from Effect Config. `rediss://` enables verified TLS;
-`redis://` uses plaintext. Keep credentials in secret configuration.
+Load settings with Effect Config. Use `rediss://` for verified TLS.
 
 ```ts
 import { Config } from "effect";
@@ -75,12 +67,11 @@ export const NodeRedisLive = RedisNode.layerConfig(settings);
 export const BunRedisLive = RedisBun.layerConfig(settings);
 ```
 
-Choose the matching runtime adapter. Redis, Valkey and other RESP engines use these
-same constructors; server capabilities determine available commands.
+Choose the matching runtime adapter; Redis-compatible engines share these constructors.
 
 ### Upstash HTTP
 
-The ready HTTP Layer supplies Effect's FetchHttpClient internally:
+The HTTP Layer includes Effect's FetchHttpClient:
 
 ```ts
 import { Config, Effect } from "effect";
@@ -100,13 +91,10 @@ const program = Redis.pipe(Effect.flatMap((redis) => redis.get("greeting")));
 export const runnable = program.pipe(Effect.provide(RedisLive));
 ```
 
-HTTP supports ordinary commands, pipelines, transactions and scoped text SSE.
-Connection-bound features such as WATCH, blocking reads, client tracking and native
-Cluster/Sentinel routing require a native adapter. HTTP transactions reject
-raw/custom/script replies whose erased RESP types cannot be decoded losslessly.
-Binary request positions have explicit limits; responses preserve binary bytes.
-SSE is text-only, and hosted multiline payloads can be truncated: use native
-Pub/Sub when payload fidelity matters.
+HTTP supports commands, pipelines, transactions and text SSE. WATCH, blocking reads,
+tracking and client-side topology routing require native sockets. HTTP transactions
+reject ambiguous raw/custom/script replies. Binary request positions are limited;
+use native Pub/Sub for binary or multiline messages.
 
 ## Typed values and commands
 
@@ -137,10 +125,8 @@ export const saveUser = Effect.gen(function* () {
 });
 ```
 
-`Commands` exposes reusable typed command descriptions. `redis.execute(command)`
-uses the same encoders and decoders as facade methods. Raw commands return lossless
-RESP values and require an explicit routing/execution contract; they do not bypass
-connection ownership or backend restrictions.
+`Commands` builds reusable typed operations for `redis.execute`, pipelines and
+transactions. Raw commands return lossless RESP with explicit routing/execution contracts.
 
 ## Pipelines and transactions
 
@@ -171,11 +157,9 @@ export const updateVisits = Effect.gen(function* () {
 ```
 
 Pipelines preserve order and per-command failures without atomicity. Transactions
-return `Committed` with per-command Results or `Conflict` for an aborted WATCH.
-Redis does not roll back sibling commands after a runtime error. Use
-`RedisSessions.watch(keys, use)` for a connection-bound read/check/transaction
-workflow. Cluster transactions require all keys in one slot; matching hash tags
-such as `{account:42}` select that slot.
+return `Committed` with per-command Results or a WATCH `Conflict`; runtime errors
+do not roll back sibling commands. Use `RedisSessions.watch(keys, use)` for WATCH
+workflows. Cluster transactions require one slot, selected here by `{account:42}`.
 
 ## Scans, Streams and Pub/Sub
 
@@ -195,10 +179,9 @@ export const firstKeys = Effect.gen(function* () {
 });
 ```
 
-Scan COUNT is a hint; results can contain duplicates and do not form a snapshot.
-`RedisStreams` adds scoped blocking readers, consumer-group pending/claim recovery
-and processing with acknowledgment after success. Processing can be redelivered;
-application side effects need an idempotency policy.
+Scans can return duplicates and do not form a snapshot. `RedisStreams` provides
+blocking readers, consumer-group recovery and acknowledgment after successful
+processing. Handle redelivery with application idempotency.
 
 Pub/Sub subscriptions wait for the server acknowledgment and own their lifetime:
 
@@ -223,10 +206,8 @@ const program = Effect.gen(function* () {
 export const runnable = program.pipe(Effect.scoped, Effect.provide(RedisLive));
 ```
 
-Native Pub/Sub preserves binary payloads. Disconnects and overflow are visible;
-optional resubscription reports delivery gaps and cannot recover missed messages.
-Managed tracking and bounded GET-byte caches are available separately through
-`RedisTracking` and `RedisCache`.
+Native Pub/Sub preserves binary payloads. Disconnects, overflow and delivery gaps
+are explicit. `RedisTracking` and `RedisCache` provide tracking and bounded GET caches.
 
 ## Cluster and Sentinel
 
@@ -254,54 +235,38 @@ export const SentinelLive = RedisNode.layerSentinel({
 });
 ```
 
-Cluster routes by binary keys, bounds redirects and rejects unsupported cross-slot
-operations. Sentinel verifies the primary role before admission. Specialized
-`RedisCluster`/`RedisSentinel` services expose topology-owned sessions and events.
-Failover does not add strong consistency or replay uncertain commands.
+Cluster routes by keys and rejects unsupported cross-slot operations. Sentinel
+discovers and verifies the primary. `RedisCluster`/`RedisSentinel` expose
+topology-bound sessions and events; failover does not replay uncertain commands.
 
 ## Compatibility
 
-| Backend or runtime                               | Execution path                                                             |
-| ------------------------------------------------ | -------------------------------------------------------------------------- |
-| Redis, Valkey                                    | Native Node/Bun, including Cluster and Sentinel fixtures                   |
-| Dragonfly, KeyDB, Redict, Garnet, Apache Kvrocks | Native Node/Bun with backend-specific command subsets                      |
-| Upstash                                          | Native RESP or HTTP/SSE; provider Search/Vector/ACL have separate builders |
-| Aiven Valkey, Redis Cloud Free                   | Tested isolated hosted configurations using native adapters                |
-| Deno, Cloudflare Workers                         | Upstash HTTP; no native TCP claim                                          |
+| Backend or runtime                               | Execution path                            |
+| ------------------------------------------------ | ----------------------------------------- |
+| Redis, Valkey                                    | Native Node/Bun; Cluster and Sentinel     |
+| Dragonfly, KeyDB, Redict, Garnet, Apache Kvrocks | Native Node/Bun; backend-specific subsets |
+| Upstash                                          | Native RESP or HTTP/SSE                   |
+| Aiven Valkey, Redis Cloud Free                   | Tested native configurations              |
+| Deno, Cloudflare Workers                         | Upstash HTTP                              |
 
-Compatibility is specific to server versions, configuration, protocol, runtime and
-executed operations. Redis command acceptance does not establish semantic parity.
-Alternative engines can reject options or behave differently; the client preserves
-those outcomes. `RedisProfiles` adds reviewed deployment policies, including a
-Garnet guard for `ZSCAN NOSCORES`. A profile alone does not certify a hosted service.
-Other cloud-provider configurations are not certified.
-
-Typed module families cover JSON, Search, TimeSeries, Bloom/Cuckoo/CMS/TopK/t-digest
-and vector sets when enabled on the server. Module versions and dialects matter.
-Upstash `SEARCH.*`/`VECTOR.*` are distinct from Redis `FT.*`/`V*`.
-Advanced replication/RDB framing and streamed RESP3 aggregates are outside the
-ordinary request/reply contract.
+Commands and guarantees depend on server versions, configuration and enabled modules.
+`RedisProfiles` applies deployment policies; it does not certify untested providers.
+Typed modules include JSON, Search, TimeSeries, probabilistic structures and vector
+sets. Upstash Search/Vector builders use their own dialects. Replication/RDB framing
+and streamed RESP3 aggregates are outside the ordinary command API.
 
 ## Errors, recovery and observability
 
-Expected failures use tagged Effect errors: configuration, admission, transport,
-handshake, server, reply, payload and batch failures remain distinguishable. Server
-errors and batch evidence are redacted because they can contain application data.
-Use `Effect.catchTag` for the failure your application can actually recover from.
+Use `Effect.catchTag` for typed failures. Server errors and batch evidence are
+redacted because they can contain application data.
 
-A disconnect or timeout after a write can have an unknown execution outcome.
-The client never automatically replays that command, transaction or script. New
-work can establish a fresh connection. Application retry must account for remote
-side effects; cancellation cannot undo a write.
+A timeout or disconnect after writing can leave execution uncertain. The client
+never automatically replays that work, and cancellation cannot undo a mutation.
 
-`RedisCredentials.provider(effect)` accepts your existing identity integration
-without adding cloud SDKs. Refresh is bounded; `RedisCredentials.rotate` explicitly
-retires owned connections or aborts HTTP work. Credentials use `Redacted`.
-
-Merge `RedisTelemetry.layer({ tracing: true })` with your runtime Layer to opt into
-Effect metrics and sanitized spans. Instrumentation is disabled by default and
-uses bounded operation/outcome labels without keys, values or endpoints. Exporters
-remain application-owned.
+`RedisCredentials.provider(effect)` supports your identity integration;
+`RedisCredentials.rotate` retires connections or aborts HTTP work.
+Merge `RedisTelemetry.layer({ tracing: true })` with your runtime Layer to enable
+Effect metrics and sanitized spans. Telemetry is opt-in; exporters are application-owned.
 
 ## Contributing and security
 

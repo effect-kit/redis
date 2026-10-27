@@ -84,15 +84,7 @@ jobs:
         env:
           REQUESTED_SHA: ${{ needs.request.outputs.sha }}
         run: test "$(git rev-parse HEAD)" = "$REQUESTED_SHA"
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: .bun-version
-          no-cache: true
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - run: pnpm fixtures:pull
         if: matrix.suite != 'core'
       - run: pnpm test:live
