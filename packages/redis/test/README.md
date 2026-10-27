@@ -118,27 +118,29 @@ an owned 0600 file under ignored `results/`; it removes that file and its contai
 on SIGINT/SIGTERM. Do not run another live runner against the same results directory.
 
 Live JUnit/JSON and fixture evidence go to ignored `results/`, collected by CI.
-Main pushes run live CI automatically; PR live runs require authorized manual
+Live checks run only through manual dispatch; PR live runs require authorized manual
 selection. Keep that authorization controller under root `.github/`, separate from
 untrusted package code. See the workspace README for CI triggers and backend scope.
 
 `runners/artifacts/` checks three independent clean builds, every archive entry and
 portable import graphs, then compiles/runs `fixtures/distribution/` from the exact
 packed archive in isolated consumers. Run `pnpm test:artifacts` before live mounts.
+The manual **Extended tests** workflow runs this suite with fixture validation and
+protocol fuzzing; ordinary PR/main CI only runs the fast `ci:check` gate.
 
 The release lane uses `pnpm release:pack` and `pnpm release:check` from the workspace
 root. It checks the Changesets publish plan and exact archive, compiles the public
-README examples, installs the archive in a fresh npm consumer, and executes Node/Bun
-native/HTTP cases against owned current Redis/Valkey fixtures. Prepare both engines'
-images first. `pnpm release:smoke` performs the same checks after downloading the
+README examples, installs the archive in a fresh npm consumer, and executes offline Node/Bun
+import probes. `pnpm release:smoke` performs the same checks after downloading the
 published registry archive and matching its integrity. Neither verification command
 publishes. Use `--provenance` to require provenance metadata in the registry
 receipt. See the root release guide for the versioning workflow.
 
-The Release workflow uses `--skip-live` for archive checks: it still installs
+The root release check/smoke scripts include `--skip-live`: they still install
 the exact tarball in a fresh consumer and checks types, README examples, Node/Bun
-imports and integrity, but needs no Docker or live backend. Local release commands
-retain their live checks by default. Full conformance remains separately dispatchable.
+imports and integrity, but need no Docker or live backend. The underlying package
+`test:release` and `test:release:registry` commands retain live checks unless given
+`--skip-live`; prepare Redis/Valkey images before using them. Full conformance remains separately dispatchable.
 Publication does not wait for npm registry availability. Run registry smoke checks
 separately once the version is available, using the original verified archive and
 `publish-plan.json` through `--pack-dir`, with `--provenance --skip-live` as needed.

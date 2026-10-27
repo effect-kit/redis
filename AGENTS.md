@@ -88,7 +88,9 @@
 ## CI and releases
 
 - Offline CI runs on ordinary PRs/main pushes; same-repository bot-created Changesets
-  version PRs skip the check job. Live, hosted-provider and release workflows
+  version PRs skip the check job. `ci:check` and `release:prepare` run fast checks;
+  fuzzing and repeated artifact builds live in the manual Extended tests workflow.
+  Live, hosted-provider and release workflows
   are dispatch-only. Use current major action tags and the shared setup action.
   Keep checkout refs explicit and tested commits immutable.
 - Keep trusted PR selection/reporting separate from untrusted tests. PR test jobs
@@ -99,7 +101,10 @@
   OIDC publication. Publish only the verified archive, without rebuilding it.
 - Release runs fast offline/package checks, without Docker or live backends. Use
   `--skip-live` for its archive/registry probes; keep full conformance dispatch-only.
-  CI owns the three-build artifact suite; Release checks the exact archive once.
+  Extended tests owns the three-build artifact suite; Release checks the exact archive once.
+- Release defaults to verification-only (`dry-run: true`), including temporary local versioning.
+  Disable it explicitly to create a version PR or publish. Root release check/smoke scripts
+  include `--skip-live`; call package test runners directly for full live consumer checks.
 - `release:pack`/`release:check` prepare and verify; `release:smoke` checks an actual
   registry publication. These verification commands do not publish.
 - Release does not wait for registry availability or run registry smoke checks.

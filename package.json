@@ -44,8 +44,12 @@
     "changeset": "changeset",
     "version-packages": "changeset version && pnpm install --lockfile-only --ignore-scripts && pnpm exec oxfmt --write .changeset packages/redis/package.json packages/redis/CHANGELOG.md pnpm-lock.yaml",
     "release:pack": "changeset pack --out-dir packages/redis/test/results/release",
-    "release:check": "pnpm --filter @effect-kit/redis test:release",
-    "release:smoke": "pnpm --filter @effect-kit/redis test:release:registry"
+    "release:check": "pnpm --filter @effect-kit/redis test:release --skip-live",
+    "release:smoke": "pnpm --filter @effect-kit/redis test:release:registry --skip-live",
+    "ci:check": "pnpm check",
+    "release:prepare": "pnpm check",
+    "release:version": "pnpm version-packages",
+    "test:extended": "pnpm fixtures:check && pnpm test:protocol:fuzz && pnpm test:artifacts"
   },
   "dependencies": {
     "effect": "catalog:"

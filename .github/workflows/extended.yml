@@ -1,0 +1,32 @@
+name: Extended tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extended-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: effect-kit/.github/actions/setup@v1
+        with:
+          bun: "true"
+      - run: pnpm test:extended
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: extended-evidence-${{ github.run_id }}
+          path: packages/redis/test/results/
+          if-no-files-found: warn
+          retention-days: 14

@@ -84,7 +84,7 @@ jobs:
         env:
           REQUESTED_SHA: ${{ needs.request.outputs.sha }}
         run: test "$(git rev-parse HEAD)" = "$REQUESTED_SHA"
-      - uses: ./.github/actions/setup
+      - uses: effect-kit/.github/actions/setup@v1
       - run: pnpm fixtures:pull
         if: matrix.suite != 'core'
       - run: pnpm test:live

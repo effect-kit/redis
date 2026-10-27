@@ -2,123 +2,23 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Verify the release without creating a PR or publishing
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
-concurrency:
-  group: release-main
-  cancel-in-progress: false
-
 jobs:
-  plan:
-    if: github.repository == 'effect-kit/redis' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      mode: ${{ steps.changesets.outputs.mode }}
-      plan: ${{ steps.changesets.outputs.publish-plan-artifact-id }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: ./.github/actions/setup
-        with:
-          bun: "false"
-          ignore-scripts: "true"
-      - id: changesets
-        uses: changesets/action/select-mode@v2
-
-  version:
-    needs: plan
-    if: needs.plan.outputs.mode == 'version'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  release:
     permissions:
       contents: write
       pull-requests: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/setup
-        with:
-          bun: "false"
-          ignore-scripts: "true"
-      - uses: changesets/action/version@v2
-        with:
-          script: pnpm version-packages
-          commit-message: "chore(release): version packages"
-          pr-title: "chore(release): version packages"
-          pr-base-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-  prepare:
-    needs: plan
-    if: needs.plan.outputs.mode == 'publish'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    outputs:
-      packed: ${{ steps.pack.outputs.pack-dir-artifact-id }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/setup
-      - run: pnpm check
-      - run: pnpm test:protocol:fuzz
-      - id: pack
-        uses: changesets/action/pack@v2
-        with:
-          publish-plan-artifact-id: ${{ needs.plan.outputs.plan }}
-      - uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ steps.pack.outputs.pack-dir-artifact-id }}
-          path: ${{ runner.temp }}/release-candidate
-          merge-multiple: true
-      - run: pnpm release:check --pack-dir "$RUNNER_TEMP/release-candidate" --skip-live
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: release-verification-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/release-candidate/verification.json
-            packages/redis/test/results/
-          if-no-files-found: error
-          retention-days: 30
-
-  publish:
-    needs: [plan, prepare]
-    if: needs.plan.outputs.mode == 'publish'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write
       id-token: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/setup
-        with:
-          bun: "false"
-          ignore-scripts: "true"
-      - name: Publish verified tarballs with OIDC and provenance
-        uses: changesets/action/publish@v2
-        with:
-          pack-dir-artifact-id: ${{ needs.prepare.outputs.packed }}
-          create-github-releases: true
-          push-git-tags: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        env:
-          NPM_CONFIG_PROVENANCE: "true"
-          PNPM_CONFIG_PROVENANCE: "true"
-          # Registry availability is verified separately after npm finishes processing.
-          PNPM_CONFIG_PUBLISH_WAIT_TIMEOUT: "0"
+    uses: effect-kit/.github/.github/workflows/release.yml@v1
+    with:
+      dry-run: ${{ inputs.dry-run }}
+      timeout-minutes: 15
+      bun: true

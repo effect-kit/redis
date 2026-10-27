@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,18 +16,13 @@ concurrency:
 
 jobs:
   check:
-    # Version PRs are checked after merging to main and again before publication.
+    uses: effect-kit/.github/.github/workflows/ci.yml@v1
+    # Version PRs are checked after merge and again before publication.
     if: >-
       github.event_name != 'pull_request' ||
       github.event.pull_request.user.login != 'github-actions[bot]' ||
       github.event.pull_request.head.repo.full_name != github.repository ||
       github.head_ref != 'changeset-release/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
-        with:
-          cache: pnpm
-      - run: pnpm check
-      - run: pnpm test:protocol:fuzz
-      - run: pnpm test:artifacts
+    with:
+      timeout-minutes: 10
+      bun: true

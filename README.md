@@ -57,7 +57,7 @@ Use Node.js **24.22.0+**, pnpm **12.14.0** and Bun **1.4.4**, pinned in the repo
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm check
+pnpm ci:check
 ```
 
 See [.env.example](.env.example) for application and optional provider-test settings.
@@ -71,6 +71,10 @@ the lockfile records exact tool and runtime versions.
 | Command                                                       | Purpose                                                        |
 | ------------------------------------------------------------- | -------------------------------------------------------------- |
 | `pnpm check`                                                  | Format, lint, typecheck, offline tests and build               |
+| `pnpm ci:check`                                               | Fast PR/main gate; runs `check`                                |
+| `pnpm release:prepare`                                        | Fast release checks and build                                  |
+| `pnpm release:version`                                        | Update package versions, changelogs and lockfile               |
+| `pnpm test:extended`                                          | Manual fixture checks, fuzzing and full artifact suite         |
 | `pnpm test`                                                   | Unit and controlled integration tests; no Redis or credentials |
 | `pnpm test:protocol:fuzz`                                     | Built-artifact RESP fuzz and large-input corpus                |
 | `pnpm test:artifacts`                                         | Three deterministic builds and exact packed consumers          |
@@ -100,22 +104,30 @@ authentication and PING/ECHO only. Mutating tests own disposable fixtures.
 The [test guide](packages/redis/test/README.md) describes suite organization and
 fixtures. Do not rebuild a checkout while live probes are reading its artifacts.
 
-Offline CI runs on ordinary PRs and pushes to `main`; bot-created Changesets version
-PRs skip the CI job until merged. Live conformance, hosted-provider and
-release workflows run only through manual dispatch. Live dispatch can select an
+Fast offline CI runs on ordinary PRs and pushes to `main`; bot-created Changesets version
+PRs skip the CI job until merged. **Extended tests** runs fixture validation, protocol fuzzing,
+and the three-build artifact suite only through manual dispatch. Live conformance,
+hosted-provider and release workflows are also dispatch-only. Live dispatch can select an
 engine and an optional PR number; it tests the exact resolved commit. Hardening
 checks remain available locally through `pnpm test:hardening`.
 
 ## Releases
 
+CI, PR-title checks, Changeset summaries, releases, and registry smoke checks reuse
+[EffectKit's shared workflows](https://github.com/effect-kit/.github). Runtime versions
+and package-specific checks stay in this repository's scripts.
+
 Changesets manages package versions and changelogs. Add a Changeset with public API
-changes, commit it with the code, and dispatch **Release** on `main` to create or
-update the version PR. After reviewing and merging that PR, dispatch **Release**
-again to validate and publish the packed package with npm trusted publishing and
+changes, commit it with the code, and dispatch **Release** on `main` with `dry-run` disabled
+to create or update the version PR. After reviewing and merging that PR, dispatch **Release**
+again with `dry-run` disabled to publish the verified package with npm trusted publishing and
 provenance. See [the release guide](.changeset/README.md).
 
-Release runs offline tests and package/registry checks; full backend conformance
-stays in the separate manual live workflow.
+The default `dry-run` mode verifies temporary versions and archives without opening a PR
+or publishing. Release runs `release:prepare` and verifies the exact archive with
+`release:check`, including types, README examples, and Node/Bun consumers without live servers.
+Full backend conformance stays in the manual live workflow. **Release smoke** separately
+checks the published registry archive and provenance after npm makes it available.
 
 Release automation never publishes on a PR or ordinary push. npm organization
 membership and trusted-publisher configuration are maintained by package owners.

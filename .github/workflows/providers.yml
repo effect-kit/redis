@@ -32,7 +32,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      - uses: effect-kit/.github/actions/setup@v1
       - if: inputs.runtime == 'all' || inputs.runtime == 'deno'
         run: pnpm providers:prepare
       - run: pnpm test:providers --env --provider "$PROVIDER_SELECTION" --runtime "$RUNTIME_SELECTION"
