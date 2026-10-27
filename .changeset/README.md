@@ -7,4 +7,7 @@ Dispatch **Release** on `main` to create or update the version/changelog PR.
 Review and merge it, then dispatch again to validate and publish the exact package
 archive through npm trusted publishing with provenance.
 
+Release runs fast offline and package checks. Backend conformance has its own
+manual workflow.
+
 Releases are manual. Keep the generated archive unchanged after verification.

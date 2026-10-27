@@ -16,13 +16,10 @@ const candidate = await readReleaseArchive(options["pack-dir"]);
 const scratch = await mkdtemp(join(tmpdir(), "effect-kit-release-"));
 
 try {
-  const consumers = await checkConsumers(
-    candidate.archive,
-    scratch,
-    packageRoot,
-    workspaceRoot,
-    true,
-  );
+  const consumers = await checkConsumers(candidate.archive, scratch, packageRoot, workspaceRoot, {
+    install: true,
+    live: !options["skip-live"],
+  });
   const evidence = {
     observedAt: new Date().toISOString(),
     commit: artifactCommand("git", ["rev-parse", "HEAD"], workspaceRoot).trim(),

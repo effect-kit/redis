@@ -59,7 +59,10 @@ try {
   if (archiveIntegrity(await readFile(archive), "sha512") !== candidate.integrity)
     throw new Error("Registry archive bytes differ from the verified candidate");
 
-  const consumers = await checkConsumers(archive, scratch, packageRoot, workspaceRoot, true);
+  const consumers = await checkConsumers(archive, scratch, packageRoot, workspaceRoot, {
+    install: true,
+    live: !options["skip-live"],
+  });
 
   await writeFile(
     join(options["pack-dir"], "registry-verification.json"),

@@ -114,6 +114,9 @@ update the version PR. After reviewing and merging that PR, dispatch **Release**
 again to validate and publish the packed package with npm trusted publishing and
 provenance. See [the release guide](.changeset/README.md).
 
+Release runs offline tests and package/registry checks; full backend conformance
+stays in the separate manual live workflow.
+
 Release automation never publishes on a PR or ordinary push. npm organization
 membership and trusted-publisher configuration are maintained by package owners.
 

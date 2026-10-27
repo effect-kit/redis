@@ -97,6 +97,8 @@
   require an owned empty deployment and verified code/binding restoration.
 - Changesets owns versions/changelogs. Keep version-PR permissions separate from
   OIDC publication. Publish only the verified archive, without rebuilding it.
+- Release runs fast offline/package checks, without Docker or live backends. Use
+  `--skip-live` for its archive/registry probes; keep full conformance dispatch-only.
 - `release:pack`/`release:check` prepare and verify; `release:smoke` checks an actual
   registry publication. These verification commands do not publish. The user owns
   the initial `0.0.0` publication; leave the pending minor Changeset unconsumed.

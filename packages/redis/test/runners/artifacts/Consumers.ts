@@ -9,7 +9,7 @@ export const checkConsumers = async (
   scratch: string,
   packageRoot: string,
   workspaceRoot: string,
-  live = false,
+  options: { readonly install?: boolean; readonly live?: boolean } = {},
 ) => {
   const extracted = join(scratch, "extracted");
   await mkdir(extracted);
@@ -18,7 +18,7 @@ export const checkConsumers = async (
   const consumer = join(scratch, "consumer");
   await mkdir(consumer);
 
-  if (!live) {
+  if (!options.install) {
     // The regular artifact gate stays offline; release consumers use a real npm installation.
     await mkdir(join(consumer, "node_modules/@effect-kit"), { recursive: true });
     await mkdir(join(packed, "node_modules"));
@@ -57,7 +57,7 @@ export const checkConsumers = async (
     ),
   ]);
 
-  if (live) {
+  if (options.install) {
     const effect = JSON.parse(
       await readFile(join(workspaceRoot, "node_modules/effect/package.json"), "utf8"),
     );
@@ -123,13 +123,15 @@ export const checkConsumers = async (
     ),
   );
 
-  const scenarios = live
+  const scenarios = options.live
     ? await (
         await import("#test/runners/artifacts/LiveConsumers")
       ).checkLiveConsumers(consumer, fixture)
     : undefined;
 
   return {
+    installed: options.install ?? false,
+    live: options.live ?? false,
     typecheckWithoutNodeGlobals: true,
     readmeExamples: examples,
     portable,

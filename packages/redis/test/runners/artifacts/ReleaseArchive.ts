@@ -14,11 +14,13 @@ import {
 export const packageRoot = fileURLToPath(new URL("../../../", import.meta.url));
 export const workspaceRoot = fileURLToPath(new URL("../../../../../", import.meta.url));
 
-export const releaseOptions = () =>
+export const releaseOptions = (args: ReadonlyArray<string> = process.argv.slice(2)) =>
   parseArgs({
+    args: [...args],
     options: {
       "pack-dir": { type: "string", default: join(packageRoot, "test/results/release") },
       provenance: { type: "boolean", default: false },
+      "skip-live": { type: "boolean", default: false },
     },
   }).values;
 

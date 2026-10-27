@@ -60,7 +60,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.mode == 'publish'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 15
     outputs:
       packed: ${{ steps.pack.outputs.pack-dir-artifact-id }}
     steps:
@@ -77,8 +77,8 @@ jobs:
             const { version } = JSON.parse(readFileSync("packages/redis/package.json", "utf8"));
             if (version === "0.0.0") throw new Error("Publish the bootstrap version manually");
           '
-      - run: pnpm fixtures:pull
-      - run: pnpm verify
+      - run: pnpm check
+      - run: pnpm test:protocol:fuzz
       - run: pnpm test:artifacts
       - id: pack
         uses: changesets/action/pack@v2
@@ -89,7 +89,7 @@ jobs:
           artifact-ids: ${{ steps.pack.outputs.pack-dir-artifact-id }}
           path: ${{ runner.temp }}/release-candidate
           merge-multiple: true
-      - run: pnpm release:check --pack-dir "$RUNNER_TEMP/release-candidate"
+      - run: pnpm release:check --pack-dir "$RUNNER_TEMP/release-candidate" --skip-live
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -133,9 +133,7 @@ jobs:
           artifact-ids: ${{ needs.prepare.outputs.packed }}
           path: ${{ runner.temp }}/published-candidate
           merge-multiple: true
-      - run: pnpm fixtures:pull --engine redis
-      - run: pnpm fixtures:pull --engine valkey
-      - run: pnpm release:smoke --pack-dir "$RUNNER_TEMP/published-candidate" --provenance
+      - run: pnpm release:smoke --pack-dir "$RUNNER_TEMP/published-candidate" --provenance --skip-live
       - uses: actions/upload-artifact@v7
         if: always()
         with:
