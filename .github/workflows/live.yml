@@ -1,10 +1,6 @@
 name: Live conformance
 
 on:
-  push:
-    branches: [main]
-  issue_comment:
-    types: [created]
   workflow_dispatch:
     inputs:
       pr:
@@ -22,7 +18,7 @@ permissions:
 
 jobs:
   request:
-    if: (github.event_name != 'issue_comment' || (github.event.issue.pull_request && startsWith(github.event.comment.body, '/test live'))) && (github.event_name != 'workflow_dispatch' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,34 +30,24 @@ jobs:
       target: ${{ steps.request.outputs.target }}
       suite: ${{ steps.request.outputs.suite }}
     steps:
-      # Controller code always comes from the default branch, including comment/dispatch events.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # PR selection never changes the trusted controller's checkout.
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
-      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+      - uses: actions/github-script@v9
         id: request
         with:
           script: |
-            const { parseLiveCommand, canRunLive, liveMatrix, pullNumber, verifiedSha } = await import(`${process.env.GITHUB_WORKSPACE}/.github/scripts/live-request.mjs`);
-            let suite = 'all';
-            let pr;
-            if (context.eventName === 'issue_comment') {
-              suite = parseLiveCommand(context.payload.comment.body);
-              if (suite === undefined) return core.setOutput('run', 'false');
-              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ ...context.repo, username: context.actor });
-              if (!canRunLive(data.permission)) return core.setOutput('run', 'false');
-              pr = context.issue.number;
-            } else if (context.eventName === 'workflow_dispatch') {
-              suite = context.payload.inputs.suite;
-              if (context.payload.inputs.pr) pr = pullNumber(context.payload.inputs.pr);
-            }
+            const { liveMatrix, pullNumber, verifiedSha } = await import(`${process.env.GITHUB_WORKSPACE}/.github/scripts/live-request.mjs`);
+            const suite = context.payload.inputs.suite;
+            const pr = context.payload.inputs.pr ? pullNumber(context.payload.inputs.pr) : undefined;
             let sha = context.sha;
             if (pr !== undefined) {
               const { data } = await github.rest.pulls.get({ ...context.repo, pull_number: pr });
               if (data.state !== 'open') throw new Error('PR must be open');
               sha = data.head.sha;
-            } else if (context.eventName === 'workflow_dispatch') {
+            } else {
               const { data } = await github.rest.repos.getBranch({ ...context.repo, branch: context.payload.repository.default_branch });
               sha = data.commit.sha;
             }
@@ -78,10 +64,9 @@ jobs:
     name: Live (${{ matrix.suite }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Only authorized requests reach this job; untrusted comments cannot cancel a valid run.
     concurrency:
       group: live-${{ needs.request.outputs.target }}-${{ matrix.suite }}
-      cancel-in-progress: ${{ github.event_name != 'push' }}
+      cancel-in-progress: false
     permissions:
       contents: read
     strategy:
@@ -91,7 +76,7 @@ jobs:
     env:
       EFFECT_REDIS_TEST_ENGINE: ${{ matrix.suite }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.request.outputs.sha }}
           persist-credentials: false
@@ -99,12 +84,11 @@ jobs:
         env:
           REQUESTED_SHA: ${{ needs.request.outputs.sha }}
         run: test "$(git rev-parse HEAD)" = "$REQUESTED_SHA"
-      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-          cache: ${{ github.event_name == 'push' && 'pnpm' || '' }}
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .bun-version
           no-cache: true
@@ -112,7 +96,7 @@ jobs:
       - run: pnpm fixtures:pull
         if: matrix.suite != 'core'
       - run: pnpm test:live
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: live-${{ matrix.suite }}-${{ needs.request.outputs.sha }}
@@ -127,7 +111,7 @@ jobs:
     permissions:
       checks: write
     steps:
-      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+      - uses: actions/github-script@v9
         env:
           TEST_SHA: ${{ needs.request.outputs.sha }}
           TEST_SUITE: ${{ needs.request.outputs.suite }}

@@ -145,7 +145,7 @@ measurements; Bun uses native GC and reports unavailable GC timing/timer enumera
 as null. Both verify server-side client cleanup. Hardware, versions, images, server
 configuration hashes and client/server resource measurements accompany each run.
 Immutable evidence stays under `results/hardening/<run-id>/` and `results/artifacts/<run-id>/`.
-The **Release hardening** workflow is manual dispatch; hosted providers remain a
+Hardening runs locally through its command; hosted providers remain a
 separate dispatch-only workflow with isolated secrets. No performance gate implicitly
 contacts a real hosted database or loads a local credentials file.
 

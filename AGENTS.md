@@ -69,7 +69,9 @@ records, not to an engine family or its COMMAND listing.
   use `catalog:` in manifests. Prefer caret ranges for stable dependencies, narrow
   known toolchain incompatibilities, and commit exact resolutions in pnpm-lock.yaml.
   Keep runtime Effect versions aligned across packages; the public Effect peer range
-  is **^4.0.6**. Review compatibility before widening its major version.
+  is **^4.0.6**. Review compatibility before widening its major version or lowering
+  the minimum. Successful typechecking alone does not prove interruption, defect,
+  cleanup or batch-evidence behavior on an older Effect runtime.
 - Effect v4 is the only permitted library runtime dependency/peer. Use platform
   TCP/TLS, bytes, and HTTP APIs at adapter boundaries. Do not add ioredis, node-redis,
   Bun.RedisClient, Upstash SDKs, RESP parsers, or unrelated runtime libraries.
@@ -190,12 +192,12 @@ records, not to an engine family or its COMMAND listing.
   connection-only AUTH plus read-only PING/ECHO; optional `EFFECT_REDIS_TEST_CA` supplies
   a CA file. Never mutate or clean deployment state in endpoint mode. Mutating tests
   need owned disposable fixtures and unique key prefixes; never FLUSH shared servers.
-- Live CI runs on every push to main, without canceling earlier main runs. PRs run
-  offline checks automatically; live tests require an authorized `/test live [engine]`
-  comment or default-branch workflow dispatch with a PR number. Resolve and verify
+- Live CI runs only through default-branch workflow dispatch, with an optional PR
+  number and engine selection. PRs and main pushes run offline checks automatically.
+  Resolve and verify
   the immutable PR head SHA. Keep trusted authorization/reporting jobs separate from
   untrusted checkout/install/test jobs; no write tokens, deployment secrets or shared
-  dependency-cache writes in PR test jobs. Unauthorized comments must not cancel runs.
+  dependency-cache writes in PR test jobs. Do not add push/comment triggers to live CI.
   Report each engine independently and retain build/configuration/JUnit evidence.
 - Run `pnpm test:protocol:fuzz` when protocol/byte ownership changes; CI also runs
   its built-artifact corpus under an external deadline. Keep its seed/replay evidence.
@@ -881,7 +883,7 @@ total is promised. Sources remain accessible without ignored research:
 - Native credential wrappers expose local `isRetired` state. Generation admission
   must observe deliberate closure before asynchronous reader retirement, and replacement
   must still join cleanup. Never retry a command to hide a rotation race.
-- Hosted GitHub CI runs only through manual default-branch dispatch with a `providers` environment and
+- Hosted GitHub CI runs only through manual default-branch dispatch using repository Actions secrets and
   serialized deployments. PR jobs receive no hosted credentials; missing prerequisites
   fail explicitly. Do not claim remote CI passed until an actual run is observed.
 
@@ -895,8 +897,9 @@ total is promised. Sources remain accessible without ignored research:
   Add public changesets with behavior changes. The initial minor Changeset prepares
   `0.1.0` from the manually published `0.0.0` bootstrap. Never consume it implicitly.
 - Release runs only on default-branch dispatch. Keep version-PR write permissions
-  separate from the `npm` environment's OIDC publish permissions. No npm write token
-  is needed. Bind all jobs to the selected immutable commit, pin actions and publish
+  separate from the OIDC publish job's permissions. Use no GitHub environment bindings
+  or npm write token. Bind all jobs to the selected immutable commit, use current major
+  version tags for workflow actions and publish
   Changesets' verified packed artifact rather than rebuilding it in the publish job.
 - `pnpm release:pack` packs the candidate; `release:check` validates its plan, archive,
   license, portable graphs, README/types and fresh npm-installed Node/Bun consumers
@@ -905,8 +908,8 @@ total is promised. Sources remain accessible without ignored research:
   integrity and repeats real consumers; CI also requires provenance metadata.
 - Bootstrap publication is user-owned. Its documented local command explicitly
   disables provenance and uses the `bootstrap` tag; CI refuses to publish `0.0.0`.
-  Configure npm's trusted publisher for `effect-kit/redis`, `release.yml`, environment
-  `npm` after bootstrap. Never claim publication, registry smoke or remote CI passed
+  Configure npm's trusted publisher for `effect-kit/redis`, `release.yml`, with the
+  environment field blank after bootstrap. Never claim publication, registry smoke or remote CI passed
   until those external actions actually occur.
 
 - `RedisTelemetry.layer` is opt-in. Keep dimensions bounded to operation/outcome;
@@ -923,15 +926,19 @@ total is promised. Sources remain accessible without ignored research:
 - Benchmark metadata must retain host/runtime/image/configuration identity, RTT,
   CPU, GC availability, memory and latency/queue measurements. Missing observations
   are not zero. Collect retained-heap samples after GC; join child/fixture cleanup.
-- Preserve UUID evidence under test/results/{providers,artifacts,hardening} when
+- Preserve evidence under test/results/{providers,artifacts,hardening,release} when
   clearing regular live results. Do not rebuild while children mount this dist.
 - Allocate published loopback ports on the host with Testcontainers' public port
   generator before container start. A VM's automatic port allocator cannot see
   occupied host ports; successful container start does not prove usable forwarding.
   Keep end-to-end PING readiness and fail actual binding/startup errors explicitly.
+- Writable bind-mounted fixture state must use the host UID/GID. Root-created nested
+  AOF directories cannot be recursively removed by an unprivileged Linux runner.
+  Verify nested state ownership and awaited cleanup; do not mask permission failures.
 - Hosted-provider CI remains manual default-branch workflow dispatch only. Offline
-  CI also verifies deterministic artifacts; local container conformance retains its
-  main-push and authorized PR policy. Publication remains a separate explicit action.
+  CI also verifies deterministic artifacts; local container conformance is dispatch-only.
+  Hardening remains a local command, without a dedicated workflow. Publication remains
+  a separate explicit action.
 - Worker control probes must match the selected deployment and use uncached URLs
   with a public nonce independent of the bearer key. Retry only convergence probes;
   an access-boundary failure from the current deployment fails immediately. Never

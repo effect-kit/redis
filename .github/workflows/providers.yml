@@ -25,19 +25,18 @@ concurrency:
 jobs:
   providers:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    environment: providers
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .bun-version
       - run: pnpm install --frozen-lockfile
@@ -56,7 +55,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           EFFECT_REDIS_TEST_WORKER_NAME: ${{ secrets.EFFECT_REDIS_TEST_WORKER_NAME }}
           EFFECT_REDIS_TEST_WORKER_URL: ${{ secrets.EFFECT_REDIS_TEST_WORKER_URL }}
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: hosted-provider-evidence-${{ github.run_id }}

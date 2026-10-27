@@ -9,18 +9,6 @@ export const suites = [
   "kvrocks",
 ];
 
-/** @param {string} text */
-export function parseLiveCommand(text) {
-  const match =
-    /^\/test live(?: (all|redis|valkey|dragonfly|keydb|redict|garnet|kvrocks|core))?$/.exec(
-      text.trim(),
-    );
-  return match ? (match[1] ?? "all") : undefined;
-}
-
-/** @param {string} permission */
-export const canRunLive = (permission) => ["admin", "maintain", "write"].includes(permission);
-
 /** @param {string} suite */
 export function liveMatrix(suite) {
   if (suite === "all") return { suite: suites };

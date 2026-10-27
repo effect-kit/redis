@@ -127,6 +127,21 @@ export const allocateServer = Effect.fnUntraced(function* (
     // No in-container shell assumptions (Redict is scratch); the independent PING probe owns readiness.
     .withWaitStrategy(Wait.forAll([]))
     .withStartupTimeout(15_000);
+
+  let containerUser = "0:0";
+
+  if (options?.writableConfiguration) {
+    const uid = process.getuid?.();
+    const gid = process.getgid?.();
+
+    if (uid === undefined || gid === undefined)
+      return yield* new FixtureError({ stage: "writable-fixture-owner" });
+
+    // Root-created AOF subdirectories cannot be removed by an unprivileged Linux host runner.
+    containerUser = `${uid}:${gid}`;
+    container.withUser(containerUser);
+  }
+
   if (options?.unixVolume !== undefined) container.sharedVolume(options.unixVolume, "/socket");
 
   if (options?.network !== undefined) {
@@ -160,6 +175,7 @@ export const allocateServer = Effect.fnUntraced(function* (
           JSON.stringify({
             configuration,
             writableConfiguration: options?.writableConfiguration ?? false,
+            containerUser,
             aclRules: options?.aclRules,
             executable: profile.executable,
             command,

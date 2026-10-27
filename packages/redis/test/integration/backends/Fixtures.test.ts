@@ -1,4 +1,6 @@
 import { existsSync } from "node:fs";
+import { stat } from "node:fs/promises";
+import { join } from "node:path";
 
 import { expect, it } from "@effect/vitest";
 import { Deferred, Effect, Fiber, Result } from "effect";
@@ -142,4 +144,33 @@ it.live(
       expect(Result.isFailure(result) && result.failure.stage).toBe("container-start");
       expect(yield* containerExists(container.fixtureName)).toBe(false);
     }),
+);
+
+it.live("SOCKET-40: writable AOF directories retain host ownership and scoped cleanup", () =>
+  Effect.gen(function* () {
+    const closed = yield* Effect.scoped(
+      Effect.gen(function* () {
+        const server = yield* (yield* allocateServer(redis, {
+          writableConfiguration: true,
+          extraConfig: ["appendonly yes", "dir /fixture"],
+        })).start;
+        const connection = yield* connect(
+          yield* decodeRedisConfig({ endpoint: { host: "127.0.0.1", port: server.port } }),
+        );
+
+        expect(yield* exchange(connection, ["SET", "owned-aof", "value"])).toMatchObject({
+          _tag: "SimpleString",
+        });
+
+        const owner = yield* Effect.promise(() => stat(join(server.directory, "appendonlydir")));
+        expect(owner.uid).toBe(process.getuid?.());
+        expect(owner.gid).toBe(process.getgid?.());
+
+        return server;
+      }),
+    );
+
+    expect(yield* containerExists(closed.name)).toBe(false);
+    expect(existsSync(closed.directory)).toBe(false);
+  }),
 );

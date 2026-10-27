@@ -50,16 +50,15 @@ OIDC and provenance; no npm write token is stored in GitHub.
    | Organization or user | `effect-kit`  |
    | Repository           | `redis`       |
    | Workflow filename    | `release.yml` |
-   | Environment name     | `npm`         |
+   | Environment name     | Leave blank   |
 
    Allow direct `npm publish` for this workflow. npm currently requires the first
    successful trusted publication within two days of creating the configuration;
    configure it when ready to release, or recreate it if it expires.
 
-2. In GitHub, create the `npm` environment, restrict it to `main` and configure
-   required reviewers if you want an approval before publication. No npm token
-   secret is needed. Enable **Actions → General → Allow GitHub Actions to create
-   and approve pull requests** so Changesets can open its version PR.
+2. No GitHub environment or npm token secret is needed. Enable **Actions → General →
+   Allow GitHub Actions to create and approve pull requests** so Changesets can open
+   its version PR. The workflow restricts release dispatch to this repository's `main`.
 3. Enable private vulnerability reporting in the repository's security settings.
    Review npm organization publish access and package 2FA settings. After trusted
    publishing works, npm recommends requiring 2FA and disallowing token publishing.
@@ -77,15 +76,16 @@ setup requirements. The repository and package must be public for provenance.
    own token; the publication job runs its checks independently.
 4. Dispatch **Release** again. With no pending Changesets, the workflow validates
    the immutable selected commit, runs conformance, packs and checks the release,
-   then publishes the same archive through the `npm` environment with provenance.
+   then publishes the same archive using OIDC with provenance.
    It creates version tags/GitHub release notes and runs a registry smoke check.
 
 ```sh
 gh workflow run release.yml --repo effect-kit/redis --ref main
 ```
 
-Release, hosted-provider and hardening workflows remain manual. Inspect provider
-and hardening evidence for the selected candidate separately; the release workflow
+Release, live conformance and hosted-provider workflows remain manual. Hardening
+checks are local commands. Inspect provider and hardening evidence for the selected
+candidate separately; the release workflow
 runs local container conformance without hosted credentials. It refuses publication
 of `0.0.0`; that version is reserved for the manual bootstrap above.
 

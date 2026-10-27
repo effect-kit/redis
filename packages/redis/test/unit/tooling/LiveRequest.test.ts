@@ -2,36 +2,12 @@ import { describe, expect, it } from "vitest";
 
 // This trusted controller is root-owned; package import targets cannot escape the package.
 import {
-  canRunLive,
   liveMatrix,
-  parseLiveCommand,
   pullNumber,
   verifiedSha,
 } from "../../../../../.github/scripts/live-request.mjs";
 
 describe("trusted live request boundary", () => {
-  it.each(["/test live", "/test live all", " /test live redis\n"])(
-    "accepts exact command %s",
-    (text) => {
-      expect(parseLiveCommand(text)).toBe(text.includes("redis") ? "redis" : "all");
-    },
-  );
-
-  it.each([
-    "/test live redis; echo injected",
-    "/test live\nall",
-    "/test live unknown",
-    "please /test live",
-    "/test live redis extra",
-  ])("ignores malformed command %s", (text) => {
-    expect(parseLiveCommand(text)).toBeUndefined();
-  });
-
-  it("authorizes only repository writers", () => {
-    expect(["admin", "maintain", "write"].every(canRunLive)).toBe(true);
-    expect(["read", "triage", "none", "", "owner"].some(canRunLive)).toBe(false);
-  });
-
   it("expands every suite and rejects unreviewed matrix values", () => {
     expect(liveMatrix("all").suite).toHaveLength(8);
     expect(liveMatrix("valkey")).toEqual({ suite: ["valkey"] });
