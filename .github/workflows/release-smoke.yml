@@ -20,6 +20,7 @@ jobs:
   smoke:
     uses: effect-kit/.github/.github/workflows/release-smoke.yml@v1
     with:
-      release-run-id: ${{ inputs.release-run-id }}
-      pack-artifact-id: ${{ inputs.pack-artifact-id }}
+      # Manual dispatch supplies IDs as strings; the reusable workflow expects numbers.
+      release-run-id: ${{ fromJSON(inputs.release-run-id) }}
+      pack-artifact-id: ${{ fromJSON(inputs.pack-artifact-id) }}
       bun: true
