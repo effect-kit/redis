@@ -102,6 +102,8 @@
   CI owns the three-build artifact suite; Release checks the exact archive once.
 - `release:pack`/`release:check` prepare and verify; `release:smoke` checks an actual
   registry publication. These verification commands do not publish.
+- Release does not wait for registry availability or run registry smoke checks.
+  Run `release:smoke` separately after the published version becomes available.
 
 ## Documentation and progress
 

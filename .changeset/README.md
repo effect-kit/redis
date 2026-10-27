@@ -11,4 +11,7 @@ Release runs fast offline and package checks. Backend conformance has its own
 manual workflow. CI runs the full artifact suite; Release verifies the exact
 archive being published.
 
+Publication does not wait for registry availability. Run `pnpm release:smoke` with
+the verified archive separately after npm makes the version available.
+
 Releases are manual. Keep the generated archive unchanged after verification.

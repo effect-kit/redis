@@ -108,6 +108,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
         with:
+          bun: "false"
           ignore-scripts: "true"
       - name: Publish verified tarballs with OIDC and provenance
         uses: changesets/action/publish@v2
@@ -119,17 +120,5 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: "true"
           PNPM_CONFIG_PROVENANCE: "true"
-          PNPM_CONFIG_PUBLISH_WAIT_TIMEOUT: "600000"
-      - uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ needs.prepare.outputs.packed }}
-          path: ${{ runner.temp }}/published-candidate
-          merge-multiple: true
-      - run: pnpm release:smoke --pack-dir "$RUNNER_TEMP/published-candidate" --provenance --skip-live
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: registry-verification-${{ github.run_id }}
-          path: ${{ runner.temp }}/published-candidate/registry-verification.json
-          if-no-files-found: warn
-          retention-days: 30
+          # Registry availability is verified separately after npm finishes processing.
+          PNPM_CONFIG_PUBLISH_WAIT_TIMEOUT: "0"

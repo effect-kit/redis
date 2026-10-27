@@ -132,13 +132,16 @@ README examples, installs the archive in a fresh npm consumer, and executes Node
 native/HTTP cases against owned current Redis/Valkey fixtures. Prepare both engines'
 images first. `pnpm release:smoke` performs the same checks after downloading the
 published registry archive and matching its integrity. Neither verification command
-publishes. The manual release workflow also requires provenance metadata in the
-registry receipt. See the root release guide for the versioning workflow.
+publishes. Use `--provenance` to require provenance metadata in the registry
+receipt. See the root release guide for the versioning workflow.
 
-The Release workflow uses `--skip-live` for archive/registry checks: it still installs
+The Release workflow uses `--skip-live` for archive checks: it still installs
 the exact tarball in a fresh consumer and checks types, README examples, Node/Bun
 imports and integrity, but needs no Docker or live backend. Local release commands
 retain their live checks by default. Full conformance remains separately dispatchable.
+Publication does not wait for npm registry availability. Run registry smoke checks
+separately once the version is available, using the original verified archive and
+`publish-plan.json` through `--pack-dir`, with `--provenance --skip-live` as needed.
 
 `runners/hardening/` owns measured Redis/Valkey TCP/TLS/local HTTP workloads, five-minute
 native and sustained-HTTP Node/Bun cleanup soaks and 100 fresh fixture startups plus
