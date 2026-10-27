@@ -100,7 +100,8 @@ authentication and PING/ECHO only. Mutating tests own disposable fixtures.
 The [test guide](packages/redis/test/README.md) describes suite organization and
 fixtures. Do not rebuild a checkout while live probes are reading its artifacts.
 
-Offline CI runs on PRs and pushes to `main`. Live conformance, hosted-provider and
+Offline CI runs on ordinary PRs and pushes to `main`; bot-created Changesets version
+PRs skip the CI job until merged. Live conformance, hosted-provider and
 release workflows run only through manual dispatch. Live dispatch can select an
 engine and an optional PR number; it tests the exact resolved commit. Hardening
 checks remain available locally through `pnpm test:hardening`.

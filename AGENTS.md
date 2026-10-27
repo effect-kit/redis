@@ -87,7 +87,8 @@
 
 ## CI and releases
 
-- Offline CI runs on PRs/main pushes. Live, hosted-provider and release workflows
+- Offline CI runs on ordinary PRs/main pushes; same-repository bot-created Changesets
+  version PRs skip the check job. Live, hosted-provider and release workflows
   are dispatch-only. Use current major action tags and the shared setup action.
   Keep checkout refs explicit and tested commits immutable.
 - Keep trusted PR selection/reporting separate from untrusted tests. PR test jobs
