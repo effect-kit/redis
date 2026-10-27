@@ -1,33 +1,42 @@
 {
   "name": "@effect-kit/redis",
   "version": "0.0.0",
-  "private": true,
-  "description": "Native Effect v4 Redis client with typed commands, scoped Node/Bun sockets, Upstash HTTP/SSE, Streams and Pub/Sub.",
+  "description": "Redis for Effect v4: typed commands, scoped Node.js/Bun connections, Upstash HTTP, Streams, Pub/Sub, Cluster and Sentinel.",
   "keywords": [
     "binary-safe",
     "bun",
     "client-side-caching",
+    "dragonfly",
     "effect",
     "effect-ts",
     "effect-v4",
+    "garnet",
     "http",
+    "keydb",
+    "kvrocks",
     "lua",
+    "nodejs",
     "pubsub",
+    "redict",
     "redis",
     "redis-client",
+    "redis-cluster",
     "redis-functions",
     "resp",
     "resp2",
     "resp3",
+    "schema",
+    "sentinel",
     "sse",
     "streams",
+    "transactions",
     "typescript",
     "upstash",
     "valkey"
   ],
-  "homepage": "https://github.com/envoy1084/effect-redis#readme",
+  "homepage": "https://github.com/effect-kit/redis/tree/main/packages/redis#readme",
   "bugs": {
-    "url": "https://github.com/envoy1084/effect-redis/issues"
+    "url": "https://github.com/effect-kit/redis/issues"
   },
   "license": "Apache-2.0",
   "author": {
@@ -36,12 +45,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/envoy1084/effect-redis.git",
+    "url": "git+https://github.com/effect-kit/redis.git",
     "directory": "packages/redis"
   },
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "type": "module",
@@ -71,7 +81,9 @@
     }
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tsdown",
@@ -91,7 +103,9 @@
     "test:providers": "node test/runners/providers/run.ts",
     "providers:prepare": "node test/runners/providers/prepare.ts",
     "test:artifacts": "node test/runners/artifacts/run.ts",
-    "test:hardening": "node --experimental-transform-types test/runners/hardening/run.ts"
+    "test:hardening": "node --experimental-transform-types test/runners/hardening/run.ts",
+    "test:release": "node --experimental-transform-types test/runners/artifacts/Release.ts",
+    "test:release:registry": "node --experimental-transform-types test/runners/artifacts/Registry.ts"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
@@ -109,5 +123,8 @@
   },
   "peerDependencies": {
     "effect": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.22.0"
   }
 }

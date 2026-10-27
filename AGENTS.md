@@ -84,8 +84,10 @@ records, not to an engine family or its COMMAND listing.
   dependency, or ownership boundary. Keep universal exports free of Node/Bun imports.
   Node transport lives behind `@effect-kit/redis/node`; keep the universal
   typecheck free of Node globals and verify both entrypoints from a packed artifact.
-- The package remains private until publishing is explicitly in scope. Do not add
-  release automation or publish packages as part of routine implementation.
+- The workspace root remains private. The library is publishable as `@effect-kit/redis`;
+  keep its version at `0.0.0` until the initial minor Changeset is consumed. The user
+  owns bootstrap publication and manual CI dispatch. Never publish, push or tag merely
+  because release tooling is present or a phase asks for implementation.
 
 ## Effect v4 conventions
 
@@ -884,6 +886,28 @@ total is promised. Sources remain accessible without ignored research:
   fail explicitly. Do not claim remote CI passed until an actual run is observed.
 
 ## Hardening and artifact gates
+
+- Public READMEs contain consumer/contributor guidance, never phase history or private
+  progress. Check every TypeScript README block against the exact archive in the
+  artifact consumers. Keep package/repository/issue links aligned with the actual
+  `effect-kit/redis` Git remote, and keep package/root Apache licenses identical.
+- Changesets v3 owns versions/changelogs; Action v2 is its compatible release action.
+  Add public changesets with behavior changes. The initial minor Changeset prepares
+  `0.1.0` from the manually published `0.0.0` bootstrap. Never consume it implicitly.
+- Release runs only on default-branch dispatch. Keep version-PR write permissions
+  separate from the `npm` environment's OIDC publish permissions. No npm write token
+  is needed. Bind all jobs to the selected immutable commit, pin actions and publish
+  Changesets' verified packed artifact rather than rebuilding it in the publish job.
+- `pnpm release:pack` packs the candidate; `release:check` validates its plan, archive,
+  license, portable graphs, README/types and fresh npm-installed Node/Bun consumers
+  against owned Redis/Valkey native/HTTP fixtures. Prepare images first. These checks
+  do not publish. `release:smoke` downloads the registry archive, requires identical
+  integrity and repeats real consumers; CI also requires provenance metadata.
+- Bootstrap publication is user-owned. Its documented local command explicitly
+  disables provenance and uses the `bootstrap` tag; CI refuses to publish `0.0.0`.
+  Configure npm's trusted publisher for `effect-kit/redis`, `release.yml`, environment
+  `npm` after bootstrap. Never claim publication, registry smoke or remote CI passed
+  until those external actions actually occur.
 
 - `RedisTelemetry.layer` is opt-in. Keep dimensions bounded to operation/outcome;
   never put command names, keys, endpoints, identities or application payloads in

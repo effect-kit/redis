@@ -1,944 +1,315 @@
 # @effect-kit/redis
 
-A runtime-neutral Redis client for Effect v4. The package remains private.
+A Redis client built for **Effect v4**. Typed commands, scoped connections, Streams,
+Pub/Sub, transactions and topology support share one API across Node.js, Bun and
+Upstash HTTP.
 
-Use a ready-to-use Layer for ordinary applications. Native Redis-compatible engines
-share the same constructor; the chosen server determines command availability:
+The client implements RESP directly using platform sockets and Effect HTTP. Effect
+is its only runtime peer dependency.
+
+## Install
+
+```sh
+pnpm add @effect-kit/redis effect
+```
+
+```sh
+npm install @effect-kit/redis effect
+# or
+bun add @effect-kit/redis effect
+```
+
+This is an ESM package for Effect `^4.0.6`. Native adapters are tested on Node.js
+24.22.0 and Bun 1.4.4. The HTTP adapter also runs on Deno and Cloudflare Workers;
+those runtimes do not use the native socket adapters.
+
+## Quick start
+
+Provide one Layer for your runtime, then access the `Redis` service:
 
 ```ts
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 
 import { Redis } from "@effect-kit/redis";
 import { RedisNode } from "@effect-kit/redis/node";
 
-const readyRedisLive = RedisNode.layer({ url: "redis://localhost:6379" });
-const readyRedisProgram = Effect.gen(function* () {
+const RedisLive = RedisNode.layer({ url: "redis://localhost:6379" });
+
+const program = Effect.gen(function* () {
   const redis = yield* Redis;
-  yield* redis.set("greeting", "hello");
-  return yield* redis.get("greeting");
-}).pipe(Effect.provide(readyRedisLive));
+
+  yield* redis.set("greeting", "Hello from Effect", {
+    expiry: { type: "EX", value: 60 },
+  });
+
+  const greeting = yield* redis.get("greeting"); // Option<string>
+  const visits = yield* redis.incr("visits"); // bigint
+
+  return { greeting: Option.getOrElse(greeting, () => "Not found"), visits };
+});
+
+const result = await Effect.runPromise(program.pipe(Effect.provide(RedisLive)));
+console.log(result);
 ```
 
-`RedisBun` from `/bun` has the same constructors. Native `.layer` supplies Redis,
-CommandExecutor, BatchExecutor, RedisSessions, RedisStreams, RedisScripts, RedisPubSub,
-RedisAdmin and platform Crypto. Helpers share their ordinary engine and lazy lease
-pool; Pub/Sub owns a dedicated connection when used. Administration remains explicit.
-Transport stays internal. The existing `layer` transport export is preserved.
+The Layer owns connection startup and shutdown. Reuse the same Layer value across
+your application's service composition. Native Layers also supply sessions,
+Streams, scripts, Pub/Sub and administration services with their own scoped
+connection ownership. For a host that calls Effects repeatedly,
+keep a single Effect `ManagedRuntime` and await `runtime.dispose()` during shutdown.
 
-Use `.layerCluster({ url, cluster: { seeds, addressMap } })` for client-side Cluster,
-or `.layerSentinel({ serviceName, sentinels: [{ endpoint: { host, port } }] })` for
-Sentinel. These provide Redis plus RedisCluster/RedisSentinel and BatchExecutor;
-their specialized services retain topology-aware session/event ownership. Each native
-constructor has a `*Config` counterpart accepting an Effect Config.
+### Configuration and Bun
 
-HTTP's ready Layer supplies FetchHttpClient internally:
+Load connection settings from Effect Config. `rediss://` enables verified TLS;
+`redis://` uses plaintext. Keep credentials in secret configuration.
 
 ```ts
 import { Config } from "effect";
 
+import { RedisBun } from "@effect-kit/redis/bun";
+import { RedisNode } from "@effect-kit/redis/node";
+
+const settings = Config.all({ url: Config.String("REDIS_URL") });
+
+export const NodeRedisLive = RedisNode.layerConfig(settings);
+export const BunRedisLive = RedisBun.layerConfig(settings);
+```
+
+Choose the matching runtime adapter. Redis, Valkey and other RESP engines use these
+same constructors; server capabilities determine available commands.
+
+### Upstash HTTP
+
+The ready HTTP Layer supplies Effect's FetchHttpClient internally:
+
+```ts
+import { Config, Effect } from "effect";
+
+import { Redis } from "@effect-kit/redis";
 import { RedisUpstash } from "@effect-kit/redis/upstash";
 
-const readyUpstashLive = RedisUpstash.layerConfig(
+const RedisLive = RedisUpstash.layerConfig(
   Config.all({
     url: Config.String("UPSTASH_REDIS_REST_URL"),
     token: Config.Redacted("UPSTASH_REDIS_REST_TOKEN"),
   }),
 );
+
+const program = Redis.pipe(Effect.flatMap((redis) => redis.get("greeting")));
+
+export const runnable = program.pipe(Effect.provide(RedisLive));
 ```
 
-`RedisUpstash.layer({ url, token })` accepts concrete values. HTTP supplies Redis,
-CommandExecutor, BatchExecutor and UpstashEvents; physical RedisSessions remain a
-native capability. The lower-level factories below support custom infrastructure.
+HTTP supports ordinary commands, pipelines, transactions and scoped text SSE.
+Connection-bound features such as WATCH, blocking reads, client tracking and native
+Cluster/Sentinel routing require a native adapter. HTTP transactions reject
+raw/custom/script replies whose erased RESP types cannot be decoded losslessly.
+Binary request positions have explicit limits; responses preserve binary bytes.
+SSE is text-only, and hosted multiline payloads can be truncated: use native
+Pub/Sub when payload fidelity matters.
 
-Ready Layers also expose `RedisCredentials`. Supply redacted fixed credentials or
-an Effect from your identity system. A provider adds bounded, coalesced refresh:
+## Typed values and commands
 
-```ts
-import { Effect } from "effect";
+- `get` returns `Option<string>` with strict UTF-8 decoding; `getBytes` returns
+  `Option<Uint8Array>`. Missing and empty values remain distinct.
+- Integer replies use `bigint`. Decimal tokens and double-valued commands expose
+  their own numeric contracts.
+- `set` returns `void`, a `boolean` with a condition, or the previous bytes as an
+  `Option` with `{ get: true }`. Previous bytes do not prove a condition applied.
+- Keys and values accept strings or bytes. JSON encoding is always explicit.
 
-import { RedisCredentials, RedisProfiles } from "@effect-kit/redis";
-import type { CredentialValues } from "@effect-kit/redis";
-import { RedisNode } from "@effect-kit/redis/node";
-
-declare const acquireCacheIdentity: Effect.Effect<CredentialValues, unknown>;
-
-const identityRedisLive = RedisNode.layer({
-  url: "rediss://cache.example.com:6379",
-  profile: RedisProfiles.elasticache({
-    engine: "valkey",
-    deployment: "replication-group",
-    routing: "standalone",
-    authentication: "iam",
-  }),
-  credentials: RedisCredentials.provider(acquireCacheIdentity, {
-    refreshBeforeMillis: 60_000,
-    acquisitionTimeoutMillis: 5000,
-    maxWaiters: 128,
-  }),
-});
-```
-
-The source returns `{ username?, password, expiresAtMillis? }`; identity and secret
-strings use `Redacted`, and expiry is absolute UTC epoch milliseconds. Each Layer
-owns its cache, worker and source services. Only expiring credentials are cached;
-values without expiry are reacquired for future connections. No cloud SDK is added.
-HTTP accepts `credentials` instead of `token`; `.layerWithHttpClient` retains custom
-Effect HttpClient composition. Request deadlines include credential acquisition.
-
-Default native lifetime is `{ mode: "reconnect" }`. Explicit `credentialLifetime`
-can select `token-expiry` with `retireBeforeMillis`, or `max-age` with `maxAgeMillis`.
-AWS IAM profiles retire at 11h55m; Azure Entra retires three minutes before expiry;
-Google IAM keeps authenticated sockets open. These policies close sockets instead
-of inserting AUTH into sessions. Written mutations/pops/EXEC can have unknown
-outcomes, and subscriptions can lose delivery. New work reconnects with fresh identity.
-`RedisCredentials.rotate` deliberately invalidates the cache and retires owned native
-sockets or aborts current HTTP work; it never retries that work. Sentinel accepts
-separate `sentinelCredentials`/`sentinelCredentialLifetime` and exposes
-`RedisSentinelCredentials.rotate` for its control plane.
-
-`RedisProfiles` covers seven local engines and named Redis Cloud/Software, AWS,
-Google, Azure, Upstash, Aiven, DigitalOcean and Tair configurations. Select the actual
-routing/authentication mode; proxy routing uses `.layer`, client Cluster uses
-`.layerCluster`. Profiles enforce reviewed TLS, database, command and module limits.
-Omitted module selection leaves availability to the server; `modules: []` disables
-known module families explicitly. Unknown commands still reach the server.
-Hosted tests cover isolated Upstash, Aiven Valkey and Redis Cloud Free configurations,
-plus Upstash HTTP under Node/Bun/Deno and actual Cloudflare Workers. Evidence is
-configuration-specific; profiles are policy builders, not blanket compatibility badges.
-Other hosted providers remain deferred. For discovered endpoints, `network.allowedHosts` and optional
-`allowedServerNames` apply after address translation and before credentials; IAM/Entra
-Cluster/Sentinel profiles require this explicit trust list. It is a hostname policy,
-not a DNS/IP firewall. TLS trust and server-name verification remain active.
-
-The `/upstash` entrypoint provides an Effect HttpClient executor and acknowledged,
-scoped text SSE subscriptions/MONITOR. It shares ordinary command decoders and batch
-types. HTTP has explicit encoding and capability limits: physical sessions stay
-native, and JSON-only transactions reject raw/custom/script replies whose RESP types
-cannot be reconstructed losslessly.
-
-Supply an Effect HttpClient to the HTTP Layer. Load the redacted bearer token from
-your application's secret configuration:
-
-```ts
-import { Effect, Layer, Redacted } from "effect";
-import { FetchHttpClient } from "effect/http";
-
-import { Commands, Redis } from "@effect-kit/redis";
-import * as Upstash from "@effect-kit/redis/upstash";
-
-declare const upstashToken: Redacted.Redacted<string>;
-
-const upstashLive = Upstash.layer({
-  url: "https://your-database.upstash.io",
-  token: upstashToken,
-}).pipe(Layer.provide(FetchHttpClient.layer));
-
-const upstashProgram = Effect.gen(function* () {
-  const redis = yield* Redis;
-  yield* redis.set("greeting", "hello");
-
-  // Each pipeline slot retains its own typed Result; the pipeline is not atomic.
-  return yield* redis.pipeline([Commands.get("greeting"), Commands.incr("visits")]);
-});
-
-const upstashRunnable = upstashProgram.pipe(Effect.provide(upstashLive));
-```
-
-`makeUpstash` instead captures the HttpClient and owning Scope, exposing `redis`,
-`batches` and `events` directly. `UpstashEvents.subscribe(channel)` and `.monitor()`
-require a Scope and return acknowledged subscriptions with a `messages` Stream and
-a `close` Effect. One UTF-8 channel is bound per request; commas, CR/LF, NUL and URL
-dot-segment names fail before sending. Text messages preserve commas. SSE does not
-promise arbitrary binary/multiline payloads or transparent reconnection. Hosted tests
-observe newline truncation at the provider boundary and explicit invalid-UTF8 failures;
-use native Pub/Sub for lossless payloads. EOF/retry
-exposes a gap. A bounded handoff backpressures each dedicated HTTP reader.
-
-Ordinary requests and pipelines use lossless RESP2 responses. JSON-only transactions
-preserve bigint number tokens and reviewed status/blob semantics, but reject ambiguous
-raw/custom/script descriptors before dispatch and unsupported object encodings after
-reply. HTTP never automatically retries mutations or transactions. Binary responses
-are preserved; invalid-UTF8 request arguments need the single-command final-body
-form. Other binary positions/batches and URL-normalized dot segments fail explicitly.
-HTTP provides no physical sessions, WATCH, blocking leases, client tracking or native
-Cluster/Sentinel routing. Use a native adapter for those connection-bound capabilities.
-
-Provider builders live under `Commands.Upstash`, the `/upstash` entrypoint's
-`Commands`, and `redis.upstash`. The 11 `SEARCH.*`, eight `VECTOR.*` and
-`ACL RESTTOKEN` operations have reviewed typed replies. They are separate from
-`FT.*`/`V*` modules. `searchQueryWith` takes an explicit PayloadCodec;
-`base64Fp32` explicitly encodes finite FP32 vectors. Availability is determined by
-the actual service; local Uprest deliberately rejects provider-only extensions.
-
-Run `pnpm fixtures:pull --engine redis` then `pnpm test:upstash` from the workspace
-for local Redis/Valkey proxy and actual Node/Bun fetch tests. `pnpm dev:upstash`
-checks a disposable fixture and keeps it alive until Ctrl+C, with connection details
-in an owned private file under ignored test results. No Upstash account is required.
-Hosted pipeline replies use one enclosing RESP array. The pinned Uprest development
-proxy instead concatenates frames: its connection file selects
-`pipelineResponseFormat: "frames"` explicitly; hosted/default configuration uses `"array"`.
-
-`pnpm providers:prepare` installs checksum-pinned Deno. Run
-`pnpm test:providers --credentials-file .env.providers.local` for the opt-in hosted
-matrix, or select `--provider upstash-native|upstash-http|aiven|redis-cloud-free|workers`
-and `--runtime node|bun|deno|all`. Repeated `--case <id>` narrows a rerun. Missing
-credentials fail before acquisition; default tests never load env files. Native tests
-use password-authenticated RESP2/3 on Node/Bun. Deno/Workers cover HTTP only. Redis Cloud
-Free requires `RedisProfiles.redisCloud({ plan: "free", routing: "proxy", authentication: "password" })`
-to admit its plaintext endpoint; default/paid profiles still require verified TLS.
-
-Provide `EFFECT_REDIS_TEST_UPSTASH_REST_URL`, `EFFECT_REDIS_TEST_UPSTASH_REST_TOKEN`,
-`EFFECT_REDIS_TEST_UPSTASH_REDIS_URL`, `EFFECT_REDIS_TEST_AIVEN_URL` and
-`EFFECT_REDIS_TEST_REDIS_CLOUD_URL`; optional `EFFECT_REDIS_TEST_AIVEN_CA_FILE` is an
-absolute CA path. Workers additionally needs `CLOUDFLARE_ACCOUNT_ID`,
-`CLOUDFLARE_API_TOKEN`, `EFFECT_REDIS_TEST_WORKER_NAME` and `EFFECT_REDIS_TEST_WORKER_URL`.
-Use isolated test databases and a dedicated empty Worker: tests temporarily replace
-its code, then verify restoration and removal of temporary secret bindings. Synthetic
-keys use unique prefixes and exact-key cleanup; no shared database flush occurs.
-Credentials travel through stdin or secret bindings. Fresh, runtime/build-bound JSON
-and JUnit evidence stays in ignored `test/results/providers/<run-id>/`.
-
-The **Hosted providers** GitHub workflow runs only through manual default-branch dispatch, uses
-the `providers` environment's corresponding secrets and serializes Worker deployments.
-It never exposes provider secrets to PR jobs. Container CI keeps its existing main-push
-and authorized PR-trigger policy; hosted CI execution requires repository configuration.
-
-The public API includes configuration decoding, binary `encodeCommand`, incremental
-`makeRespDecoder`, lossless `RespValue`/`RespPairs`, `RedisArgument`/`RedisCommand`,
-codec limits and typed errors. The Node-only `/node` entrypoint exports `connect`,
-`layer`, `Transport` and `TransportConnection` for scoped TCP/TLS/Unix byte I/O,
-plus an optional `cryptoLayer` for Effect Crypto.
-The `/bun` entrypoint supplies the same `connect`, `layer` and optional `cryptoLayer`
-using native Bun sockets and hashing. Development pins Bun 1.4.4 in `.bun-version`.
-Choose its Layer when composing a Bun application; command APIs remain shared.
-Before TCP establishment Bun exposes no abort handle: scope cleanup joins native
-settlement and closes any late socket, so cleanup can outlast the readiness timeout.
-Established sockets and pending TLS handshakes can be terminated directly.
-The universal entrypoint also exports `makeConnection`, the `Connection` service and
-its scoped Layer, connection options/snapshots, and typed admission/handshake/connection
-failures. The engine executes caller-declared ordinary single-reply commands. `Redis`,
-`CommandExecutor`, `Commands`, `Reply`, `RedisKey` and `PayloadCodec` add typed
-ordinary commands across strings, hashes, lists, sets, keys/TTL, sorted sets, bitmaps,
-HyperLogLog, geo and arrays, plus custom descriptors and explicit payload codecs.
-The data families cover 187 reviewed ordinary commands; available commands/options depend on the
-actual server. Native sessions add pipelines, transactions, WATCH, connection controls
-and blocking leases. Scan commands, Redis Streams and scoped consumer workflows have
-unit, controlled, primary Redis/Valkey and packed-consumer coverage. Scoped Pub/Sub,
-client tracking and bounded GET-byte caches extend event delivery. Lua/functions,
-administration, native hash imports/backups and diagnostic modes are implemented.
-Native Redis/Valkey Cluster adds slot routing, topology recovery and node-bound workflows.
-Native Redis/Valkey Sentinel adds verified discovery, generation-bound sessions and
-future-work failover.
-Typed Bloom, Cuckoo, Count-Min Sketch, TopK and t-digest builders require the
-corresponding server module; availability and numeric reply contracts remain explicit.
-Valkey Bloom adds `bfLoad` for its opaque versioned serialization, extra INFO selectors
-and INSERT capacity validation. Its load bytes differ from Redis DUMP/SCANDUMP data.
-Typed JSON builders preserve JSONPath multiplicity, legacy-path results and serialized
-bytes. `jsonSetWith`/`jsonGetWith` explicitly select a `PayloadCodec`; expanded
-RESP3 formats have separate methods and retain actual provider availability.
-Vector-set builders distinguish members, scored/attribute matches, graph links and
-raw quantized embeddings. `encodeFloat32` uses an explicit byte order (little endian
-by default); match the server CPU for Redis's native FP32 layout. Repeat nondefault
-quantization and connection-count settings on subsequent `vadd` operations.
-TimeSeries builders use milliseconds for timestamps, retention, alignment and buckets.
-Samples preserve bigint timestamps and floating values, including empty-bucket NaN.
-Multi-range results retain binary labels and protocol-specific metadata. Label queries
-require an explicit Cluster node. `sessions.tsReadBlocking` leases its own connection;
-its server wait is finite because TS.READ BLOCK zero means no wait.
-Search builders include typed index fields, ordered aggregation steps, binary PARAMS,
-scored/payload replies, suggestions and explicit hybrid queries. Index names are
-server-owned state: target a node explicitly in Cluster and follow the module's
-index/prefix hash-tag constraints. `ftListWithClusterState` returns structured status
-reports separately from ordinary index names. `ftCursorGc` preserves the server's
-signed count, including its -1 no-collection sentinel. `RedisSearch.layer` captures
-`RedisSessions`; `makeRedisSearch(sessions).aggregate(...)` returns a lazy scoped Stream.
-A lease owns cursor creation, reads and cleanup, including early exit. Defaults are
-64 rows per page and 60 seconds of server cursor idle time. Cancellation waits for the
-bounded current receipt before cleanup; lost receipts are never replayed, and unknown
-cursor IDs can only expire on the server. Cleanup failures escape the Cause.
-
-Module methods use the existing Redis service and command/session composition:
+Use Schema-backed keys for application data:
 
 ```ts
 import { Effect, Schema } from "effect";
 
-import { PayloadCodec, Redis } from "@effect-kit/redis";
+import { Redis, RedisKey } from "@effect-kit/redis";
 
-const moduleProgram = Effect.gen(function* () {
+const User = Schema.Struct({ name: Schema.String, active: Schema.Boolean });
+const userKey = RedisKey.json("user:42", User);
+
+export const saveUser = Effect.gen(function* () {
   const redis = yield* Redis;
-  const user = PayloadCodec.json(Schema.Struct({ name: Schema.String }));
 
-  yield* redis.jsonSetWith("user:42", "$", { name: "Ada" }, user);
-  const saved = yield* redis.jsonGetWith("user:42", user);
-  const firstVisit = yield* redis.bfAdd("visitors", "42");
+  yield* redis.setKey(userKey, { name: "Ada", active: true });
 
-  return { saved, firstVisit };
+  return yield* redis.getKey(userKey); // Option<{ name: string; active: boolean }>
 });
 ```
 
-These methods require enabled server modules. Pinned Redis/Stack/Valkey module
-profiles have separate RESP2/3 conformance tests; unsupported commands/options remain
-typed server errors. Module conformance does not certify every hosted deployment.
+`Commands` exposes reusable typed command descriptions. `redis.execute(command)`
+uses the same encoders and decoders as facade methods. Raw commands return lossless
+RESP values and require an explicit routing/execution contract; they do not bypass
+connection ownership or backend restrictions.
 
-The codecs return Effect Result; use Effect.fromResult to compose them into Effects.
-Feed bounded byte chunks, drain decoder.next() between feeds, and drain after end()
-to detect truncated input. Detailed architecture notes and progress reports stay in
-ignored local research. [Tests](test/README.md) own executable assertions, pinned
-fixtures and runners; fixture definitions alone are not conformance evidence.
+## Pipelines and transactions
 
-Effect `^4.0.6` is the only runtime peer dependency. Universal exports have no Node/Bun imports.
-Builds use tsdown/Klarity, TypeScript 7 declarations and Publint. Tests, fixtures and
-runners stay outside the package artifact.
-
-Run from the workspace root:
-
-- `pnpm --filter @effect-kit/redis test`: offline unit and controlled integration tests.
-- `pnpm --filter @effect-kit/redis test:unit`: focused unit tests only.
-- `pnpm --filter @effect-kit/redis typecheck`: source and test/type-contract configurations.
-- `pnpm --filter @effect-kit/redis lint`: source and all test-owned modules.
-- `pnpm --filter @effect-kit/redis build`: unbundled ESM/declarations plus Publint.
-- `pnpm test:protocol:fuzz`: built-artifact fuzz/large-input corpus under an external watchdog.
-- `pnpm fixtures:check`: validate pinned backend fixtures before live acquisition.
-- `pnpm check`: offline workspace checks.
-- `pnpm verify`: offline checks, fixture validation, protocol corpus and all live suites.
-
-Default tests require no Redis process, credentials or network access. `pnpm test:live`
-selects both runtimes; `test:node` and `test:bun` select one. Live tests use scoped
-Testcontainers fixtures for twelve versions across
-Redis, Valkey, Dragonfly, KeyDB, Redict, Garnet and Kvrocks. Prepare digest-pinned
-images explicitly with `pnpm fixtures:pull`; tests require a local Docker-compatible
-daemon and OpenSSL. Bun cases require the `.bun-version` runtime; CI installs it.
-`--runtime node|bun|all` and `--engine valkey` select independent dimensions. Explicit `--mode binary`
-owns a supplied Redis/Valkey executable; `--mode endpoint` reads
-`EFFECT_REDIS_TEST_URL` and runs read-only PING/ECHO, with connection-only AUTH when
-needed. Optional `EFFECT_REDIS_TEST_CA` names a custom CA file. See the workspace
-README for commands and manual PR CI triggers. Native compatibility records are scoped
-to exact images, configurations, protocols, runtimes and executed scenarios. The live
-runner writes ignored `test/results/engine-conformance.json` only when all selected
-cases have fresh evidence; it includes build/inventory hashes and individual outcomes.
-Hosted-provider certification remains separate.
-
-Use `RedisProfiles.garnet()` with the ready runtime Layer for its reviewed option guard:
-Garnet 2.2.4 accepts `ZSCAN NOSCORES` while still returning scores, so that profile rejects
-the option before writing. Its default fixture disables Lua; a separate tested configuration
-enables Lua and transaction locking. Vector preview, Redis `MSET` atomicity and equivalent
-`BITFIELD OVERFLOW FAIL` behavior are not implied by accepting command names.
-
-Kvrocks 2.17.0 requires explicit JSONPaths such as `{ paths: ["$"] }`, with their matching-value
-envelopes. `FUNCTION LOAD` preserves its empty acknowledgment; `DBSIZE` preserves cached
-counts until an explicit server scan. Missing strict `XINFO STREAM` counters produce
-`ReplyError`; raw replies retain available fields. Bitfield bit order/int64 behavior differs
-from Redis. Dragonfly's overlapping pattern subscriptions affect reported subscriber counts.
-These server behaviors remain visible; the client does not emulate Redis guarantees.
-Vendor-specific KeyDB commands, Garnet ETags and Kvrocks CAS/CAD/SQL remain raw/custom
-contracts unless a reviewed typed family explicitly covers them.
-
-Licensed under Apache-2.0. Package archives include the license and built artifacts;
-`prepack` rebuilds them, and pnpm replaces catalog references with compatible ranges.
-
-Node transport accepts a validated `RedisConfig` inside an Effect scope. `read`
-returns owned nonempty bytes or `undefined` for clean EOF; `write` applies bounded
-backpressure; `close` is idempotent and wakes pending operations. Only one reader and
-writer may own a connection. Canceling an active write retires that socket because
-a prefix may have been sent. Local write completion does not prove server execution.
-
-TLS verifies trust and identity by default and supports explicit SNI, custom CAs and
-client certificates. Acquisition includes the TLS handshake and connect deadline;
-The connection engine completes AUTH, HELLO, optional naming and database selection
-before admission. Automatic protocol fallback requires a reviewed unsupported HELLO/
-protocol response. Authentication, ACL and malformed responses remain failures.
+Heterogeneous command tuples retain each result's type:
 
 ```ts
-import { Effect } from "effect";
+import { Effect, Result } from "effect";
 
-import { decodeRedisConfig, makeConnection } from "@effect-kit/redis";
-import { layer as NodeTransport } from "@effect-kit/redis/node";
+import { Commands, Redis } from "@effect-kit/redis";
 
-const ping = Effect.scoped(
-  Effect.gen(function* () {
-    const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
-    const connection = yield* makeConnection(config);
-    return yield* connection.executeOrdinary(["PING"]);
-  }),
-).pipe(Effect.provide(NodeTransport));
+export const updateVisits = Effect.gen(function* () {
+  const redis = yield* Redis;
+
+  const [saved, visits] = yield* redis.pipeline([
+    Commands.set("{account:42}:name", "Ada"),
+    Commands.incr("{account:42}:visits"),
+  ]);
+
+  if (Result.isFailure(visits)) return yield* visits.failure;
+
+  const transaction = yield* redis.transaction([
+    Commands.get("{account:42}:name"),
+    Commands.incr("{account:42}:visits"),
+  ]);
+
+  return { saved, visits: visits.success, transaction };
+});
 ```
 
-`executeOrdinary` returns lossless RESP values, including raw server errors. The typed executor maps server errors to
-redacted `ServerError`; reply/payload decoding failures have separate tagged errors. Known stateful/blocking operations require
-session APIs; custom commands must obey the caller-declared single-reply contract.
+Pipelines preserve order and per-command failures without atomicity. Transactions
+return `Committed` with per-command Results or `Conflict` for an aborted WATCH.
+Redis does not roll back sibling commands after a runtime error. Use
+`RedisSessions.watch(keys, use)` for a connection-bound read/check/transaction
+workflow. Cluster transactions require all keys in one slot; matching hash tags
+such as `{account:42}` select that slot.
 
-Admission bounds queued/in-flight counts and encoded bytes. Full queues fail with
-`AdmissionError`; accepted work waits fairly within its command deadline. Cancellation
-before write removes work. Cancellation after possible write retires that generation;
-sibling failures retain `unsent` or `possibly-written` evidence. Neither queued old
-work nor uncertain requests are replayed. New work may acquire a fresh generation.
-A local write keeps the original deadline even if its reply arrives before the write
-callback; a stalled callback cannot retain capacity indefinitely.
+## Scans, Streams and Pub/Sub
 
-Options default to three acquisition attempts, 100 ms initial exponential backoff
-(capped at 60 seconds), a 5-second graceful drain, 64 push messages and a 1 MiB push wire-byte budget. `credentials` accepts an Effect source captured at acquisition
-and rerun for each physical connection; choose it or fixed config credentials. Supply
-redacted credentials and map expected source failures to `HandshakeError`.
-
-`close` stops admission and drains with a deadline; `abort` retires immediately and
-awaits scoped cleanup. Cleanup defects propagate and prevent replacement acquisition.
-`takePush` permits one waiting consumer, preserves attributes and tags generations;
-overflow retires the connection. Managed event lifetimes use `RedisPubSub` and
-`RedisTracking`. `snapshot` exposes safe counters without arguments or payloads.
-
-The typed service composes over the same connection:
+Lazy cursor scans compose directly with Effect Stream:
 
 ```ts
-import { Effect, Layer, Schema } from "effect";
+import { Effect, Stream } from "effect";
 
-import { CommandExecutor, Connection, Redis, RedisKey, decodeRedisConfig } from "@effect-kit/redis";
-import { layer as NodeTransport } from "@effect-kit/redis/node";
+import { Redis } from "@effect-kit/redis";
+
+export const firstKeys = Effect.gen(function* () {
+  const redis = yield* Redis;
+
+  return yield* redis
+    .scanKeys({ match: "user:*", count: 100 })
+    .pipe(Stream.take(20), Stream.runCollect);
+});
+```
+
+Scan COUNT is a hint; results can contain duplicates and do not form a snapshot.
+`RedisStreams` adds scoped blocking readers, consumer-group pending/claim recovery
+and processing with acknowledgment after success. Processing can be redelivered;
+application side effects need an idempotency policy.
+
+Pub/Sub subscriptions wait for the server acknowledgment and own their lifetime:
+
+```ts
+import { Effect, Stream } from "effect";
+
+import { Redis, RedisPubSub } from "@effect-kit/redis";
+import { RedisNode } from "@effect-kit/redis/node";
+
+const RedisLive = RedisNode.layer({ url: "redis://localhost:6379" });
 
 const program = Effect.gen(function* () {
   const redis = yield* Redis;
-  const user = RedisKey.json("user:1", Schema.Struct({ name: Schema.String }));
-  yield* redis.setKey(user, { name: "Ada" });
-  const value = yield* redis.getKey(user);
-  const created = yield* redis.set("once", "value", { condition: "NX" });
-  const count = yield* redis.incr("count");
-  return { value, created, count };
-});
-
-const runnable = Effect.gen(function* () {
-  const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
-  const live = Redis.layer.pipe(
-    Layer.provide(CommandExecutor.layer),
-    Layer.provide(Connection.layer(config)),
-    Layer.provide(NodeTransport),
-  );
-  return yield* program.pipe(Effect.provide(live));
-});
-```
-
-On Bun, compose the same program with its native transport:
-
-```ts
-import { layer as BunTransport } from "@effect-kit/redis/bun";
-
-const bunRunnable = Effect.gen(function* () {
-  const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
-  const bunLive = Redis.layer.pipe(
-    Layer.provide(CommandExecutor.layer),
-    Layer.provide(Connection.layer(config)),
-    Layer.provide(BunTransport),
-  );
-
-  return yield* program.pipe(Effect.provide(bunLive));
-});
-```
-
-`get` returns strict UTF-8 `Option<string>`; `getBytes` returns `Option<Uint8Array>`.
-Text preserves a leading BOM and rejects malformed UTF-8. `incr` returns bigint.
-`zscore` returns `Option<number>` in the server's IEEE double domain;
-`zscoreToken` preserves the decimal token. No raw operation auto-serializes JSON.
-
-SET returns void normally, boolean with a condition, or previous bytes as Option
-with `{ get: true }`. Previous values do not prove a conditional write applied.
-`expiry: { type: "EX" | "PX" | "EXAT" | "PXAT", value }` uses whole positive units;
-`{ type: "KEEPTTL" }` retains expiry. `expiryAfter(Duration)` validates exact whole
-milliseconds. Conditions/options still depend on actual server versions: for example,
-Valkey 9.1.2 supports IFEQ, while IFNE/digest conditions are absent there.
-
-`Commands` exposes the same operations as lazy command descriptions. Use
-`redis.execute(Commands.get("key"))`, or prepare explicitly then executePrepared.
-Preparation requires encoding services; decoding services are needed at execution.
-Typed-key writes intentionally exclude GET; use getKey for decoded payload reads.
-Prepared binary tokens are borrowed until admission; do not mutate them during use.
-
-`redis.raw(tokens, { execution: "ordinary", routing: { _tag: "Keyless" } })` preserves
-lossless RESP, including errors. Keyed custom calls declare key argument indexes and
-access roles. `defineCommand` additionally requires a reply decoder and provenance.
-The standalone executor rejects nonordinary modes and explicit-node routing. These
-contracts do not bypass session ownership, topology routing or provider capabilities.
-
-The development typecheck includes compile-only public inference and codec service
-contracts. Shared live command scenarios cover seven current native engines with Node
-and Bun in RESP2/3, including separate Linux runtimes and explicit unsupported/different
-outcomes. Older Redis/Valkey builds retain dedicated regressions. Evidence covers exact
-executed scenarios. Hosted evidence covers the explicitly configured free-service
-subset described above; other provider configurations remain deferred.
-
-Development uses `#/` source imports and `#test/` imports for all test-owned modules.
-Node resolves them through package imports; tsdown rewrites built module references.
-The three TypeScript configs separate universal code without Node globals, native
-source declaration builds, and development files/type contracts. Two Vitest configs
-under test/ separate offline tests from explicitly selected live integration/e2e tests.
-
-New collection APIs preserve bytes and ordered pairs. Use named result variants such
-as lpopCount, zrangeWithScores, lcsMatches and geosearchWith for replies whose shape
-changes with options. Numeric string/hash/array aggregates retain decimal wire tokens;
-TTL results keep -1/-2 sentinels and array cursors use exact unsigned bigint values.
-SORT BY/GET patterns carry unresolved routing metadata: standalone support does not
-imply Cluster execution. Commands/options are sent explicitly; older servers may
-reject them with typed server errors, and no semantic emulation or replay occurs.
-
-Positional replies such as MGET, HMGET and BITFIELD must match the prepared request
-length. Reply shape errors mean the server has already replied; they do not cause
-replay. Binary key/member/value arguments remain bytes throughout encoding/decoding.
-
-Native `RedisSessions.layer(config, options)` provides `RedisSessions` and `BatchExecutor`.
-Add it to the existing native composition with `Layer.provideMerge`; ordinary-only
-programs keep their current Layer. `redis.pipeline` and `redis.transaction` require
-`BatchExecutor`, while a leased session has its batch executor captured already.
-
-```ts
-import { RedisSessions } from "@effect-kit/redis";
-
-const live = Redis.layer.pipe(
-  Layer.provide(CommandExecutor.layer),
-  Layer.provide(Connection.layer(config)),
-  Layer.provideMerge(RedisSessions.layer(config)),
-  Layer.provide(NodeTransport),
-);
-```
-
-Pipelines accept readonly heterogeneous `Commands` tuples and return per-slot Effect
-Results. Transactions return `{ _tag: "Committed", results }` or `{ _tag: "Conflict" }`;
-queue rejection is a separate `TransactionError`. Runtime EXEC errors remain individual
-results. Neither mechanism rolls back successful mutations or replays uncertain work.
-`BatchError.outcomes` is redacted and retains indexed completed, received, unsent and
-unknown slots. Explicit `Redacted.value` inspection can reveal application values.
-Interruption and defects remain in the Cause alongside available batch evidence.
-
-Use `sessions.watch(keys, use)` or `sessions.withSession(use)` for a generation-bound
-client. Use it sequentially: concurrent calls and nested transaction attempts fail
-explicitly. Scope exit cleans known WATCH/MULTI state or retires the connection;
-a retained session object fails after its scope ends. Advanced/exclusive raw calls
-must declare single-reply semantics and retire their lease on release; their raw
-contract can set `replyTimeoutMillis`, including explicit `"forever"`. Known mode
-switches still require their reviewed APIs.
-
-Blocking operations are available on `RedisSessions` and leased clients, with builders
-under `Commands`. For example, `sessions.blpop(["jobs"], { blockFor: Duration.seconds(30) })`
-returns an optional binary key/value pair. `blockFor: "forever"` is explicit. The optional
-`timeout` sets an independent client deadline; otherwise finite waits allow one extra
-second and forever waits remain scoped until completion/cancellation. Writes always
-retain the configured bounded write deadline. Server timeout is an absent value;
-a lost reply after a destructive pop can mean the element was already consumed.
-
-`session.waitForReplicas` and `session.waitForAof` stay with the preceding writes on
-that session. They return actual acknowledgment counts, including when a server wait
-expires. Both take the same explicit duration options; server waits use whole milliseconds.
-Local AOF acknowledgment counts are zero or one. These APIs do not promise strong
-consistency or protection from every failover/storage failure.
-
-`session.caching(mode, command)` keeps CLIENT CACHING adjacent to its command; the caller
-must configure a compatible tracking mode. `RedisTracking` owns managed tracking and
-invalidation lifetimes. `withoutReplies(commands)` and `skipReply(command)` restore
-REPLY ON with a fenced compound write and intentionally discard individual results/errors.
-Failure of that fence can leave mutations uncertain. RESET and QUIT retire the lease;
-Valkey capability/import-source flags are isolated to the owning scope.
-
-Session options default to four session sockets, two blocking sockets, 128 queued
-acquisitions, a five-second lease-acquisition deadline, a one-second cleanup deadline
-and 256 commands per batch. Both socket lanes are lazy and separately bounded; the
-ordinary Connection remains separately owned. Existing wire count/byte limits also
-apply. `connection.credentials` captures an Effect credential source for each newly
-opened physical lease connection, or configuration supplies fixed credentials.
-
-Scan commands return typed pages with opaque decimal cursors. `scanKeys`, `scanHash`,
-`scanHashFields`, `scanSet`, `scanSortedSet` and `scanSortedMembers` return lazy Effect
-Streams. Empty nonterminal pages and duplicate values are preserved; COUNT is a hint,
-and scans provide no snapshot/deduplication guarantee. `scanArray` uses ARSCAN's
-ordered index ranges in either direction, with a default LIMIT of 128. UINT64_MAX is
-reserved for the array insertion cursor and cannot be used as an ARSCAN bound.
-
-Redis Streams commands preserve exact IDs and ordered binary field/value pairs.
-Named variants include xaddIfExists, xclaimIds, xautoclaimIds, xpendingEntries,
-xinfoStreamFull and xreadgroupClaim. Nonblocking reads are ordinary Effects; blocking
-reads use `RedisSessions.xreadBlocking`/`xreadgroupBlocking` or a leased client.
-CLAIM readers retain their additional delivery metadata. Older claim responses can
-contain unavailable entries without IDs: Option.none preserves this evidence.
-XAUTOCLAIM's deleted-ID list is also optional because older replies omit it.
-
-`RedisStreams.layer` captures Redis and RedisSessions; compose it over the existing
-native Layer. `makeRedisStreams(redis, sessions)` supports explicit composition.
-
-```ts
-import { Stream } from "effect";
-
-import { RedisStreams } from "@effect-kit/redis";
-
-const streamsLive = RedisStreams.layer.pipe(Layer.provideMerge(live));
-
-const streamProgram = Effect.gen(function* () {
-  const streams = yield* RedisStreams;
-
-  return yield* streams.read([["events", "$"]]).pipe(Stream.take(10), Stream.runCollect);
-}).pipe(Effect.provide(streamsLive));
-```
-
-`read` resolves $ once and advances concrete per-stream IDs. `readGroup` requests new
-entries; `pending` reads this consumer's history; `claim` emits complete recovery pages,
-including empty continuation pages and deletion evidence. Readers hold dedicated
-blocking capacity, use a one-entry handoff queue, and default to COUNT 64 and a
-five-second server wait. A decoded server batch can also remain in memory. Explicit
-count/cumulative-size options retain server availability rules; MAXSIZE can still
-return one oversized entry, independently of the client protocol byte limits.
-Connection failure terminates the reader; resumption/recovery is explicit.
-
-`process(group, messages, handle, options)` acknowledges after the application Effect
-succeeds. `consume(group, consumer, keys, handle, options, readOptions)` first finishes
-this consumer's pending processing, then processes new deliveries. Defaults are one
-worker and one attempt; concurrency is bounded at 256 and attempts at 100. Optional
-onFailure decisions are Retry with an Effect Duration, LeavePending with a redacted
-visible outcome, or explicit Acknowledge. Tombstones require explicit policy; defects,
-interruption and failed acknowledgments never retry the application automatically.
-
-A dead-letter Effect must succeed before an Acknowledge decision. Its write and XACK
-have no implicit atomicity. Processing may succeed before a crash prevents acknowledgment,
-so applications must account for redelivery and external-effect idempotency.
-
-`StreamPayload.field(name, PayloadCodec.json(schema))` selects an explicit single-field
-envelope. `redis.xaddPayload` retains encoding services; payload.decode/decodeGroup
-retain decoding services. Missing, duplicate, malformed and tombstoned payload fields
-fail with PayloadError. Raw stream entries remain available and no raw value is
-implicitly JSON-encoded or acknowledged because decoding failed.
-
-`RedisPubSub.layer(config, options)` owns a dedicated scoped event connection;
-`makeRedisPubSub` supports explicit construction. Acquisition waits for server
-acknowledgments. Duplicate local listeners share server subscriptions; Pub/Sub is
-server-wide across databases. Publication counts report recipients, not processing.
-
-```ts
-import { RedisPubSub } from "@effect-kit/redis";
-
-const subscriptionsLive = RedisPubSub.layer(config).pipe(
-  Layer.provideMerge(live),
-  Layer.provide(NodeTransport),
-);
-
-const subscriptionProgram = Effect.gen(function* () {
   const pubsub = yield* RedisPubSub;
-  const redis = yield* Redis;
-  const subscription = yield* pubsub.subscribe(["orders.created"]);
+  const subscription = yield* pubsub.subscribe(["events"]);
 
-  yield* redis.publish("orders.created", "order-123");
+  yield* redis.publish("events", "hello");
+
   return yield* subscription.messages.pipe(Stream.take(1), Stream.runCollect);
-}).pipe(Effect.scoped, Effect.provide(subscriptionsLive));
+});
+
+export const runnable = program.pipe(Effect.scoped, Effect.provide(RedisLive));
 ```
 
-`psubscribe` and `ssubscribe` select pattern/sharded modes. Messages preserve binary
-payloads, channel/pattern identities, RESP attributes and connection generations.
-Each local listener owns its buffers. `close()` releases its child Scope immediately;
-the caller's Scope also owns cleanup. Unknown pushes have a bounded diagnostic Stream.
+Native Pub/Sub preserves binary payloads. Disconnects and overflow are visible;
+optional resubscription reports delivery gaps and cannot recover missed messages.
+Managed tracking and bounded GET-byte caches are available separately through
+`RedisTracking` and `RedisCache`.
 
-Default disconnect fails. `{ recovery: "resubscribe" }` enables bounded recovery;
-consume `events` to observe DeliveryGap and subsequent Ready events. `messages` fails
-on a gap. These are single-consumer views of one mailbox. Pub/Sub has no durable
-replay. Sharded support depends on the server. Standalone subscriptions stay node-bound;
-use the Cluster service below for explicit slot-owner selection and topology lifetimes.
+## Cluster and Sentinel
 
-Defaults bound active/retiring listeners to 128, unique interests to 1,024/1 MiB,
-mailboxes to 64 events/1 MiB and shared retained events to 16 MiB. Lifecycle events
-also consume count capacity. Overflow fails visibly; a slow listener never suspends
-the reader. Control admission defaults to 128 owners; whole-operation deadlines use
-the Redis config. Heartbeats run every 30 seconds. Recovery defaults to three attempts
-with 100 ms spacing, and never retries publications or authentication rejection.
-
-`RedisTracking.layer(config, options)` owns tracked execution and invalidation state.
-It supports default, optin, optout and broadcast-prefix modes. RESP3 uses inline
-invalidations by default; RESP2 and `delivery: "redirect"` own a separate receiver.
-Managed tracking owns its redirect ID; `session.tracking`/`trackingInfo` expose
-exclusive controls, including custom redirection. `tracking.caching(mode, command)`
-pairs the next-command flag with its command. Typed GET helpers opt in automatically.
-
-`tracking.events` exposes TrackingReady/TrackingGap/Invalidate; `invalidations` filters
-readiness and fails on gaps. Both views share one observer mailbox. Critical cache
-eviction happens before observers, so observer overflow cannot prevent invalidation.
-Connection loss clears the cohort. Calls fail until explicit `tracking.restart`
-re-establishes it; no mutation is replayed. Unknown pushes remain separately observable.
+Choose topology explicitly. Both Node and Bun provide these constructors:
 
 ```ts
-import { RedisCache, RedisTracking } from "@effect-kit/redis";
-
-const cacheLive = RedisCache.layer({ maxEntries: 1024 }).pipe(
-  Layer.provideMerge(RedisTracking.layer(config, { tracking: { mode: "optin" } })),
-  Layer.provide(NodeTransport),
-);
-
-const cachedProgram = RedisCache.pipe(
-  Effect.flatMap((cache) =>
-    cache.getKey(RedisKey.json("user:1", Schema.Struct({ name: Schema.String }))),
-  ),
-  Effect.provide(cacheLive),
-);
-```
-
-Provide cache Layers once for the application lifetime. Cache helpers store GET bytes;
-each typed codec decodes anew with its own services. Backend/database identity, binary
-keys, missing values and codec results remain separate. Defaults are 1,024 entries,
-8 MiB of values/key identities, 128 in-flight loads, 64 KiB eligible keys and a 30-second
-maximum local TTL. Oversized keys/values bypass storage. Returned bytes are owned;
-eviction uses LRU. Broadcast caches store only keys under tracked prefixes.
-
-Invalidation before a delayed GET reply prevents insertion. Declared local writes,
-flushes, connection gaps and restart invalidate affected state. Invalidation delivery
-is asynchronous; these helpers do not create strong consistency or exactly-once delivery.
-
-Lua and function calls require explicit keys, arguments and a reply decoder:
-`redis.evalScript(source, { keys, args }, Reply.integer)` and
-`redis.fcall(name, { keys, args }, Reply.blob)`. Read-only variants are separately
-named. Builders under `Commands` retain decoder requirements and key indexes.
-SCRIPT/FUNCTION lifecycle operations are explicit; function libraries are installed
-by the caller.
-
-```ts
-import { Effect } from "effect";
-
-import {
-  RedisScript,
-  Reply,
-  decodeRedisConfig,
-  makeRedisScripts,
-  makeRedisSessions,
-} from "@effect-kit/redis";
-import { cryptoLayer as NodeCrypto, layer as NodeTransport } from "@effect-kit/redis/node";
-
-const scriptProgram = Effect.scoped(
-  Effect.gen(function* () {
-    const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
-    const sessions = yield* makeRedisSessions(config);
-    const scripts = yield* makeRedisScripts(sessions);
-    const counter = yield* RedisScript.make({
-      source: "return redis.call('INCR', KEYS[1])",
-      decode: Reply.integer,
-    });
-
-    return yield* scripts.execute(counter, { keys: ["counter"] });
-  }),
-).pipe(Effect.provide(NodeTransport), Effect.provide(NodeCrypto));
-```
-
-`RedisScripts.layer()` captures `RedisSessions`. A canonical server NOSCRIPT rejection
-permits one load and one retry on the same physical connection. Load receipts default
-to connection scope. `{ loadScope: "server" }` shares pending loads only when the caller
-can guarantee that every lease targets the same physical server. Managed Lua
-source must reserve Redis's canonical NOSCRIPT errors for server cache rejection.
-Other errors, decoder failures and uncertain writes propagate. Shared load failure/cancellation reaches its waiters. Defaults bound concurrent loads to 64 and
-additional binary argument snapshots to 16 MiB per active lease. Immutable strings are
-borrowed; keep queued input unchanged. Each wire operation uses the native deadline.
-Explicitly preload scripts before batches; pipelines/transactions never replay siblings.
-
-`RedisAdmin.layer` captures `RedisSessions`; `makeRedisAdmin(sessions)` provides the
-same explicit composition. ACL/configuration, INFO, memory, command introspection,
-client controls, persistence, backups and MIGRATE use that configured backend.
-Each operation leases a connection. `admin.withSession(use)` groups related controls;
-exclusive operations retire their lease on release. Secret-bearing configuration,
-ACL rules and diagnostic logs use `Redacted`. INFO preserves strings, duplicate fields
-and unknown sections; open-ended structured reports retain lossless fields.
-MIGRATE errors can follow partial transfers. No rollback or automatic retry is implied.
-
-`session.authenticate`, `selectDatabase` and `hello()` expose reviewed connection
-controls. AUTH/SELECT changes retire their physical lease. `hello()` inspects the
-current protocol; initial negotiation belongs to configuration. Redis 8.10 HIMPORT
-uses `session.himportPrepare/Set/Discard/DiscardAll`: positional fieldsets belong to
-that client and HIMPORT SET replaces the hash. BACKUP controls expose the server's
-snapshot/abort/seal/cleanup lifecycle, with exact times and redacted file paths.
-
-`RedisMonitor.layer(config)` / `makeRedisMonitor(config)` acquires a dedicated scoped
-connection. `events` is a single-consumer Stream of Command/Unknown records. Timestamps
-remain decimal text; database IDs are bigint; client/command/raw content is redacted.
-Defaults allow 64 queued events, 1 MiB retained bytes and 64 KiB diagnostic lines, bounded
-by the decoder buffer. Raw bytes plus text are charged at three times wire size.
-`close` ends the stream. Overflow, framing errors and disconnect fail it; recovery is
-explicit. Ordinary connections keep their existing header limits.
-
-`RedisShutdown.layer(config)` / `makeRedisShutdown(config)` owns each control socket.
-`shutdown({ save: "NOSAVE" })` reports ConnectionClosed with `execution: "unknown"`
-after EOF. `abort()` requires a real OK reply. One shutdown and one abort may run
-concurrently; additional same-kind calls fail unsent. Cleanup defects prevent implicit
-replacement. QUIT/RESET/reply suppression retain their reviewed session APIs.
-
-Availability remains version/configuration-specific. ACL DIGEST's 9.2 descriptor has
-no positive claim on pinned Valkey 9.1; topology/module scenarios keep their own gates.
-Private replication/RDB, protected debug and interactive Lua debugger protocols are
-excluded. Four BLESS catalog records describe Redis 8.12 without a verified
-reply contract in the pinned baselines; they have no invented typed wrappers.
-
-## Cluster
-
-`RedisCluster.layer(config, options)` provides `Redis`, `CommandExecutor`, `BatchExecutor`
-and `RedisCluster`. Existing typed commands keep their result/error/codec contracts.
-The factory captures the same services without requiring an application Layer:
-
-```ts
-import { Effect } from "effect";
-
-import { decodeRedisConfig, makeRedisCluster } from "@effect-kit/redis";
-import { layer as NodeTransport } from "@effect-kit/redis/node";
-
-const clusterProgram = Effect.scoped(
-  Effect.gen(function* () {
-    const config = yield* decodeRedisConfig({ endpoint: { host: "localhost", port: 7000 } });
-    const cluster = yield* makeRedisCluster(config, {
-      seeds: [{ host: "localhost", port: 7001 }],
-    });
-
-    yield* cluster.redis.set("user:{42}:name", "Ada");
-    return yield* cluster.redis.get("user:{42}:name");
-  }),
-).pipe(Effect.provide(NodeTransport));
-```
-
-Default execution targets primaries. `readPreference: "replica-preferred"` explicitly
-permits stale replica reads for eligible commands. SHARDS/SLOTS discovery and periodic
-refresh are bounded; ACL errors do not authorize legacy fallback. `addressMap` translates
-announced host/port pairs and can set `serverName` independently of the dial address.
-Redis clients use DB0. Configured Valkey multi-DB needs `databaseCapability:
-"valkey-multi-db"`; its server must enable the selected database with `cluster-databases`.
-
-`cluster.pipeline`/`transaction` require a single slot. `withSession({ key }, use)` pins
-that slot/node; `{ node: id }` explicitly selects a node. Cross-slot operations fail
-before application writes. A lease never migrates with an active WATCH/transaction.
-MOVED/ASK rejection recovery is bounded; uncertain wire outcomes and EXEC never replay.
-Native blocking helpers retain their explicit reply deadlines, including scoped forever.
-
-`node(id)` and `admin(id)` expose explicit node operations. `onPrimaries(command)` is a
-lazy sequential Stream of per-node Results. `scanKeys` traverses distinct primaries,
-preserves duplicates and fails if the observed topology changes; it is not a snapshot.
-Valkey's `clusterScan`/`scanCluster` retain opaque tagged cursors and actual availability.
-Dynamic SORT patterns require an explicit node; COPY DB/MOVE/SWAPDB remain rejected.
-
-`scripts({ key })` loads missing scripts on their actual node and lease, including
-ASK/NOSCRIPT adjacency. Application decoders run after recovery. Managed Lua must not
-forge reserved cache/routing rejections. `streams(target)`, `pubsub(target)` and
-`tracking(target)` bind their dedicated lifetimes explicitly. Topology changes/redirects
-close old cohorts and clear their caches; reacquire on the new owner. Node reconnect
-can expose DeliveryGap/Ready, without recovering missed publications.
-
-Defaults: 64 node pools including retained seeds/retiring resources, four session and
-two blocking sockets per node, 1,024 admitted commands/16 MiB retained intent, eight
-redirects, 64 event cohorts and 30-second ordinary deadlines/refresh intervals. Event
-cohorts own additional dedicated sockets. All resources belong to Scope. Full hosted
-provider and secondary-engine Cluster certification remains separate.
-
-## Sentinel
-
-`RedisSentinel.layer(config, options)` provides `RedisSentinel`, `Redis`,
-`CommandExecutor` and `BatchExecutor`. The scoped factory captures the same services:
-
-```ts
-import { Effect } from "effect";
-
-import { decodeSentinelConfig, makeRedisSentinel } from "@effect-kit/redis";
-import { layer as NodeTransport } from "@effect-kit/redis/node";
-
-const sentinelProgram = Effect.scoped(
-  Effect.gen(function* () {
-    const config = yield* decodeSentinelConfig({
-      serviceName: "cache",
-      sentinels: [
-        { endpoint: { host: "localhost", port: 26379 } },
-        { endpoint: { host: "localhost", port: 26380 } },
-      ],
-      data: { database: 0 },
-    });
-    const client = yield* makeRedisSentinel(config);
-
-    yield* client.redis.set("user:42:name", "Ada");
-    return yield* client.redis.get("user:42:name");
-  }),
-).pipe(Effect.provide(NodeTransport));
-```
-
-Sentinel endpoints default to port 26379 and DB0. The data template selects the
-application database and protocol; discovery supplies its address. Each physical data
-connection re-resolves Sentinel and verifies ROLE after authentication/negotiation.
-`sentinelConnection.credentials` and `connection.credentials` capture independent
-Effect credential sources; fixed credentials instead belong to their respective
-configuration. Each source is reacquired in its physical connection's Scope.
-
-Discovery TLS belongs to each Sentinel endpoint. `dataTls` accepts validated TLS
-options with redacted CA/certificate/key material and explicit `rejectUnauthorized`.
-`addressMap(address, plane)` translates advertised addresses separately for control
-and data connections and can override TLS `serverName` independently of the dial host.
-
-Primary reads are the default. `readPreference: "replica-preferred"` explicitly allows
-stale reads for eligible ordinary commands; sessions, writes, scripts, scans and stream
-consumers stay on the primary. Pipelines and transactions retain standalone multi-key
-semantics. `withSession`, `withBlockingSession`, `watch`, `scripts()`, `streams` and
-`admin` reuse native ownership and typed results. A lease never moves after its callback
-starts. Bounded acquisition may follow a newly discovered primary before that point.
-
-Future work can discover promotion after failure; an operation that may have executed
-is never replayed. Unknown mutation/EXEC outcomes retain their native indexed evidence.
-Periodic refresh and per-connection queries drive discovery; Sentinel notifications
-are not required. ROLE cannot fence an isolated old primary, and asynchronous replication
-can lose acknowledged writes during failover. This client does not add strong consistency.
-
-`scanKeys` and the other lazy scans remain bound to their starting primary/generation
-and fail on a change. `pubsub()` and `tracking()` create scoped cohorts; old cohorts close
-and caches clear before replacement routing is published. Reacquire them explicitly.
-`sentinel(index).execute(Commands.sentinelMasters())` targets a configured control
-endpoint. The typed Sentinel family preserves version-specific aliases/options and
-actual server errors. Control mutations are explicit and never retried automatically.
-
-Defaults bound discovery to 16 Sentinel endpoints and 16 data-node pools, 1,024 logical
-operations, 64 event cohorts, three discovery attempts, five-second discovery and
-500 ms candidate deadlines, plus 30-second ordinary operation/refresh intervals.
-Native session/blocking limits apply per data pool; event cohorts own additional
-dedicated sockets. `learnSentinels: true` opts into bounded peer discovery.
-
-`RedisTelemetry.layer()` opts Redis facade operations into Effect metrics. Merge it
-with the ready runtime Layer; `{ tracing: true }` additionally creates client spans:
-
-```ts
-import { Effect, Layer } from "effect";
-
-import { Redis, RedisTelemetry } from "@effect-kit/redis";
 import { RedisNode } from "@effect-kit/redis/node";
 
-const observableRedis = Layer.mergeAll(
-  RedisNode.layer({ url: "redis://localhost:6379" }),
-  RedisTelemetry.layer({ tracing: true }),
-);
-const observableProgram = Redis.pipe(
-  Effect.flatMap((redis) => redis.ping()),
-  Effect.provide(observableRedis),
-);
+export const ClusterLive = RedisNode.layerCluster({
+  url: "redis://localhost:7000",
+  cluster: {
+    seeds: [
+      { host: "localhost", port: 7000 },
+      { host: "localhost", port: 7001 },
+    ],
+  },
+});
+
+export const SentinelLive = RedisNode.layerSentinel({
+  serviceName: "mymaster",
+  sentinels: [
+    { endpoint: { host: "localhost", port: 26379 } },
+    { endpoint: { host: "localhost", port: 26380 } },
+  ],
+});
 ```
 
-Instrumentation is disabled by default. Metrics are `effect_redis.operations`
-(completions), `effect_redis.operations.active` (current operations) and
-`effect_redis.operation.duration_ms` (whole-operation latency histogram). Dimensions
-are fixed operation kind (`command`, `pipeline`, `transaction`) and completion
-outcome. A batch counts once. Direct low-level executors, sessions and event/Stream
-helpers retain their existing snapshots rather than these facade counters. Spans
-are `redis.command`, `redis.pipeline` and `redis.transaction`; their end status
-contains only a fixed outcome, never the application's result or error. Library
-labels contain no keys, arguments, command names, endpoints or identities. Ambient
-Effect metric labels and application tracers remain application-owned. Export metrics
-through your Effect instrumentation; no exporter or background polling is installed.
-`{ metrics: false, tracing: true }` enables spans alone.
+Cluster routes by binary keys, bounds redirects and rejects unsupported cross-slot
+operations. Sentinel verifies the primary role before admission. Specialized
+`RedisCluster`/`RedisSentinel` services expose topology-owned sessions and events.
+Failover does not add strong consistency or replay uncertain commands.
 
-Shutdown belongs to the Layer's Scope: await its finalizers before ending the host.
-Cancellation after possible write retires that connection; it cannot undo a remote
-mutation. Replacement connections admit future work with fresh handshakes, without
-replaying old commands. A pipeline is ordered, a transaction does not roll back
-individual runtime errors, and WATCH conflict is a distinct result. Streams and
-Pub/Sub do not promise exactly-once delivery. Retain application idempotency keys
-when an uncertain result needs business-level recovery.
+## Compatibility
 
-`pnpm test:artifacts` performs three clean builds and requires byte-identical JS and
-declarations, then checks the exact archive with independent TS7/Node/Bun consumers.
-`pnpm test:hardening` runs disposable benchmark, soak and readiness suites. It needs
-prepared primary/proxy images, Docker, OpenSSL and the pinned Bun runtime. Select
-`benchmark`, `soak` or `readiness` to rerun one part; `--calibrate` produces diagnostic
-measurements without release certification. Measurements and budgets are scoped to
-the recorded workloads and host conditions, rather than performance guarantees for
-an arbitrary deployment. Both commands keep immutable evidence under ignored test
-results. Never rebuild this checkout while live children are reading its artifacts.
+| Backend or runtime                               | Execution path                                                             |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
+| Redis, Valkey                                    | Native Node/Bun, including Cluster and Sentinel fixtures                   |
+| Dragonfly, KeyDB, Redict, Garnet, Apache Kvrocks | Native Node/Bun with backend-specific command subsets                      |
+| Upstash                                          | Native RESP or HTTP/SSE; provider Search/Vector/ACL have separate builders |
+| Aiven Valkey, Redis Cloud Free                   | Tested isolated hosted configurations using native adapters                |
+| Deno, Cloudflare Workers                         | Upstash HTTP; no native TCP claim                                          |
 
-The supported Effect peer is `^4.0.6`; major-version widening requires compatibility
-review. Runtime, engine and module claims refer to executed versions/configurations,
-not every version accepting a Redis command. Before release, keep the package private
-until ownership and publication authorization are verified. Report vulnerabilities
-privately through the repository's **Security → Report a vulnerability** interface
-when enabled; do not post credentials or exploit details in a public issue.
-Private vulnerability reporting must be enabled before publication.
+Compatibility is specific to server versions, configuration, protocol, runtime and
+executed operations. Redis command acceptance does not establish semantic parity.
+Alternative engines can reject options or behave differently; the client preserves
+those outcomes. `RedisProfiles` adds reviewed deployment policies, including a
+Garnet guard for `ZSCAN NOSCORES`. A profile alone does not certify a hosted service.
+Other cloud-provider configurations are not certified.
+
+Typed module families cover JSON, Search, TimeSeries, Bloom/Cuckoo/CMS/TopK/t-digest
+and vector sets when enabled on the server. Module versions and dialects matter.
+Upstash `SEARCH.*`/`VECTOR.*` are distinct from Redis `FT.*`/`V*`.
+Advanced replication/RDB framing and streamed RESP3 aggregates are outside the
+ordinary request/reply contract.
+
+## Errors, recovery and observability
+
+Expected failures use tagged Effect errors: configuration, admission, transport,
+handshake, server, reply, payload and batch failures remain distinguishable. Server
+errors and batch evidence are redacted because they can contain application data.
+Use `Effect.catchTag` for the failure your application can actually recover from.
+
+A disconnect or timeout after a write can have an unknown execution outcome.
+The client never automatically replays that command, transaction or script. New
+work can establish a fresh connection. Application retry must account for remote
+side effects; cancellation cannot undo a write.
+
+`RedisCredentials.provider(effect)` accepts your existing identity integration
+without adding cloud SDKs. Refresh is bounded; `RedisCredentials.rotate` explicitly
+retires owned connections or aborts HTTP work. Credentials use `Redacted`.
+
+Merge `RedisTelemetry.layer({ tracing: true })` with your runtime Layer to opt into
+Effect metrics and sanitized spans. Instrumentation is disabled by default and
+uses bounded operation/outcome labels without keys, values or endpoints. Exporters
+remain application-owned.
+
+## Contributing and security
+
+See the [repository](https://github.com/effect-kit/redis) for development and testing
+commands. Report reproducible bugs through
+[GitHub issues](https://github.com/effect-kit/redis/issues). For security-sensitive
+reports, use GitHub's private vulnerability reporting when enabled; do not include
+credentials or exploit details in public issues.
+
+Licensed under [Apache-2.0](https://github.com/effect-kit/redis/blob/main/LICENSE).
+Copyright 2026 Effect Kit Contributors.

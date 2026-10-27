@@ -2,9 +2,9 @@
   "name": "effect-redis-workspace",
   "private": true,
   "description": "Development workspace for the native Effect v4 Redis client.",
-  "homepage": "https://github.com/envoy1084/effect-redis#readme",
+  "homepage": "https://github.com/effect-kit/redis#readme",
   "bugs": {
-    "url": "https://github.com/envoy1084/effect-redis/issues"
+    "url": "https://github.com/effect-kit/redis/issues"
   },
   "license": "Apache-2.0",
   "author": {
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/envoy1084/effect-redis.git"
+    "url": "git+https://github.com/effect-kit/redis.git"
   },
   "type": "module",
   "scripts": {
@@ -40,12 +40,18 @@
     "test:providers": "pnpm --filter @effect-kit/redis test:providers",
     "providers:prepare": "pnpm --filter @effect-kit/redis providers:prepare",
     "test:artifacts": "pnpm --filter @effect-kit/redis test:artifacts",
-    "test:hardening": "pnpm --filter @effect-kit/redis test:hardening"
+    "test:hardening": "pnpm --filter @effect-kit/redis test:hardening",
+    "changeset": "changeset",
+    "version-packages": "changeset version && pnpm install --lockfile-only --ignore-scripts && pnpm exec oxfmt --write .changeset packages/redis/package.json packages/redis/CHANGELOG.md pnpm-lock.yaml",
+    "release:pack": "changeset pack --out-dir packages/redis/test/results/release",
+    "release:check": "pnpm --filter @effect-kit/redis test:release",
+    "release:smoke": "pnpm --filter @effect-kit/redis test:release:registry"
   },
   "dependencies": {
     "effect": "catalog:"
   },
   "devDependencies": {
+    "@changesets/cli": "catalog:",
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
     "@types/node": "catalog:",

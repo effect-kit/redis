@@ -1,151 +1,126 @@
 # Effect Redis
 
-A Redis protocol client built with Effect v4 and runtime platform APIs. The goal is
-complete command coverage, binary-safe RESP2/RESP3, and explicit capabilities across
-Redis-compatible servers and transports.
+**Redis for Effect v4.** A native, typed Redis client with scoped connections,
+transactions, Streams and Pub/Sub across Node.js, Bun and Upstash HTTP.
 
-**Status:** The typed Redis service covers 187 ordinary data commands across strings,
-hashes, lists, sets, keys/TTL, sorted sets, bitmaps, HyperLogLog, geo and arrays.
-Scoped Node TCP/TLS/Unix, bounded scheduling and lossless RESP2/RESP3 are implemented.
-Native sessions add scoped leases, typed pipelines/transactions, WATCH workflows,
-nine blocking list/sorted-set commands and connection-relative controls. Cursor scans
-and Redis Streams add typed commands, scoped readers and consumer recovery/processing.
-Scoped Pub/Sub adds acknowledged subscriptions and explicit delivery gaps. Client
-tracking adds invalidations and bounded GET-byte caches. Typed Lua/functions,
-bounded script loading, explicit administration, session-local hash imports,
-server backups, MONITOR and SHUTDOWN modes are implemented. Native Redis/Valkey Cluster
-adds explicit routing, bounded discovery/redirects, node-bound sessions and topology-aware
-event/cache lifetimes. Redis/Valkey Sentinel adds verified discovery, generation-bound
-leases and future-work failover. Broader runtime/provider certification remains pending.
-The `/upstash` entrypoint adds scoped Effect HTTP execution, pipelines, JSON
-transactions and acknowledged text SSE. Typed provider Search/Vector/ACL extensions
-remain distinct from Redis modules. Local tests use an owned Uprest proxy; they do
-not certify the hosted provider. Separate opt-in tests exercise actual Upstash,
-Aiven Valkey and Redis Cloud Free, plus HTTP on Node/Bun/Deno and Cloudflare Workers.
-These prove the recorded configurations and scenarios; other cloud providers remain deferred.
-Seven-engine native tests share Node/Bun scenarios and retain exact host/Linux,
-protocol, configuration and module evidence. Their generated records describe tested
-operations and explicit differences, rather than universal Redis compatibility.
+The npm package is [`@effect-kit/redis`](https://www.npmjs.com/package/@effect-kit/redis).
+Effect is the only runtime peer dependency; the client implements RESP directly
+using platform sockets and Effect HTTP.
+
+```sh
+pnpm add @effect-kit/redis effect
+```
+
+```ts
+import { Effect } from "effect";
+
+import { Redis } from "@effect-kit/redis";
+import { RedisNode } from "@effect-kit/redis/node";
+
+const RedisLive = RedisNode.layer({ url: "redis://localhost:6379" });
+
+const program = Effect.gen(function* () {
+  const redis = yield* Redis;
+
+  yield* redis.set("greeting", "Hello from Effect");
+
+  return yield* redis.get("greeting");
+});
+
+const greeting = await Effect.runPromise(program.pipe(Effect.provide(RedisLive)));
+```
+
+See the **[package README](packages/redis/README.md)** for installation, configuration,
+typed payloads, pipelines, transactions, scans, Pub/Sub and topology examples.
+
+## What it provides
+
+- Typed commands with binary values, exact integers and explicit Schema codecs.
+- Scoped Node/Bun TCP, TLS and Unix sockets with bounded queues and backpressure.
+- Pipelines, transactions, WATCH, blocking sessions, scripting and functions.
+- Lazy scans, Redis Streams/group recovery, Pub/Sub, tracking and bounded caches.
+- Redis/Valkey Cluster routing and Sentinel discovery without uncertain-write replay.
+- Upstash HTTP/SSE and separate provider Search/Vector/ACL command families.
+- Optional JSON, Search, TimeSeries, probabilistic and vector-set module commands.
+- Effect Layers, tagged errors, credential refresh and opt-in telemetry.
+
+Redis and Valkey are the primary native backends. Tests also exercise Dragonfly,
+KeyDB, Redict, Garnet and Apache Kvrocks with explicit unsupported/different outcomes.
+Hosted tests cover isolated Upstash, Aiven Valkey and Redis Cloud Free configurations,
+plus HTTP on Deno and Cloudflare Workers. Compatibility is scoped to actual tested
+versions, configurations and operations; backend policies do not certify every
+deployment of a service.
 
 ## Development
 
-Use Node.js 24.22.0 or newer and pnpm 12.14.0 (pinned in `packageManager`).
-Live Bun scenarios also require Bun 1.4.4, pinned in `.bun-version`.
+Use Node.js **24.22.0+**, pnpm **12.14.0** and Bun **1.4.4**, pinned in the repository.
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
 pnpm check
 ```
 
-`pnpm install` installs Lefthook. Klarity supplies TypeScript, Oxlint, Oxfmt,
-Commitlint, and Git hook conventions. TypeScript 7 checks types;
-tsdown uses Klarity’s library preset to build unbundled ESM and declarations, with
-Publint checking package exports.
+The pnpm/Turborepo workspace uses TypeScript 7, tsdown, Klarity, Oxfmt, Oxlint,
+Lefthook and Commitlint. Shared dependency ranges live in the pnpm catalog;
+the lockfile records exact tool and runtime versions.
 
-| Command                                                       | Purpose                                                           |
-| ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `pnpm build`                                                  | Build workspace packages through Turborepo                        |
-| `pnpm typecheck`                                              | Check source, tests and public type contracts                     |
-| `pnpm lint`                                                   | Lint root configs, source and tests                               |
-| `pnpm format`                                                 | Format tracked project files with Oxfmt                           |
-| `pnpm format:check`                                           | Check formatting                                                  |
-| `pnpm test`                                                   | Run offline unit and controlled integration tests                 |
-| `pnpm test:protocol:fuzz`                                     | Build and run the watchdog protocol corpus                        |
-| `pnpm test:artifacts`                                         | Compare three clean builds and check exact packed consumers       |
-| `pnpm test:hardening`                                         | Run gated benchmarks, soaks and fresh-start readiness tests       |
-| `pnpm fixtures:check`                                         | Validate pinned backend test fixtures                             |
-| `pnpm fixtures:pull`                                          | Explicitly download pinned integration-test images                |
-| `pnpm test:node`                                              | Run live cases through the Node adapter                           |
-| `pnpm test:bun`                                               | Run real Bun socket, backend and topology cases                   |
-| `pnpm test:live`                                              | Run both runtimes against applicable live fixtures                |
-| `pnpm test:upstash`                                           | Run local HTTP/proxy, fault and Node/Bun consumer tests           |
-| `pnpm dev:upstash`                                            | Keep an owned HTTP fixture running for interactive use            |
-| `pnpm providers:prepare`                                      | Install checksum-pinned Deno for hosted HTTP tests                |
-| `pnpm test:providers --credentials-file .env.providers.local` | Run the isolated hosted-provider matrix with explicit credentials |
-| `pnpm check`                                                  | Formatting, lint, typecheck, test, and build                      |
-| `pnpm verify`                                                 | Offline checks, fixture validation, fuzz and all live suites      |
+| Command                                                       | Purpose                                                        |
+| ------------------------------------------------------------- | -------------------------------------------------------------- |
+| `pnpm check`                                                  | Format, lint, typecheck, offline tests and build               |
+| `pnpm test`                                                   | Unit and controlled integration tests; no Redis or credentials |
+| `pnpm test:protocol:fuzz`                                     | Built-artifact RESP fuzz and large-input corpus                |
+| `pnpm test:artifacts`                                         | Three deterministic builds and exact packed consumers          |
+| `pnpm fixtures:check`                                         | Validate pinned backend fixtures                               |
+| `pnpm fixtures:pull`                                          | Explicitly prepare container images                            |
+| `pnpm test:live`                                              | Native/backend integration and e2e suites                      |
+| `pnpm verify`                                                 | Offline checks, fixture validation, fuzz and all live suites   |
+| `pnpm dev:upstash`                                            | Start an owned local HTTP fixture until Ctrl+C                 |
+| `pnpm test:hardening`                                         | Disposable benchmarks, soaks and readiness checks              |
+| `pnpm test:providers --credentials-file .env.providers.local` | Opt-in hosted tests                                            |
+| `pnpm changeset`                                              | Describe a public change for the next release                  |
 
-## Workspace
-
-- `packages/redis`: the private `@effect-kit/redis` library foundation.
-- `pnpm-workspace.yaml`: shared compatible dependency ranges in the default pnpm catalog.
-- `AGENTS.md`: engineering policy and architecture guidance for contributors and agents.
-- [Tests](packages/redis/test/README.md): unit/integration/e2e suites, fixtures and runners.
-- `research/`: ignored local docs, plans, phase reports and investigations.
-  These files are private and never required by the build, tests or CI.
-
-Effect is installed at the workspace root so its `AGENTS.md`, AI documentation, and
-source are available locally. Effect is the library's only intended runtime peer;
-tooling packages are development dependencies. No existing Redis client or protocol
-parser is used. Commit meaningful changes separately using Conventional Commits.
-
-## Architecture direction
-
-Implement native RESP2/RESP3 over scoped TCP/TLS, typed Effect commands, and Stream
-helpers for subscriptions, cursor scans, and Redis Stream consumption. Node and Bun
-supply socket adapters; Upstash HTTP uses a separate executor with explicit transport
-capabilities. Server versions, modules, and provider restrictions determine actual
-command availability.
-
-The maintained [agent guide](AGENTS.md) records module boundaries, binary safety,
-cancellation and replay rules, transactions, topology, and implementation milestones.
-Local research catalogs are split by category under `research/redis-commands/`,
-`research/valkey-commands/`, and `research/upstash-commands/`.
-
-## Dependencies and license
-
-Catalog ranges allow compatible updates; `pnpm-lock.yaml` records exact resolutions
-for reproducible installs. Effect uses `^4.0.6`, TypeScript stays within `~7.0.2`,
-and tsdown is constrained to `>=0.23.1 <0.23.2` until its declaration plugin supports
-our compiler. Use frozen installs in CI and review lockfile updates.
-
-Licensed under [Apache-2.0](LICENSE). The library remains private during development.
-
-Node networking is exposed through `@effect-kit/redis/node`. Default live tests
-use disposable Testcontainers fixtures and require a local Docker-compatible daemon,
-OpenSSL and explicitly prepared images. `pnpm check` stays offline.
-
-Run `pnpm verify` for the complete regular verification sequence. It runs offline
-checks, fixture validation, the protocol corpus and every live suite in order,
-stopping at the first failure. Prepare images once with `pnpm fixtures:pull`.
-Topology and fault scenarios make this a long run; allow it to finish.
+Live suites require Docker, OpenSSL and explicitly prepared images. Runtime and
+engine selection are independent:
 
 ```sh
-pnpm fixtures:pull                     # or --engine valkey
-pnpm test:live                         # all engines and socket/fault tests
-pnpm test:live --engine valkey         # selected engine, all pinned versions
-pnpm test:bun --engine valkey          # Bun runtime, selected backend
-pnpm test:live --runtime node          # Node runtime only
-pnpm test:upstash                      # local HTTP fixtures, Node and Bun
-pnpm dev:upstash --engine valkey       # checks the client, then waits for Ctrl+C
-pnpm test:live --mode binary --engine redis --binary /absolute/path/redis-server
-# Explicit existing endpoint: set EFFECT_REDIS_TEST_URL privately in your shell.
-pnpm test:live --mode endpoint         # AUTH if needed, PING/ECHO only; no writes
+pnpm fixtures:pull
+pnpm test:live --engine valkey --runtime node
+pnpm test:bun --engine redis
+pnpm test:upstash
 ```
 
-The matrix pins Redis 6.2.19/7.2.11/7.4.6/8.10.2, Valkey 7.2.11/8.0.3/9.1.2,
-Dragonfly 2.0.2, KeyDB 6.3.4, Redict 7.3.6, Garnet 2.2.4 and Kvrocks 2.17.0.
-Shared command scenarios run against all seven current engines in RESP2/3 with Node
-and Bun, including separate Linux runtime containers and explicit unsupported/different
-outcomes. Older Redis/Valkey builds retain their dedicated regression suites. Cluster suites own three
-primaries and three replicas, including resharding, promotion, partitions and TLS.
-Sentinel suites own three data servers and three Sentinels, covering discovery on every
-primary baseline and current-build promotion, partitions, separate credentials and mTLS.
-Evidence covers exact executed configurations and scenarios. Hosted certification covers
-the approved free-service subset above; other hosted configurations remain deferred.
-Bun is a runtime, rather than a server fixture. Endpoint mode also accepts `EFFECT_REDIS_TEST_CA` for a custom
-CA file; it never downloads images or starts/stops the external server.
+For read-only checks against an existing server, set `EFFECT_REDIS_TEST_URL`
+privately and run `pnpm test:live --mode endpoint`. This mode performs connection
+authentication and PING/ECHO only. Mutating tests own disposable fixtures.
 
-HTTP cases use the current Redis/Valkey fixtures and digest-pinned Uprest 0.5.0.
-`fixtures:pull --engine redis|valkey` prepares the corresponding proxy image too.
-`dev:upstash` writes a private, ignored connection file under test results and
-removes it on Ctrl+C. It prints the endpoint and file path, without the bearer token.
-Use a separate checkout for another live run: test runners clear their results directory.
+The [test guide](packages/redis/test/README.md) describes suite organization and
+fixtures. Do not rebuild a checkout while live probes are reading its artifacts.
 
-Live CI runs on every push to `main`. PRs run offline checks automatically. Writers
-can comment `/test live` on a PR for the full suite, or `/test live valkey` for a
-selected engine (`core` selects socket/TLS fault tests). The **Live conformance**
-workflow also supports manual dispatch with an optional PR number and suite. Manual
-PR runs test the exact resolved head SHA with read-only permissions; reports link
-that SHA to individual matrix results and artifacts. The workflow must be present on
-the default branch before comment/dispatch triggers become available.
+Offline CI runs on PRs and pushes to `main`. Local live conformance runs on main
+pushes; a repository writer can request it on a PR with `/test live` or
+`/test live valkey`. Hosted-provider, hardening and release workflows are manual.
+
+## Releases
+
+Changesets manages package versions and changelogs. Add a Changeset with public API
+changes, commit it with the code, and dispatch **Release** on `main` to create or
+update the version PR. After reviewing and merging that PR, dispatch **Release**
+again to validate and publish the packed package with npm trusted publishing and
+provenance. See [release setup and bootstrap commands](.changeset/README.md).
+
+Release automation never publishes on a PR or ordinary push. npm organization
+membership and trusted-publisher configuration are maintained by package owners.
+
+## Contributing
+
+Keep modules focused, use Effect-native services/tests and preserve binary and
+connection-lifetime contracts. The [agent guide](AGENTS.md) records engineering
+conventions. Use Conventional Commits and include tests for behavior changes.
+
+Open [issues](https://github.com/effect-kit/redis/issues) for bugs and proposals.
+For vulnerabilities, use private reporting from the repository's Security tab when
+available; keep credentials and exploit details out of public issues.
+
+## License
+
+[Apache-2.0](LICENSE) · Copyright 2026 Effect Kit Contributors.

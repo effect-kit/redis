@@ -20,6 +20,7 @@ it("rejects private files and traversal paths in a package archive", () => {
     "package/dist/index.js",
     "package/dist/index.d.ts",
     "package/LICENSE",
+    "package/CHANGELOG.md",
     "package/package.json",
   ])
     expect(allowedPackageEntry(path)).toBe(true);

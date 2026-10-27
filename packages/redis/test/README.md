@@ -126,6 +126,15 @@ untrusted package code. See the workspace README for CI triggers and backend sco
 portable import graphs, then compiles/runs `fixtures/distribution/` from the exact
 packed archive in isolated consumers. Run `pnpm test:artifacts` before live mounts.
 
+The release lane uses `pnpm release:pack` and `pnpm release:check` from the workspace
+root. It checks the Changesets publish plan and exact archive, compiles the public
+README examples, installs the archive in a fresh npm consumer, and executes Node/Bun
+native/HTTP cases against owned current Redis/Valkey fixtures. Prepare both engines'
+images first. `pnpm release:smoke` performs the same checks after downloading the
+published registry archive and matching its integrity. Neither verification command
+publishes. The manual release workflow also requires provenance metadata in the
+registry receipt. See the root release guide for bootstrap/trusted-publisher setup.
+
 `runners/hardening/` owns measured Redis/Valkey TCP/TLS/local HTTP workloads, five-minute
 native and sustained-HTTP Node/Bun cleanup soaks and 100 fresh fixture startups plus
 delayed-start forwarding.

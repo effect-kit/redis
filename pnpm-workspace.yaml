@@ -19,6 +19,7 @@ catalog:
   "@commitlint/config-conventional": "^21.2.4"
   "@types/node": "^24.19.2"
   "@types/bun": ">=1.4.4 <1.4.5"
+  "@changesets/cli": ^3.0.3
 
 catalogMode: strict
 saveExact: false

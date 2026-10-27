@@ -11,6 +11,7 @@ export const allowedPackageEntry = (entry: string) => {
       "package/dist",
       "package/LICENSE",
       "package/README.md",
+      "package/CHANGELOG.md",
       "package/package.json",
     ].includes(path) ||
     /^package\/dist\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:js|d\.ts)(?:\.map)?$/.test(path)
