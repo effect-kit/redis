@@ -5,6 +5,44 @@ import { TestClock } from "effect/testing";
 import { sent, bytes } from "#test/support/connection/Controlled";
 import { poolFixture, waitForPool } from "#test/support/sessions/Pool";
 
+it.effect.each(["session", "blocking"] as const)(
+  "SESSION-POOL: a released %s permit reaches an existing waiter before reacquisition",
+  (mode) =>
+    Effect.gen(function* () {
+      const { pool } = yield* poolFixture({ maxSessionConnections: 1, maxBlockingConnections: 1 });
+      const release = yield* Deferred.make<void>();
+      const order: string[] = [];
+      const owner = yield* pool
+        .use(mode, () => Deferred.await(release))
+        .pipe(
+          Effect.andThen(
+            pool.use(mode, () =>
+              Effect.sync(() => {
+                order.push("owner");
+              }),
+            ),
+          ),
+          Effect.forkChild,
+        );
+      yield* waitForPool(pool, (snapshot) => snapshot.connections === 1);
+      const waiter = yield* pool
+        .use(mode, () =>
+          Effect.sync(() => {
+            order.push("waiter");
+          }),
+        )
+        .pipe(Effect.forkChild);
+      yield* waitForPool(pool, (snapshot) => snapshot.waiting === 1);
+
+      yield* Deferred.succeed(release, undefined);
+      yield* Fiber.join(owner);
+      yield* Fiber.join(waiter);
+
+      expect(order).toEqual(["waiter", "owner"]);
+      expect(yield* pool.snapshot).toMatchObject({ leased: 0, waiting: 0, idle: 1 });
+    }),
+);
+
 it.effect(
   "SESSION-POOL: a released healthy connection is reused after write ownership drains",
   () =>

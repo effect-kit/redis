@@ -41,6 +41,7 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
   const sessionPermits = yield* Semaphore.make(policy.maxSessionConnections);
   const blockingPermits = yield* Semaphore.make(policy.maxBlockingConnections);
   const idle: Record<LeaseMode, Entry[]> = { session: [], blocking: [] };
+  const waitingByMode: Record<LeaseMode, number> = { session: 0, blocking: 0 };
   const entries = new Set<Entry>();
 
   let closed = false;
@@ -157,6 +158,7 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
         if (!immediate) {
           if (waiting >= policy.maxWaiters) return yield* unavailable("pool-full");
           waiting++;
+          waitingByMode[mode]++;
 
           yield* restore(
             permits.take(1).pipe(
@@ -169,6 +171,7 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
             Effect.ensuring(
               Effect.sync(() => {
                 waiting--;
+                waitingByMode[mode]--;
               }),
             ),
           );
@@ -197,6 +200,9 @@ export const makeLeasePool = Effect.fnUntraced(function* <R>(
                 Effect.gen(function* () {
                   leased--;
                   yield* permits.release(1);
+                  // Semaphore wakes are scheduled. Let existing lane waiters run
+                  // before this worker can immediately acquire the same permit again.
+                  if (waitingByMode[mode] > 0) yield* Effect.yieldNow;
                 }),
               ),
             ),
