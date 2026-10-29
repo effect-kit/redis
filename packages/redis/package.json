@@ -85,16 +85,20 @@
     "test:artifacts": "node test/runners/artifacts/run.ts",
     "test:hardening": "node --experimental-transform-types test/runners/hardening/run.ts",
     "test:release": "node --experimental-transform-types test/runners/artifacts/Release.ts",
-    "test:release:registry": "node --experimental-transform-types test/runners/artifacts/Registry.ts"
+    "test:release:registry": "node --experimental-transform-types test/runners/artifacts/Registry.ts",
+    "bench:clients": "node --experimental-transform-types test/runners/benchmarks/run.ts"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
+    "@valkey/valkey-glide": "catalog:",
     "effect": "catalog:",
+    "ioredis": "catalog:",
     "klarity": "catalog:",
     "oxlint": "catalog:",
     "publint": "catalog:",
+    "redis": "catalog:",
     "testcontainers": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",

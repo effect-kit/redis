@@ -49,7 +49,8 @@
     "ci:check": "pnpm check",
     "release:prepare": "pnpm check",
     "release:version": "pnpm version-packages",
-    "test:extended": "pnpm fixtures:check && pnpm test:protocol:fuzz && pnpm test:artifacts"
+    "test:extended": "pnpm fixtures:check && pnpm test:protocol:fuzz && pnpm test:artifacts",
+    "bench:clients": "pnpm --filter @effect-kit/redis bench:clients"
   },
   "dependencies": {
     "effect": "catalog:"

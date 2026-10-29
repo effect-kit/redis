@@ -82,6 +82,10 @@
   release/provider/artifact/hardening evidence when clearing regular test results.
 - Endpoint mode performs connection authentication and read-only PING/ECHO only.
   Mutating tests use disposable fixtures and unique keys; never flush shared servers.
+- `pnpm bench:clients` is an opt-in Node comparison with development-only drivers.
+  Keep competitor imports under test/runners/benchmarks, fresh-process isolation,
+  recorded batching/execution policies and complete per-trial evidence. Never add
+  these workloads to normal tests/releases or claim rankings from smoke samples.
 - Report exact checks run, failures and skipped gates. Unobserved remote/provider
   checks are not passing evidence.
 

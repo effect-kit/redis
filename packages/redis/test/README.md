@@ -145,6 +145,49 @@ Publication does not wait for npm registry availability. Run registry smoke chec
 separately once the version is available, using the original verified archive and
 `publish-plan.json` through `--pack-dir`, with `--provenance --skip-live` as needed.
 
+`runners/benchmarks/` compares the built Node client with development-only ioredis,
+node-redis and Valkey GLIDE against owned, digest-pinned Redis/Valkey fixtures:
+
+```sh
+pnpm fixtures:pull --engine redis
+pnpm fixtures:pull --engine valkey
+pnpm bench:clients
+pnpm bench:clients --execution all
+pnpm bench:clients --engine redis --workload get-256b-c32 --trials 5
+```
+
+The default is both engines, native Effect versus Promise clients wrapped in
+`Effect.tryPromise`, seven workloads, three independent trials, one-second warmup
+and two-second samples. `--execution promise` measures plain Promise callers;
+Effect Redis uses `ManagedRuntime.runPromise` per operation in that lane. Each
+client/workload/trial runs in a fresh Node process; client order rotates across
+trials. `--client`, `--warmup-ms` and `--sample-ms` support focused reruns. These
+commands never join ordinary tests, CI or Release and never target shared endpoints.
+
+All clients use RESP2, binary GETs and the same fixed payloads/concurrency. Cases
+cover 256-byte GET at concurrency 1/32, 64-KiB GET at concurrency 8, SET, INCR,
+32-GET pipelines and 8-GET transactions. Each reply is checked inside the timed
+loop. Throughput excludes connection/setup/warmup but includes client scheduling,
+reply normalization and verification. These are closed-loop measurements, not
+open-loop saturation or coordinated-omission-corrected latency estimates.
+
+Batching is explicit for pipeline/transaction workloads. Ordinary commands use
+documented client policies: ioredis automatic pipelining is disabled, node-redis
+retains same-tick batching, and GLIDE uses native multiplexing. Effect Redis retains
+its ordinary connection and scoped session pool. These policies are recorded,
+not treated as identical physical connections/writes. node-redis 6.3.0 decodes RESP2
+EXEC blobs as strings; its adapter converts this fixture's ASCII payload back to
+Buffer inside the measured operation. No arbitrary-binary transaction claim follows.
+
+Ignored `results/benchmarks/<run-id>/` contains individual JSON receipts, host and
+server identity, dependency/artifact/harness hashes, and a summary CSV. Reports
+separate batches/sec from commands/sec, summarize p50/p95/p99 as medians of trial
+percentiles, preserve throughput spread, and include CPU, sampled RSS, GC and event
+loop delay. RSS includes the harness/Effect and GLIDE native allocations; it is not
+a retained-memory/leak measurement. Missing/error/duplicate cells fail the run;
+partial receipts remain available without a passing summary. Short smoke selections
+verify the harness and must not be presented as performance rankings.
+
 `runners/hardening/` owns measured Redis/Valkey TCP/TLS/local HTTP workloads, five-minute
 native and sustained-HTTP Node/Bun cleanup soaks and 100 fresh fixture startups plus
 delayed-start forwarding.

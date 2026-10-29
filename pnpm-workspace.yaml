@@ -20,6 +20,9 @@ catalog:
   "@types/node": "^24.19.2"
   "@types/bun": ">=1.4.4 <1.4.5"
   "@changesets/cli": ^3.0.3
+  ioredis: "^6.0.0"
+  redis: "^6.3.0"
+  "@valkey/valkey-glide": "^2.5.3"
 
 catalogMode: strict
 saveExact: false
