@@ -98,22 +98,15 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
         const now = yield* Clock.currentTimeMillis;
 
         // Reserve the entire batch before making any frame visible to the writer.
-        for (const command of fenced ? [commands[0]] : commands) {
-          if (command === undefined) return yield* Effect.die(new Error("Empty fenced exchange"));
-          const reserved = fenced
-            ? admission.reserveExchange(commands, now, config.commandTimeoutMillis)
-            : admission.reserve(command, now, config.commandTimeoutMillis);
-          if (reserved instanceof AdmissionError || reserved instanceof ProtocolError) {
-            for (const ticket of tickets) admission.release(ticket);
-            return yield* reserved;
-          }
-          tickets.push(reserved);
-        }
+        const reserved = fenced
+          ? admission.reserveExchange(commands, now, config.commandTimeoutMillis)
+          : admission.reserveBatch(commands, now, config.commandTimeoutMillis);
+        if (reserved instanceof AdmissionError || reserved instanceof ProtocolError)
+          return yield* reserved;
+        tickets.push(...(Array.isArray(reserved) ? reserved : [reserved]));
 
-        const writeGroup = !fenced && tickets.length > 1 ? Symbol() : undefined;
         const replies = collectReplies(tickets);
         for (const ticket of tickets) {
-          ticket.writeGroup = writeGroup;
           generation.enqueue(ticket);
         }
 

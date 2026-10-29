@@ -18,24 +18,28 @@ export const decodeBatch = <Cs extends ReadonlyArray<AnyCommand>>(
   phase: BatchError["phase"],
 ) =>
   Effect.suspend(() => {
-    const partial = replies.map((reply, index) =>
-      reply._tag === "Replied"
-        ? { _tag: "Replied" as const, index, reply: Redacted.make(reply.reply) }
-        : { _tag: reply._tag, index, error: Redacted.make(reply.error) },
-    );
-    const outcomes: Array<BatchOutcomes<ReadonlyArray<AnyCommand>>[number]> = [...partial];
+    const results: Array<BatchResults<ReadonlyArray<AnyCommand>>[number] | undefined> = [];
     const execution = replies.every((reply) => reply._tag === "Replied")
       ? "replied"
       : "partial-or-unknown";
-    const failure = () =>
-      new BatchError({
+    const failure = () => {
+      // Keep raw replies and decoded results compact until evidence actually escapes in an error.
+      const outcomes = replies.map((reply, index) => {
+        const result = results[index];
+        if (result !== undefined) return { _tag: "Completed" as const, index, result };
+        return reply._tag === "Replied"
+          ? { _tag: "Replied" as const, index, reply: Redacted.make(reply.reply) }
+          : { _tag: reply._tag, index, error: Redacted.make(reply.error) };
+      }) as BatchOutcomes<Cs>;
+
+      return new BatchError({
         phase,
         execution,
-        outcomes: Redacted.make(outcomes.slice()),
+        outcomes: Redacted.make(outcomes),
       }) as PartialBatchError<Cs>;
+    };
 
     return Effect.gen(function* () {
-      const results = [];
       for (const [index, reply] of replies.entries()) {
         const command = prepared[index];
         if (command === undefined)
@@ -43,8 +47,7 @@ export const decodeBatch = <Cs extends ReadonlyArray<AnyCommand>>(
         if (reply._tag !== "Replied") continue;
 
         const result = yield* Effect.result(decodeReply(command, reply.reply));
-        outcomes[index] = { _tag: "Completed", index, result };
-        results.push(result);
+        results[index] = result;
       }
 
       if (execution !== "replied") return yield* Effect.fail(failure());

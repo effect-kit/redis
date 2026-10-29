@@ -45,6 +45,20 @@ export const takeWriteGroup = (
   if (single === undefined) throw new Error("Empty owned write group");
   if (frames.length === 1) return { tickets, frame: single, deadlineMillis };
 
+  let expectedOffset = single.byteOffset;
+  const contiguous = frames.every((fragment) => {
+    const matches = fragment.buffer === single.buffer && fragment.byteOffset === expectedOffset;
+    expectedOffset += fragment.length;
+    return matches;
+  });
+  if (contiguous) {
+    return {
+      tickets,
+      frame: new Uint8Array(single.buffer, single.byteOffset, bytes),
+      deadlineMillis,
+    };
+  }
+
   const frame = new Uint8Array(bytes);
   let offset = 0;
   for (const fragment of frames) {

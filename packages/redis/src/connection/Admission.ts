@@ -10,6 +10,7 @@ import type { ProtocolError } from "#/errors/ProtocolError";
 import { encodeCommandWithLimits } from "#/protocol/encode";
 import type { RedisCommand } from "#/protocol/encode";
 import { encodeBatchWithLimits } from "#/protocol/encodeBatch";
+import { encodeGroups } from "#/protocol/encodeGroups";
 import type { RespValue } from "#/protocol/RespValue";
 
 export type ExecutionError =
@@ -40,6 +41,8 @@ export interface Ticket {
 export class Admission {
   readonly tickets = new Set<Ticket>();
   drained = Deferred.makeUnsafe<void>();
+  private retainedBytes = 0;
+  private readonly slabs = new WeakMap<Ticket, { remaining: number; readonly bytes: number }>();
   queuedCommands = 0;
   queuedBytes = 0;
   inFlightCommands = 0;
@@ -75,6 +78,47 @@ export class Admission {
     );
   }
 
+  reserveBatch(commands: ReadonlyArray<RedisCommand>, queuedAt: number, timeoutMillis: number) {
+    const reject = (reason: AdmissionError["reason"]) => {
+      this.rejected++;
+      return new AdmissionError({ reason, delivery: "unsent" });
+    };
+    if (commands.length > this.limits.maxQueuedCommands - this.queuedCommands)
+      return reject("count");
+
+    const capacity = Math.min(
+      this.limits.maxQueuedBytes - this.queuedBytes,
+      this.limits.maxQueuedBytes + this.limits.maxInFlightBytes - this.retainedBytes,
+    );
+    const encoded = encodeGroups(
+      commands,
+      this.limits,
+      capacity,
+      this.limits.maxInFlightCommands,
+      this.limits.maxInFlightBytes,
+    );
+    if (Result.isFailure(encoded)) {
+      return encoded.failure.limit === "maxQueuedBytes" ? reject("bytes") : encoded.failure;
+    }
+
+    const tickets: Ticket[] = [];
+    for (const frames of encoded.success) {
+      const slab = {
+        remaining: frames.length,
+        bytes: frames.reduce((sum, frame) => sum + frame.length, 0),
+      };
+      this.retainedBytes += slab.bytes;
+      const writeGroup = Symbol();
+      for (const frame of frames) {
+        const ticket = this.register(frame, queuedAt, timeoutMillis);
+        ticket.writeGroup = writeGroup;
+        this.slabs.set(ticket, slab);
+        tickets.push(ticket);
+      }
+    }
+    return tickets;
+  }
+
   private reserveWith(
     queuedAt: number,
     timeoutMillis: number,
@@ -90,6 +134,7 @@ export class Admission {
     const capacity = Math.min(
       this.limits.maxQueuedBytes - this.queuedBytes,
       this.limits.maxInFlightBytes,
+      this.limits.maxQueuedBytes + this.limits.maxInFlightBytes - this.retainedBytes,
     );
     if (capacity === 0) return reject("bytes");
 
@@ -108,6 +153,11 @@ export class Admission {
     }
 
     const frame = encoded.success;
+    this.retainedBytes += frame.length;
+    return this.register(frame, queuedAt, timeoutMillis);
+  }
+
+  private register(frame: Uint8Array, queuedAt: number, timeoutMillis: number): Ticket {
     if (this.tickets.size === 0) this.drained = Deferred.makeUnsafe();
 
     const ticket: Ticket = {
@@ -168,6 +218,11 @@ export class Admission {
       this.inFlightCommands--;
       this.inFlightBytes -= ticket.bytes;
     }
+
+    const slab = this.slabs.get(ticket);
+    if (slab === undefined) this.retainedBytes -= ticket.bytes;
+    else if (--slab.remaining === 0) this.retainedBytes -= slab.bytes;
+    this.slabs.delete(ticket);
 
     ticket.phase = "done";
     ticket.frame = undefined;

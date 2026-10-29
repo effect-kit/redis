@@ -4,6 +4,7 @@ import { Effect } from "effect";
 import { Admission } from "#/connection/Admission";
 import type { Ticket } from "#/connection/Admission";
 import { takeWriteGroup } from "#/connection/WriteGroup";
+import type { RedisCommand } from "#/protocol/encode";
 import { decodeRedisConfig } from "#/RedisConfig";
 
 it.effect("write groups respect byte limits and never combine unrelated ordinary requests", () =>
@@ -82,5 +83,97 @@ it.effect("group selection reserves byte capacity for every ticket before copyin
 
     admission.release(first);
     expect(takeWriteGroup(queue, pending, admission, 1)?.tickets).toEqual([second]);
+  }),
+);
+
+it.effect(
+  "batch admission shares bounded slabs and rejects the entire batch before registration",
+  () =>
+    Effect.gen(function* () {
+      const config = yield* decodeRedisConfig({
+        endpoint: { host: "localhost" },
+        limits: { maxQueuedCommands: 3, maxInFlightCommands: 2 },
+      });
+      const admission = new Admission(config.limits);
+      const tickets = admission.reserveBatch(
+        [
+          ["GET", "a"],
+          ["GET", "b"],
+          ["GET", "c"],
+        ],
+        0,
+        1000,
+      );
+      if (!Array.isArray(tickets)) return yield* Effect.die(tickets);
+      const [first, second, third] = tickets;
+      if (!first?.frame || !second?.frame || !third?.frame)
+        return yield* Effect.die("Missing frames");
+      expect(first.frame.buffer).toBe(second.frame.buffer);
+      expect(third.frame.buffer).not.toBe(second.frame.buffer);
+      const group = takeWriteGroup([...tickets], [], admission, 0);
+      if (group === undefined) return yield* Effect.die("Missing write group");
+      expect(group.frame.buffer).toBe(first.frame.buffer);
+      expect(group.tickets).toHaveLength(2);
+
+      const rejected = new Admission(config.limits);
+      expect(
+        rejected.reserveBatch(
+          [
+            ["GET", "a"],
+            ["GET", "b"],
+            ["GET", "c"],
+            ["GET", "d"],
+          ],
+          0,
+          1000,
+        ),
+      ).toMatchObject({ reason: "count" });
+      expect(rejected.tickets.size).toBe(0);
+      expect(
+        rejected.reserveBatch([["GET", "a"], [] as unknown as RedisCommand], 0, 1000),
+      ).toMatchObject({
+        kind: "InvalidArguments",
+      });
+      expect(rejected.tickets.size).toBe(0);
+    }),
+);
+
+it.effect("a partial slab remains charged until its last ticket releases the storage", () =>
+  Effect.gen(function* () {
+    const config = yield* decodeRedisConfig({
+      endpoint: { host: "localhost" },
+      limits: { maxQueuedBytes: 64, maxInFlightBytes: 64 },
+    });
+    const admission = new Admission(config.limits);
+    const tickets = admission.reserveBatch(
+      [
+        ["GET", "a"],
+        ["GET", "b"],
+      ],
+      0,
+      1000,
+    );
+    if (!Array.isArray(tickets)) return yield* Effect.die(tickets);
+    const [first, second] = tickets;
+    if (!first || !second) return yield* Effect.die("Missing tickets");
+    takeWriteGroup([...tickets], [], admission, 0);
+    admission.release(first);
+    const queued = admission.reserveBatch(
+      [
+        ["GET", "c"],
+        ["GET", "d"],
+        ["GET", "e"],
+      ],
+      0,
+      1000,
+    );
+    if (!Array.isArray(queued)) return yield* Effect.die(queued);
+    takeWriteGroup([...queued], [], admission, 0);
+    const [queuedFirst] = queued;
+    if (!queuedFirst) return yield* Effect.die("Missing queued ticket");
+    admission.release(queuedFirst);
+    expect(admission.reserve(["GET", "f".repeat(11)], 0, 1000)).toMatchObject({ reason: "bytes" });
+    admission.release(second);
+    expect(admission.reserve(["GET", "f".repeat(11)], 0, 1000)).toHaveProperty("result");
   }),
 );
