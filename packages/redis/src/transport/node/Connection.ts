@@ -4,6 +4,7 @@ import { Deferred, Effect, Redacted } from "effect";
 
 import { TransportError } from "#/errors/TransportError";
 import { makeWriter } from "#/transport/node/Write";
+import { ownRead } from "#/transport/Ownership";
 import type { TransportConnection } from "#/transport/Transport";
 
 type ResumeRead = (result: Effect.Effect<Uint8Array | undefined, TransportError>) => void;
@@ -47,7 +48,13 @@ export const makeConnection = (
       const chunk: Uint8Array | null = socket.read(available);
       if (chunk !== null && chunk.length > 0) {
         reader = undefined;
-        resume(Effect.succeed(new Uint8Array(chunk)));
+        // Node transfers readable Buffer storage. Keep Uint8Array replies and avoid
+        // retaining a large pooled backing store through a small view.
+        const owned =
+          chunk.buffer.byteLength <= 64 * 1024
+            ? new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+            : new Uint8Array(chunk);
+        resume(Effect.succeed(owned));
       } else if (ended || socket.readableEnded) {
         reader = undefined;
         resume(Effect.succeed(undefined));
@@ -117,7 +124,7 @@ export const makeConnection = (
   });
 
   const connection: TransportConnection = {
-    read,
+    read: ownRead(read),
     write: makeWriter(socket, maximumWrite, () => aborted || retired || ended || failed, close),
     close,
   };

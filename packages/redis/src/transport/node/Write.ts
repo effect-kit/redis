@@ -3,6 +3,7 @@ import type { Socket } from "node:net";
 import { Effect, Exit, Redacted } from "effect";
 
 import { TransportError } from "#/errors/TransportError";
+import { ownWrite } from "#/transport/Ownership";
 
 const chunkBytes = 64 * 1024;
 
@@ -82,7 +83,7 @@ export const makeWriter = (
   socket.on("close", onClose);
   socket.on("drain", onDrain);
 
-  return (bytes: Uint8Array): Effect.Effect<void, TransportError> =>
+  const write = (bytes: Uint8Array, owned: boolean): Effect.Effect<void, TransportError> =>
     Effect.uninterruptibleMask((restore) =>
       Effect.suspend(() => {
         if (unavailable())
@@ -92,7 +93,7 @@ export const makeWriter = (
           return Effect.fail(new TransportError({ stage: "write", reason: "limit" }));
         if (bytes.byteLength === 0) return Effect.void;
 
-        const snapshot = new Uint8Array(bytes);
+        const snapshot = owned ? bytes : new Uint8Array(bytes);
         busy = true;
 
         return restore(
@@ -123,4 +124,9 @@ export const makeWriter = (
         );
       }),
     );
+
+  return ownWrite(
+    (bytes) => write(bytes, false),
+    (bytes) => write(bytes, true),
+  );
 };

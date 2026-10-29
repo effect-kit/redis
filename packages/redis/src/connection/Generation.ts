@@ -10,6 +10,7 @@ import type { ReplyReader } from "#/connection/ReplyReader";
 import { takeWriteGroup } from "#/connection/WriteGroup";
 import { ConnectionError } from "#/errors/ConnectionError";
 import type { RespValue } from "#/protocol/RespValue";
+import { ownedWrite } from "#/transport/Ownership";
 import type { TransportConnection } from "#/transport/Transport";
 
 export interface PushReply {
@@ -37,6 +38,7 @@ export const makeGeneration = Effect.fnUntraced(function* (
   const queued: Array<Ticket> = [];
   const pending: Array<Ticket> = [];
   const owned = new Set<Ticket>();
+  const write = ownedWrite(transport.write);
 
   let ready = false;
   let stopped = false;
@@ -191,7 +193,7 @@ export const makeGeneration = Effect.fnUntraced(function* (
           writerFiber?.interruptUnsafe();
         });
         cancelWriteDeadline = cancelDeadline;
-        yield* transport.write(group.frame).pipe(
+        yield* write(group.frame).pipe(
           Effect.ensuring(
             Effect.sync(() => {
               cancelDeadline();

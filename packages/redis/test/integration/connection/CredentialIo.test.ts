@@ -3,6 +3,7 @@ import { Effect, Fiber } from "effect";
 
 import { makeCredentialBindings } from "#/credentials/Bindings";
 import { decodeRedisConfig } from "#/RedisConfig";
+import { hasOwnedRead, ownedWrite, ownRead, ownWrite } from "#/transport/Ownership";
 import { Transport } from "#/transport/Transport";
 import { bytes } from "#test/support/connection/Controlled";
 import { makeControlledTransport } from "#test/support/transport/ControlledTransport";
@@ -44,4 +45,45 @@ it.effect(
       });
       expect((yield* fixture.observations).acceptedBytes).toBe(1);
     }),
+);
+
+it.effect("native ownership survives credential wrapping without bypassing retirement", () =>
+  Effect.gen(function* () {
+    let reads = 0;
+    let writes = 0;
+    const bindings = yield* makeCredentialBindings({
+      open: () =>
+        Effect.succeed({
+          read: ownRead(
+            Effect.sync(() => {
+              reads++;
+              return bytes("+OK\r\n");
+            }),
+          ),
+          write: ownWrite(
+            () => Effect.die(new Error("Unexpected copying write")),
+            () =>
+              Effect.sync(() => {
+                writes++;
+              }),
+          ),
+          close: Effect.void,
+        }),
+    });
+    const config = yield* decodeRedisConfig({ endpoint: { host: "localhost" } });
+    const connection = yield* bindings.transport.open(config);
+    expect(hasOwnedRead(connection.read)).toBe(true);
+    const write = ownedWrite(connection.write);
+
+    yield* write(bytes("request"));
+    yield* connection.read;
+    yield* connection.close;
+
+    expect(yield* Effect.flip(write(bytes("later")))).toMatchObject({
+      stage: "write",
+      reason: "closed",
+    });
+    expect(yield* Effect.flip(connection.read)).toMatchObject({ stage: "read", reason: "closed" });
+    expect({ reads, writes }).toEqual({ reads: 1, writes: 1 });
+  }),
 );

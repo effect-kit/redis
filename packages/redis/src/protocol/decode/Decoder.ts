@@ -44,7 +44,10 @@ class Decoder implements RespDecoder {
   private ended = false;
   private failure: ProtocolError | undefined;
 
-  constructor(private readonly limits: RespDecodeLimits) {
+  constructor(
+    private readonly limits: RespDecodeLimits,
+    private readonly ownedInput = false,
+  ) {
     this.blockSize = Math.min(4096, limits.maxBufferedBytes);
     this.queue = new ByteQueue(this.blockSize);
   }
@@ -78,7 +81,13 @@ class Decoder implements RespDecoder {
       );
     }
 
-    this.queue.append(bytes);
+    // Bound backing storage as well as the view. Public feeds always snapshot.
+    if (
+      this.ownedInput &&
+      bytes.buffer.byteLength <= Math.min(maximumContiguousBlobBytes, this.limits.maxBufferedBytes)
+    )
+      this.queue.appendOwned(bytes);
+    else this.queue.append(bytes);
     return Result.succeed(undefined);
   }
 
@@ -370,3 +379,9 @@ export const makeRespDecoder = (
   options?: Partial<RespDecodeLimits>,
 ): Result.Result<RespDecoder, ProtocolError> =>
   decodeLimits(options).pipe(Result.map((limits) => new Decoder(limits)));
+
+/** Internal only: each feed transfers bounded native storage to this decoder. */
+export const makeOwnedRespDecoder = (
+  options: RespDecodeLimits,
+): Result.Result<RespDecoder, ProtocolError> =>
+  decodeLimits(options).pipe(Result.map((limits) => new Decoder(limits, true)));

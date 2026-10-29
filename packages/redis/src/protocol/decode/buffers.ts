@@ -3,12 +3,16 @@ interface Block {
   used: number;
 }
 
+interface QueueBlock extends Block {
+  readonly reusable: boolean;
+}
+
 /** Owned blocks avoid both caller-buffer aliasing and one allocation per tiny feed. */
 export class ByteQueue {
-  private blocks: Array<Block | undefined> = [];
+  private blocks: Array<QueueBlock | undefined> = [];
   private head = 0;
   private cursor = 0;
-  private spare: Block | undefined;
+  private spare: QueueBlock | undefined;
 
   size = 0;
   offset = 0;
@@ -19,7 +23,7 @@ export class ByteQueue {
     while (offset < bytes.length) {
       let tail = this.blocks.at(-1);
       if (tail === undefined || tail.used === tail.bytes.length) {
-        tail = this.spare ?? { bytes: new Uint8Array(this.blockSize), used: 0 };
+        tail = this.spare ?? { bytes: new Uint8Array(this.blockSize), used: 0, reusable: true };
         this.spare = undefined;
         this.blocks.push(tail);
       }
@@ -29,6 +33,14 @@ export class ByteQueue {
       offset += count;
       this.size += count;
     }
+  }
+
+  /** Private native input has transferred ownership; it must never become reusable scratch. */
+  appendOwned(bytes: Uint8Array): void {
+    if (bytes.length === 0) return;
+
+    this.blocks.push({ bytes, used: bytes.length, reusable: false });
+    this.size += bytes.length;
   }
 
   readByte(): number | undefined {
@@ -65,7 +77,7 @@ export class ByteQueue {
     this.spare = undefined;
   }
 
-  private consume(count: number, block: Block): void {
+  private consume(count: number, block: QueueBlock): void {
     this.size -= count;
     this.offset += count;
     this.cursor += count;
@@ -76,7 +88,7 @@ export class ByteQueue {
     // A spare block must not keep the previous payload alive after consumption.
     block.bytes.fill(0, 0, block.used);
     block.used = 0;
-    this.spare = block;
+    if (block.reusable) this.spare = block;
     this.cursor = 0;
 
     if (this.size === 0) {

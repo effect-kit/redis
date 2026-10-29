@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import { TransportError } from "#/errors/TransportError";
+import { ownRead } from "#/transport/Ownership";
 
 type Resume = (result: Effect.Effect<Uint8Array | undefined, TransportError>) => void;
 
@@ -26,7 +27,10 @@ export const makeReader = (maximumBytes: number, resumeSocket: () => void) => {
     const chunk = chunks[0];
     if (chunk !== undefined) {
       const end = Math.min(offset + 64 * 1024, chunk.length);
-      const owned = chunk.slice(offset, end);
+      const owned =
+        chunk.buffer.byteLength <= 64 * 1024
+          ? chunk.subarray(offset, end)
+          : chunk.slice(offset, end);
       offset = end;
 
       if (offset === chunk.length) {
@@ -54,19 +58,21 @@ export const makeReader = (maximumBytes: number, resumeSocket: () => void) => {
   };
 
   return {
-    read: Effect.callback<Uint8Array | undefined, TransportError>((resume) => {
-      if (reader !== undefined) {
-        resume(Effect.fail(new TransportError({ stage: "read", reason: "unavailable" })));
-        return;
-      }
+    read: ownRead(
+      Effect.callback<Uint8Array | undefined, TransportError>((resume) => {
+        if (reader !== undefined) {
+          resume(Effect.fail(new TransportError({ stage: "read", reason: "unavailable" })));
+          return;
+        }
 
-      reader = resume;
-      pump();
+        reader = resume;
+        pump();
 
-      return Effect.sync(() => {
-        if (reader === resume) reader = undefined;
-      });
-    }),
+        return Effect.sync(() => {
+          if (reader === resume) reader = undefined;
+        });
+      }),
+    ),
 
     receive: (bytes: Uint8Array) => {
       if (failure !== undefined || ended || bytes.length === 0) return;

@@ -1,6 +1,7 @@
 import { Effect, Exit, Redacted } from "effect";
 
 import { TransportError } from "#/errors/TransportError";
+import { ownWrite } from "#/transport/Ownership";
 
 interface WriterSocket {
   readonly write: (bytes: Uint8Array) => number;
@@ -17,7 +18,7 @@ export const makeWriter = (
     | { readonly pump: () => void; readonly fail: (error: TransportError) => void }
     | undefined;
 
-  const write = (bytes: Uint8Array): Effect.Effect<void, TransportError> =>
+  const write = (bytes: Uint8Array, owned: boolean): Effect.Effect<void, TransportError> =>
     Effect.uninterruptibleMask((restore) =>
       Effect.suspend(() => {
         if (unavailable() || current() === undefined)
@@ -31,7 +32,7 @@ export const makeWriter = (
 
         if (bytes.length === 0) return Effect.void;
 
-        const snapshot = new Uint8Array(bytes);
+        const snapshot = owned ? bytes : new Uint8Array(bytes);
 
         return restore(
           Effect.callback<void, TransportError>((resume) => {
@@ -105,7 +106,10 @@ export const makeWriter = (
     );
 
   return {
-    write,
+    write: ownWrite(
+      (bytes) => write(bytes, false),
+      (bytes) => write(bytes, true),
+    ),
     drain: () => active?.pump(),
     fail: (error: TransportError) => active?.fail(error),
   };

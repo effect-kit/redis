@@ -6,6 +6,7 @@ import type { CredentialSnapshot } from "#/credentials/Manager";
 import { CredentialPlane } from "#/credentials/Plane";
 import { CredentialError } from "#/errors/CredentialError";
 import { TransportError } from "#/errors/TransportError";
+import { hasOwnedRead, ownedWrite, ownRead, ownWrite } from "#/transport/Ownership";
 import type { Transport } from "#/transport/Transport";
 
 export interface Binding {
@@ -54,12 +55,19 @@ export const makeCredentialBindings = (transport: Transport["Service"]) =>
         }).pipe(Effect.orDie),
       );
 
+      const read = Effect.suspend(() => (closed ? expired("read") : physical.read));
+      const write: typeof physical.write = (bytes) =>
+        Effect.suspend(() => (closed ? expired("write") : physical.write(bytes)));
+      const writeOwned = ownedWrite(physical.write);
+
       return {
         isRetired: () => closed || physical.isRetired?.() === true,
         // Transport.close owns waking pending I/O. A second per-operation race
         // duplicates that lifetime and eagerly allocates errors on successful I/O.
-        read: Effect.suspend(() => (closed ? expired("read") : physical.read)),
-        write: (bytes) => Effect.suspend(() => (closed ? expired("write") : physical.write(bytes))),
+        read: hasOwnedRead(physical.read) ? ownRead(read) : read,
+        write: ownWrite(write, (bytes) =>
+          Effect.suspend(() => (closed ? expired("write") : writeOwned(bytes))),
+        ),
         close,
       };
     });
