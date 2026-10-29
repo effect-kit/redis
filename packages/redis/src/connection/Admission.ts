@@ -98,7 +98,14 @@ export class Admission {
       this.limits.maxInFlightBytes,
     );
     if (Result.isFailure(encoded)) {
-      return encoded.failure.limit === "maxQueuedBytes" ? reject("bytes") : encoded.failure;
+      return encoded.failure.limit === "maxQueuedBytes"
+        ? reject(
+            encoded.failure.maximum === this.limits.maxInFlightBytes ||
+              (this.queuedBytes === 0 && encoded.failure.maximum === capacity)
+              ? "oversized"
+              : "bytes",
+          )
+        : encoded.failure;
     }
 
     const tickets: Ticket[] = [];
@@ -246,6 +253,11 @@ export class Admission {
 
   fail(ticket: Ticket, error: ExecutionError) {
     this.release(ticket);
+    this.notifyFailure(ticket, error);
+  }
+
+  /** Deadlines publish their exact failure before cancellation retires neighboring FIFO slots. */
+  notifyFailure(ticket: Ticket, error: ExecutionError) {
     const notify = ticket.onResult;
     ticket.onResult = undefined;
     Deferred.doneUnsafe(ticket.result, Effect.fail(error));

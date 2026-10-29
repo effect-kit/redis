@@ -69,6 +69,8 @@ export { Transport } from "#/transport/Transport";
 export type { TransportConnection } from "#/transport/Transport";
 
 export { Redis, makeRedis } from "#/Redis";
+export type { CompiledBatch } from "#/command/Compiled";
+export type { BatchValues } from "#/sessions/batch/Types";
 export type { RedisClient } from "#/Redis";
 
 export { CommandExecutor, makeExecutor } from "#/command/Executor";

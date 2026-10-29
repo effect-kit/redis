@@ -128,6 +128,41 @@ export const saveUser = Effect.gen(function* () {
 `Commands` builds reusable typed operations for `redis.execute`, pipelines and
 transactions. Raw commands return lossless RESP with explicit routing/execution contracts.
 
+## Batches and compiled plans
+
+`batch` returns a typed tuple of values. Compile fixed commands once when the same
+arguments will be used repeatedly:
+
+```ts
+import { Effect } from "effect";
+
+import { Commands, Redis } from "@effect-kit/redis";
+
+export const readCounters = Effect.gen(function* () {
+  const redis = yield* Redis;
+
+  const values = yield* redis.batch([Commands.get("greeting"), Commands.incr("visits")]); // readonly [Option<string>, bigint]
+
+  const plan = yield* redis.compile([Commands.get("greeting"), Commands.get("visits")]);
+
+  const latest = yield* plan.execute();
+  return { values, latest };
+});
+```
+
+Native Node/Bun batches share the ordinary connection. HTTP, Cluster and Sentinel
+use their existing provider batch paths and routing restrictions. Batches are ordered,
+not atomic; use transactions for atomic execution. A failed slot fails a values batch
+with indexed `BatchError` evidence after replies have been drained. Use `pipeline`
+when individual `Result` values are preferable.
+
+Compiled plans snapshot arguments, including bytes, and reuse native encoding after
+first admission under each connection's limits. Decoder services are supplied at
+execution time. Plans belong to their client's scope; keep them inside that lifetime.
+Compilation accepts up to 256 commands and 16 MiB of encoded input; provider and
+connection limits are still checked on every execution. Cancellation after a possible
+write retires the shared native connection, including other pending requests.
+
 ## Pipelines and transactions
 
 Heterogeneous command tuples retain each result's type:

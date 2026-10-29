@@ -1,10 +1,12 @@
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Redacted } from "effect";
 
 import type { Command, PreparedCommand } from "#/command/Command";
+import { batchTokens } from "#/command/Compiled";
 import { decodeReply } from "#/command/Decode";
 import type { ExecutionError } from "#/connection/Admission";
 import { Connection } from "#/connection/Connection";
 import type { RedisConnection } from "#/connection/Connection";
+import { BatchError } from "#/errors/BatchError";
 import type { ClusterError } from "#/errors/ClusterError";
 import type { CommandInputError } from "#/errors/CommandInputError";
 import type { ReplyError } from "#/errors/ReplyError";
@@ -13,6 +15,17 @@ import type { ServerError } from "#/errors/ServerError";
 import type { SessionError } from "#/errors/SessionError";
 import { UnsupportedCommandError } from "#/errors/UnsupportedCommandError";
 import type { UpstashError } from "#/errors/UpstashError";
+import { decodeBatch } from "#/sessions/batch/Decode";
+import { mapBatchFailure } from "#/sessions/batch/Failure";
+import { validateOrdinary } from "#/sessions/batch/Prepare";
+import type {
+  AnyCommand,
+  BatchFailure,
+  BatchResults,
+  DecodeRequirements,
+  PreparedBatch,
+  PartialBatchError,
+} from "#/sessions/batch/Types";
 
 export type RedisError =
   | ExecutionError
@@ -26,6 +39,9 @@ export type RedisError =
   | UpstashError;
 
 export interface RedisExecutor {
+  readonly executeBatchPrepared?: <const Cs extends ReadonlyArray<AnyCommand>>(
+    prepared: PreparedBatch<Cs>,
+  ) => Effect.Effect<BatchResults<Cs>, BatchFailure<Cs>, DecodeRequirements<Cs[number]>>;
   readonly execute: <A, E, RD, RE>(
     command: Command<A, E, RD, RE>,
   ) => Effect.Effect<A, RedisError | E, RD | RE>;
@@ -47,7 +63,42 @@ export const makeExecutor = (connection: RedisConnection): RedisExecutor => {
     return yield* decodeReply(command, reply);
   });
 
+  const executeBatchPrepared = <const Cs extends ReadonlyArray<AnyCommand>>(
+    prepared: PreparedBatch<Cs>,
+  ) =>
+    mapBatchFailure(
+      Effect.gen(function* () {
+        if (prepared.length === 0) return [] as BatchResults<Cs>;
+        for (const command of prepared) yield* validateOrdinary(command);
+        if (connection.executeBatch === undefined)
+          return yield* new UnsupportedCommandError({
+            delivery: "unsent",
+            reason: "execution-mode",
+          });
+        const replies = yield* mapBatchFailure(
+          connection.executeBatch(batchTokens(prepared)),
+          (error) =>
+            (error instanceof BatchError
+              ? error
+              : new BatchError({
+                  phase: "pipeline",
+                  execution: "not-executed",
+                  outcomes: Redacted.make(
+                    prepared.map((_, index) => ({
+                      _tag: "Unsent",
+                      index,
+                      error: Redacted.make(error),
+                    })),
+                  ),
+                })) as PartialBatchError<Cs>,
+        );
+        return yield* decodeBatch<Cs>(prepared, replies, "pipeline");
+      }),
+      (error) => error,
+    );
+
   return {
+    ...(connection.executeBatch === undefined ? {} : { executeBatchPrepared }),
     executePrepared,
     execute: (command) => command.prepare.pipe(Effect.flatMap(executePrepared)),
   };

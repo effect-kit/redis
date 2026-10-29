@@ -1,5 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 
+import { batchApi } from "#/command/Batch";
 import { BatchExecutor } from "#/command/BatchExecutor";
 import { CommandExecutor } from "#/command/Executor";
 import type { RedisExecutor } from "#/command/Executor";
@@ -28,10 +29,14 @@ import { upstashFamily } from "#/commands/upstash/Family";
 import { vectorFamily } from "#/commands/vectors/Family";
 import { keyFamily } from "#/keys/Commands";
 import type { RedisCommand } from "#/protocol/encode";
-import type { AnyCommand } from "#/sessions/batch/Types";
+import type { AnyCommand, BatchExecutorService } from "#/sessions/batch/Types";
 import { observe, observedExecutor } from "#/telemetry/Observe";
 
-export const makeRedis = (source: RedisExecutor) => {
+export const makeRedis = (
+  source: RedisExecutor,
+  ownedBatches?: BatchExecutorService,
+  isClosed: () => boolean = () => false,
+) => {
   const executor = observedExecutor(source);
 
   return {
@@ -58,6 +63,8 @@ export const makeRedis = (source: RedisExecutor) => {
     ...geoFamily(executor),
     ...keyFamily(executor),
 
+    ...batchApi(source, ownedBatches, isClosed),
+
     pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
       observe(
         "pipeline",
@@ -77,6 +84,22 @@ export const makeRedis = (source: RedisExecutor) => {
 
 export type RedisClient = ReturnType<typeof makeRedis>;
 
+export const scopedRedis = Effect.fnUntraced(function* (
+  source: RedisExecutor,
+  batches?: BatchExecutorService,
+) {
+  let closed = false;
+  yield* Effect.addFinalizer(() =>
+    Effect.sync(() => {
+      closed = true;
+    }),
+  );
+  return makeRedis(source, batches, () => closed);
+});
+
 export class Redis extends Context.Service<Redis, RedisClient>()("@effect-kit/redis/Redis") {
-  static readonly layer = Layer.effect(Redis, CommandExecutor.pipe(Effect.map(makeRedis)));
+  static readonly layer = Layer.effect(
+    Redis,
+    CommandExecutor.pipe(Effect.flatMap((executor) => scopedRedis(executor))),
+  );
 }

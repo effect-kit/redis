@@ -58,6 +58,19 @@ it.live.each(httpTargets)(
         ),
       ).toBe(7n);
 
+      const plan = yield* redis.compile([
+        Commands.getBytes(`${prefix}:binary`),
+        Commands.get(`${prefix}:missing`),
+      ]);
+      const compiled = yield* plan.execute();
+      expect(compiled).toEqual([Option.some(new Uint8Array([0, 255, 128, 13, 10])), Option.none()]);
+      expect(
+        yield* redis.batch([
+          Commands.getBytes(`${prefix}:binary`),
+          Commands.get(`${prefix}:missing`),
+        ]),
+      ).toEqual(compiled);
+
       yield* recordFixture(`http-client-${target.fixture}`, {
         proxy: fixture.proxy,
         build: fixture.build,

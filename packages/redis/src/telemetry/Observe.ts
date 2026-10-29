@@ -8,7 +8,7 @@ const active = Metric.counter("effect_redis.operations.active");
 const duration = Metric.histogram("effect_redis.operation.duration_ms", {
   boundaries: [0, 0.1, 0.5, 1, 2, 5, 10, 50, 100, 500, 1000, 5000, 30000],
 });
-type Operation = "command" | "pipeline" | "transaction";
+type Operation = "command" | "pipeline" | "transaction" | "batch";
 
 const outcome = (exit: Exit.Exit<unknown, unknown>) =>
   Exit.isSuccess(exit)

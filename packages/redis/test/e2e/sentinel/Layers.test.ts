@@ -1,7 +1,13 @@
 import { expect, it } from "@effect/vitest";
 import { Effect, Option, Redacted } from "effect";
 
-import { Redis, RedisCredentials, RedisProfiles, RedisSentinelCredentials } from "#/index";
+import {
+  Commands,
+  Redis,
+  RedisCredentials,
+  RedisProfiles,
+  RedisSentinelCredentials,
+} from "#/index";
 import { RedisNode } from "#/node";
 import { nativeInput } from "#test/support/client/Input";
 import { sentinelFixture } from "#test/support/sentinel/Fixture";
@@ -40,6 +46,14 @@ it.live.each(currentSentinelCases)(
         const redis = yield* Redis;
         yield* redis.set("ready-sentinel", "value");
         yield* (yield* RedisSentinelCredentials).rotate;
+        const plan = yield* redis.compile([
+          Commands.get("ready-sentinel"),
+          Commands.get("ready-sentinel"),
+        ]);
+        expect(yield* plan.execute()).toEqual([Option.some("value"), Option.some("value")]);
+        expect(
+          yield* redis.batch([Commands.get("ready-sentinel"), Commands.get("ready-sentinel")]),
+        ).toEqual([Option.some("value"), Option.some("value")]);
         expect(yield* redis.get("ready-sentinel")).toEqual(Option.some("value"));
         yield* (yield* RedisCredentials).rotate;
         expect(yield* redis.get("ready-sentinel")).toEqual(Option.some("value"));

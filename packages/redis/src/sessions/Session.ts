@@ -81,13 +81,16 @@ export const makeSession = (
 
   const pipelinePrepared = <Cs extends ReadonlyArray<AnyCommand>>(prepared: PreparedBatch<Cs>) =>
     state.run(() =>
-      (validation?.batch(prepared, false) ?? Effect.void).pipe(
-        Effect.andThen(runPipeline<Cs>(wire, prepared)),
-      ),
+      Effect.gen(function* () {
+        if (prepared.length > policy.maxBatchCommands)
+          return yield* new SessionError({ reason: "batch-limit", delivery: "unsent" });
+        yield* validation?.batch(prepared, false) ?? Effect.void;
+        return yield* runPipeline<Cs>(wire, prepared);
+      }),
     );
 
   const client = {
-    ...makeRedis(executor),
+    ...makeRedis({ ...executor, executeBatchPrepared: pipelinePrepared }),
     ...blockingFamily(executor),
     ...blockingTimeSeriesFamily(executor),
     ...hashImportFamily(executor),

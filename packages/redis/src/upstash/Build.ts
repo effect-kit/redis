@@ -2,7 +2,7 @@ import { Context, Effect } from "effect";
 
 import { BatchExecutor } from "#/command/BatchExecutor";
 import { CommandExecutor } from "#/command/Executor";
-import { Redis, makeRedis } from "#/Redis";
+import { Redis, scopedRedis } from "#/Redis";
 import type { UpstashSettings } from "#/upstash/Config";
 import { makeHttpBatches, makeHttpExecutor } from "#/upstash/Executor";
 import { makeHttpClient } from "#/upstash/http/Client";
@@ -19,7 +19,12 @@ export const makeUpstashServices = Effect.fnUntraced(function* (
   const batches = makeHttpBatches(http);
   return {
     http,
-    client: { redis: makeRedis(executor), executor, batches, events: makeSubscriptions(http) },
+    client: {
+      redis: yield* scopedRedis(executor, batches),
+      executor,
+      batches,
+      events: makeSubscriptions(http),
+    },
   };
 });
 

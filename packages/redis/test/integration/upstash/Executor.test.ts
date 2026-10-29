@@ -184,3 +184,18 @@ it.effect("a development proxy's concatenated pipeline dialect requires explicit
     });
   }),
 );
+
+it.effect("HTTP values batches and compiled plans keep provider validation and typed replies", () =>
+  Effect.gen(function* () {
+    const fixture = controlledHttp(() => resp("*2\r\n$1\r\nx\r\n:2\r\n"));
+    const client = yield* makeUpstash(httpConfig).pipe(Effect.provide(fixture.layer));
+    const plan = yield* client.redis.compile([Commands.get("a"), Commands.incr("b")]);
+    expect(yield* plan.execute()).toEqual([Option.some("x"), 2n]);
+    expect(yield* client.redis.batch([Commands.get("a"), Commands.incr("b")])).toEqual([
+      Option.some("x"),
+      2n,
+    ]);
+    expect(fixture.requests).toHaveLength(2);
+    expect(fixture.requests.every((request) => request.url.endsWith("/pipeline"))).toBe(true);
+  }),
+);

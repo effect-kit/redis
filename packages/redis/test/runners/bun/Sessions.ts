@@ -9,6 +9,25 @@ export const sessions = Effect.fnUntraced(function* (input: unknown) {
   const nativeSessions = yield* core.makeRedisSessions(config);
   const key = `bun:session:${crypto.randomUUID()}`;
 
+  const ordinaryKey = `${key}:ordinary`;
+  const plan = yield* redis.compile([
+    core.Commands.incr(ordinaryKey),
+    core.Commands.get(ordinaryKey),
+  ]);
+  const compiled = yield* plan.execute();
+  ensure(
+    compiled[0] === 1n && Option.isSome(compiled[1]) && compiled[1].value === "1",
+    "Compiled batch ordering changed",
+  );
+  const shared = yield* redis.batch([
+    core.Commands.incr(ordinaryKey),
+    core.Commands.get(ordinaryKey),
+  ]);
+  ensure(
+    shared[0] === 2n && Option.isSome(shared[1]) && shared[1].value === "2",
+    "Shared batch ordering changed",
+  );
+
   const pipeline = yield* nativeSessions.pipeline([
     core.Commands.incr(key),
     core.Commands.get(key),

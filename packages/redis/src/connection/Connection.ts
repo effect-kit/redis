@@ -14,6 +14,7 @@ import {
 
 import { Admission } from "#/connection/Admission";
 import type { ExecutionError, Ticket } from "#/connection/Admission";
+import { makeOrdinaryBatch } from "#/connection/Batch";
 import { makeDeadlines } from "#/connection/deadline/Coordinator";
 import { makeGeneration } from "#/connection/Generation";
 import type { Generation, PushReply } from "#/connection/Generation";
@@ -24,6 +25,7 @@ import { checkOrdinary } from "#/connection/OrdinaryCommand";
 import { makeReplyReader } from "#/connection/ReplyReader";
 import { RoleExpectation } from "#/connection/Role";
 import { AdmissionError } from "#/errors/AdmissionError";
+import type { BatchError } from "#/errors/BatchError";
 import { ConnectionError } from "#/errors/ConnectionError";
 import { HandshakeError } from "#/errors/HandshakeError";
 import { ProtocolError } from "#/errors/ProtocolError";
@@ -33,6 +35,7 @@ import { ProfileCommandPolicy } from "#/profiles/Commands";
 import type { RedisCommand } from "#/protocol/encode";
 import type { RespValue } from "#/protocol/RespValue";
 import type { RedisConfig } from "#/RedisConfig";
+import type { WireOutcome } from "#/sessions/pool/Wire";
 import { Transport } from "#/transport/Transport";
 
 type AcquisitionError = ConnectionError | HandshakeError | ProtocolError | TransportError;
@@ -61,6 +64,9 @@ export interface RedisConnection {
   /** Declares ordinary single-reply semantics. Stateful/blocking commands require later session APIs.
    * Returns lossless RESP, including server error values; never casts or automatically replays. */
   readonly executeOrdinary: (command: RedisCommand) => Effect.Effect<RespValue, ExecutionError>;
+  readonly executeBatch?: (
+    commands: ReadonlyArray<RedisCommand>,
+  ) => Effect.Effect<ReadonlyArray<WireOutcome>, ExecutionError | BatchError>;
   /** One consumer at a time; unsolicited pushes carry the physical generation that received them. */
   readonly takePush: Effect.Effect<PushReply, ConnectionError>;
   readonly snapshot: Effect.Effect<ConnectionSnapshot>;
@@ -377,10 +383,7 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
               generation: ticket.generation,
               delivery: ticket.mayHaveBeenWritten ? "possibly-written" : "unsent",
             });
-            Deferred.doneUnsafe(ticket.result, Effect.fail(error));
-            const notify = ticket.onResult;
-            ticket.onResult = undefined;
-            notify?.(Exit.fail(error));
+            admission.notifyFailure(ticket, error);
             ticket.cancel?.();
             admission.release(ticket);
           });
@@ -471,7 +474,23 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
 
   yield* ensureReady.pipe(Effect.onExit((exit) => (Exit.isFailure(exit) ? abort : Effect.void)));
 
-  return { executeOrdinary, takePush, snapshot, close, abort } satisfies RedisConnection;
+  const executeBatch = makeOrdinaryBatch({
+    admission,
+    deadlines,
+    config,
+    guard: commandPolicy,
+    isClosed: () => closing || stopped,
+    current: () => current,
+    ensureReady,
+  });
+  return {
+    executeOrdinary,
+    executeBatch,
+    takePush,
+    snapshot,
+    close,
+    abort,
+  } satisfies RedisConnection;
 });
 
 export class Connection extends Context.Service<Connection, RedisConnection>()(

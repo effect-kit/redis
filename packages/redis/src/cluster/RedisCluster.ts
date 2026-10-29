@@ -25,7 +25,7 @@ import { decodePolicy } from "#/connection/Options";
 import { ClusterError } from "#/errors/ClusterError";
 import { RedisConfigError } from "#/errors/RedisConfigError";
 import { scanEntries } from "#/iteration/Pages";
-import { makeRedis, Redis } from "#/Redis";
+import { makeRedis, Redis, scopedRedis } from "#/Redis";
 import type { RedisConfig } from "#/RedisConfig";
 import type { ScriptOptions } from "#/scripting/RedisScripts";
 import type { AnyCommand } from "#/sessions/batch/Types";
@@ -73,7 +73,7 @@ export const makeRedisCluster = Effect.fnUntraced(function* <R = never>(
   const events = yield* makeClusterEvents(registry, discovery, policy, options, config.database);
   yield* Effect.addFinalizer(() => events.close);
   const executor = router.executor();
-  const redis = { ...makeRedis(executor), ...batches };
+  const redis = { ...(yield* scopedRedis(executor, batches)), ...batches };
 
   const executeBlocking = <A, E, RD, RE>(command: Command<A, E, RD, RE>) =>
     command.prepare.pipe(
@@ -155,13 +155,15 @@ export const makeRedisCluster = Effect.fnUntraced(function* <R = never>(
       makeClusterScripts(router, target, scriptOptions),
     streams: (target: ClusterTarget) => makeRedisStreams(redis, bound(target)),
     admin: (node: string) => makeRedisAdmin(bound({ node })),
-    node: (node: string) => ({
-      ...makeRedis(router.executor(node)),
-      pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
-        leases.withSession({ node }, (session) => session.pipeline(commands)),
-      transaction: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
-        leases.withSession({ node }, (session) => session.transaction(commands)),
-    }),
+    node: (node: string) => {
+      const nodeBatches = {
+        pipeline: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
+          leases.withSession({ node }, (session) => session.pipeline(commands)),
+        transaction: <const Cs extends ReadonlyArray<AnyCommand>>(commands: Cs) =>
+          leases.withSession({ node }, (session) => session.transaction(commands)),
+      };
+      return { ...makeRedis(router.executor(node), nodeBatches), ...nodeBatches };
+    },
     /** Lazy, sequential node results; no broadcast atomicity or implicit retry. */
     onPrimaries: <A, E, RD, RE>(command: Command<A, E, RD, RE>) =>
       Stream.unwrap(

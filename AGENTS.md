@@ -52,6 +52,11 @@
   snapshots; unknown transports use the copying fallback. Bound backing stores too.
 - One physical connection owns ordered writes and reply slots. Cancellation after
   possible write retires the generation; never silently replay uncertain commands.
+- Compiled plans own bounded input snapshots; only private immutable tuples may cache
+  wire frames. Recheck admission, profiles, routing and deadlines on every execution.
+  Keep decoder services in the executing fiber and reject plans after client scope closure.
+- Ordinary batches share native FIFO ownership; preserve indexed evidence and retire
+  the generation after uncertain cancellation. Keep provider session/routing guarantees.
 - Pipelines are ordered, not atomic. WATCH/transactions/blocking operations and
   next-command state require the correct exclusive connection ownership.
 - Cluster, Sentinel, ordinary native and HTTP execution have distinct capabilities.

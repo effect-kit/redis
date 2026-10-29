@@ -104,6 +104,21 @@ it.live.each(targets)(
         yield* redis.set(prefix, binary);
         expect(yield* redis.getBytes(prefix)).toEqual(Option.some(binary));
 
+        const ordinaryKey = `${prefix}:ordinary`;
+        const plan = yield* redis.compile([
+          Commands.set(ordinaryKey, binary),
+          Commands.getBytes(ordinaryKey),
+        ]);
+        for (let index = 0; index < 2; index++) {
+          expect(yield* plan.execute()).toEqual([undefined, Option.some(binary)]);
+        }
+        expect(
+          yield* redis.batch([
+            Commands.getBytes(ordinaryKey),
+            Commands.incr(`${ordinaryKey}:count`),
+          ]),
+        ).toEqual([Option.some(binary), 1n]);
+
         const batch = yield* redis.pipeline([
           Commands.incr(`${prefix}:count`),
           Commands.get(`${prefix}:count`),

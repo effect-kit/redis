@@ -8,7 +8,7 @@ import { blockingStreamFamily } from "#/commands/streams/ReadFamily";
 import { decode } from "#/config/Validation";
 import { decodePolicy } from "#/connection/Options";
 import { RedisConfigError } from "#/errors/RedisConfigError";
-import { makeRedis, Redis } from "#/Redis";
+import { Redis, scopedRedis } from "#/Redis";
 import type { RedisArgument } from "#/RedisArgument";
 import { makeRedisScripts } from "#/scripting/RedisScripts";
 import type { ScriptOptions } from "#/scripting/RedisScripts";
@@ -85,7 +85,7 @@ export const makeRedisSentinel = Effect.fnUntraced(function* <RData = never, RSe
       ),
   };
   const scans = makeSentinelScans(manager, leases, policy);
-  const redis = { ...makeRedis(executor), ...scans, ...batches };
+  const redis = { ...(yield* scopedRedis(executor, batches)), ...scans, ...batches };
 
   yield* manager.refresh.pipe(
     Effect.onExit((exit) => (Exit.isFailure(exit) ? manager.close : Effect.void)),

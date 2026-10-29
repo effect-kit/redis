@@ -1,5 +1,6 @@
 import { Effect, Redacted } from "effect";
 
+import { batchTokens } from "#/command/Compiled";
 import { BatchError } from "#/errors/BatchError";
 import { decodeBatch } from "#/sessions/batch/Decode";
 import { mapBatchFailure } from "#/sessions/batch/Failure";
@@ -17,7 +18,7 @@ export const runPipeline = <const Cs extends ReadonlyArray<AnyCommand>>(
 ) =>
   Effect.gen(function* () {
     const replies = yield* mapBatchFailure(
-      wire.batch(prepared.map((command) => command.tokens)),
+      wire.batch(batchTokens(prepared)),
       (error) =>
         (error instanceof BatchError
           ? error

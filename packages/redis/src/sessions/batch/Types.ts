@@ -20,6 +20,10 @@ export type DecodeRequirements<C> =
 export type PrepareRequirements<C> =
   C extends Command<infer _A, infer _E, infer _RD, infer RE> ? RE : never;
 
+export type BatchValues<Cs extends ReadonlyArray<AnyCommand>> = {
+  readonly [K in keyof Cs]: CommandValue<Cs[K]>;
+};
+
 export type BatchResults<Cs extends ReadonlyArray<AnyCommand>> = {
   readonly [K in keyof Cs]: Result.Result<
     CommandValue<Cs[K]>,

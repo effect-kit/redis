@@ -1,6 +1,7 @@
 import { Result } from "effect";
 
-import type { ProtocolError } from "#/errors/ProtocolError";
+import { ProtocolError } from "#/errors/ProtocolError";
+import { cachedGroups, cacheGroups } from "#/protocol/CompiledFrames";
 import { measureCommand, writeCommand } from "#/protocol/encode";
 import type { RedisCommand } from "#/protocol/encode";
 import type { RespEncodeLimits } from "#/protocol/limits";
@@ -13,6 +14,24 @@ export const encodeGroups = (
   maximumCommands: number,
   maximumBytes: number,
 ): Result.Result<ReadonlyArray<ReadonlyArray<Uint8Array>>, ProtocolError> => {
+  const cached = cachedGroups(commands, limits);
+  if (cached !== undefined) {
+    const total = cached.reduce(
+      (sum, group) => sum + group.reduce((bytes, frame) => bytes + frame.length, 0),
+      0,
+    );
+    if (total <= capacity) return Result.succeed(cached);
+    return Result.fail(
+      new ProtocolError({
+        stage: "encode",
+        kind: "LimitExceeded",
+        offset: 0,
+        limit: "maxQueuedBytes",
+        maximum: capacity,
+      }),
+    );
+  }
+
   const measured = [];
   let total = 0;
 
@@ -52,5 +71,6 @@ export const encodeGroups = (
     start = end;
   }
 
+  cacheGroups(commands, limits, groups);
   return Result.succeed(groups);
 };
