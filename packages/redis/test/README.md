@@ -34,7 +34,7 @@ Run from the workspace root:
 - `pnpm test:upstash`: HTTP fetch faults, Redis/Valkey proxy cases and built Node/Bun consumers.
 - `pnpm dev:upstash --engine redis --runtime all`: validate both consumers and retain an interactive fixture.
 - `pnpm test:live --runtime node|bun|all`: select the runtime independently of the engine.
-- `pnpm test:protocol:fuzz`: built codec corpus in a worker with an external deadline.
+- `pnpm test:protocol:fuzz`: public-copying and private-owned built codec corpora in workers with external deadlines.
 - `pnpm typecheck`: includes `types/`; Vitest never executes those contracts.
 
 Both Vitest configs keep the package root explicit, disable env-file loading and
