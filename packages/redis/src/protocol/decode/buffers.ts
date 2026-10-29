@@ -53,7 +53,24 @@ export class ByteQueue {
     return byte;
   }
 
-  copyTo(builder: ByteBuilder, maximum: number): number {
+  /** Complete contiguous headers need no incremental builder or scratch block. */
+  readLine(maximum: number): Uint8Array | undefined {
+    const block = this.blocks[this.head];
+    if (block === undefined) return undefined;
+    const end = Math.min(block.used - 1, this.cursor + maximum);
+    for (let index = this.cursor; index < end; index++) {
+      const byte = block.bytes[index];
+      if (byte === 10) return undefined;
+      if (byte !== 13) continue;
+      if (block.bytes[index + 1] !== 10) return undefined;
+      const bytes = block.bytes.slice(this.cursor, index);
+      this.consume(index + 2 - this.cursor, block);
+      return bytes;
+    }
+    return undefined;
+  }
+
+  copyTo(builder: ByteOutput, maximum: number): number {
     let copied = 0;
 
     while (copied < maximum && this.size > 0) {
@@ -148,5 +165,31 @@ export class ByteBuilder {
     }
 
     return bytes;
+  }
+}
+
+export interface ByteOutput {
+  readonly length: number;
+  append(bytes: Uint8Array): void;
+  finish(): Uint8Array;
+}
+
+/** Only validated, bounded length declarations allocate their exact output immediately. */
+export class ContiguousBytes implements ByteOutput {
+  private readonly bytes: Uint8Array;
+  length = 0;
+
+  constructor(size: number) {
+    this.bytes = new Uint8Array(size);
+  }
+
+  append(bytes: Uint8Array): void {
+    this.bytes.set(bytes, this.length);
+    this.length += bytes.length;
+  }
+
+  finish(): Uint8Array {
+    if (this.length !== this.bytes.length) throw new Error("Incomplete contiguous blob");
+    return this.bytes;
   }
 }

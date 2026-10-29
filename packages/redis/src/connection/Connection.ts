@@ -318,8 +318,17 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
         const operation = Effect.suspend(() => {
           if (closing || stopped) return Effect.fail(unavailable());
           if (current?.isReady()) {
-            current.enqueue(ticket);
-            return Deferred.await(ticket.result);
+            const ready = current;
+            return Effect.callback<RespValue, ExecutionError>((resume) => {
+              ticket.onResult = (exit) =>
+                resume(
+                  Exit.isSuccess(exit) ? Effect.succeed(exit.value) : Effect.failCause(exit.cause),
+                );
+              ready.enqueue(ticket);
+              return Effect.sync(() => {
+                ticket.onResult = undefined;
+              });
+            });
           }
 
           // Acquisition is shared, but a queued deadline must wake this caller immediately.
@@ -363,16 +372,15 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
           ticket.cancelDeadline = deadlines.schedule(remaining, () => {
             if (ticket.phase === "done" || ticket.replied) return;
             admission.timeout(ticket);
-            Deferred.doneUnsafe(
-              ticket.result,
-              Effect.fail(
-                new ConnectionError({
-                  reason: "timeout",
-                  generation: ticket.generation,
-                  delivery: ticket.mayHaveBeenWritten ? "possibly-written" : "unsent",
-                }),
-              ),
-            );
+            const error = new ConnectionError({
+              reason: "timeout",
+              generation: ticket.generation,
+              delivery: ticket.mayHaveBeenWritten ? "possibly-written" : "unsent",
+            });
+            Deferred.doneUnsafe(ticket.result, Effect.fail(error));
+            const notify = ticket.onResult;
+            ticket.onResult = undefined;
+            notify?.(Exit.fail(error));
             ticket.cancel?.();
             admission.release(ticket);
           });

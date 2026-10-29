@@ -3,7 +3,8 @@ import { Predicate, Result } from "effect";
 import { failProtocol, ProtocolError } from "#/errors/ProtocolError";
 import { completeAggregate } from "#/protocol/decode/aggregates";
 import type { AggregateFrame } from "#/protocol/decode/aggregates";
-import { ByteBuilder, ByteQueue } from "#/protocol/decode/buffers";
+import type { ByteOutput } from "#/protocol/decode/buffers";
+import { ByteBuilder, ByteQueue, ContiguousBytes } from "#/protocol/decode/buffers";
 import { readLength, scalar } from "#/protocol/decode/scalars";
 import { decodeLimits } from "#/protocol/limits";
 import type { RespDecodeLimits } from "#/protocol/limits";
@@ -14,7 +15,7 @@ const maximumContiguousBlobBytes = 64 * 1024;
 interface BlobFrame {
   readonly tag: "BlobString" | "BlobError" | "VerbatimString";
   readonly streamed: boolean;
-  readonly bytes: ByteBuilder;
+  readonly bytes: ByteOutput;
   remaining: number | undefined;
   terminator: number;
 }
@@ -162,6 +163,16 @@ class Decoder implements RespDecoder {
             );
         }
 
+        const completeLine = this.queue.readLine(this.limits.maxHeaderBytes);
+        if (completeLine !== undefined) {
+          const value = this.header(marker, completeLine);
+          if (value !== undefined) {
+            const completed = this.accept(value);
+            if (completed !== undefined) return completed;
+          }
+          continue;
+        }
+
         this.marker = marker;
         this.line = new ByteBuilder(Math.min(256, this.limits.maxHeaderBytes));
         this.carriageReturn = false;
@@ -263,9 +274,9 @@ class Decoder implements RespDecoder {
       this.blob = {
         tag: marker === 36 ? "BlobString" : marker === 33 ? "BlobError" : "VerbatimString",
         streamed,
-        bytes: new ByteBuilder(
-          Math.max(1, contiguous ? count : Math.min(this.blockSize, count ?? this.blockSize)),
-        ),
+        bytes: contiguous
+          ? new ContiguousBytes(count)
+          : new ByteBuilder(Math.max(1, Math.min(this.blockSize, count ?? this.blockSize))),
         remaining: count,
         terminator: 0,
       };
