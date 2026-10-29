@@ -246,7 +246,7 @@ class Decoder implements RespDecoder {
       this.blob = {
         tag: marker === 36 ? "BlobString" : marker === 33 ? "BlobError" : "VerbatimString",
         streamed,
-        bytes: new ByteBuilder(this.blockSize),
+        bytes: new ByteBuilder(Math.max(1, Math.min(this.blockSize, count ?? this.blockSize))),
         remaining: count,
         terminator: 0,
       };

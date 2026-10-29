@@ -1,19 +1,27 @@
 import { Result } from "effect";
 
 import { ProtocolError } from "#/errors/ProtocolError";
-import { encodeCommand } from "#/protocol/encode";
+import { measureCommand, writeCommand } from "#/protocol/encode";
 import type { RedisCommand } from "#/protocol/encode";
 import { encodeLimits } from "#/protocol/limits";
 import type { RespEncodeLimits } from "#/protocol/limits";
 
-/** Compound writes retain at most one budget of fragments plus one budget of output bytes. */
+/** Measure every frame before allocating the single owned compound request. */
 export const encodeBatch = (
   commands: ReadonlyArray<RedisCommand>,
   options: Partial<RespEncodeLimits>,
 ): Result.Result<Uint8Array, ProtocolError> => {
   const parsed = encodeLimits(options);
   if (Result.isFailure(parsed)) return Result.fail(parsed.failure);
-  const limits = parsed.success;
+
+  return encodeBatchWithLimits(commands, parsed.success);
+};
+
+export const encodeBatchWithLimits = (
+  commands: ReadonlyArray<RedisCommand>,
+  limits: RespEncodeLimits,
+  capacity = limits.maxQueuedBytes,
+): Result.Result<Uint8Array, ProtocolError> => {
   if (
     !Array.isArray(commands) ||
     commands.length === 0 ||
@@ -21,33 +29,32 @@ export const encodeBatch = (
   )
     return Result.fail(new ProtocolError({ stage: "encode", kind: "InvalidArguments", offset: 0 }));
 
-  const frames: Uint8Array[] = [];
+  const frames: Array<{ readonly command: RedisCommand; readonly lengths: ReadonlyArray<number> }> =
+    [];
   let total = 0;
   for (const command of commands) {
-    if (total >= limits.maxQueuedBytes)
+    if (total >= capacity)
       return Result.fail(
         new ProtocolError({
           stage: "encode",
           kind: "LimitExceeded",
           offset: 0,
           limit: "maxQueuedBytes",
-          maximum: limits.maxQueuedBytes,
+          maximum: capacity,
         }),
       );
-    const frame = encodeCommand(command, {
-      ...limits,
-      maxQueuedBytes: limits.maxQueuedBytes - total,
-    });
+    const frame = measureCommand(command, limits, capacity - total);
     if (Result.isFailure(frame)) return Result.fail(frame.failure);
-    frames.push(frame.success);
-    total += frame.success.length;
+    frames.push({ command, lengths: frame.success.lengths });
+    total += frame.success.total;
   }
 
   const bytes = new Uint8Array(total);
   let offset = 0;
   for (const frame of frames) {
-    bytes.set(frame, offset);
-    offset += frame.length;
+    const written = writeCommand(frame.command, frame.lengths, bytes, offset);
+    if (Result.isFailure(written)) return Result.fail(written.failure);
+    offset = written.success;
   }
   return Result.succeed(bytes);
 };

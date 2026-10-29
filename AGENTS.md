@@ -79,7 +79,7 @@
 - Allocate loopback ports on the host. Writable bind mounts use the host UID/GID.
   Await socket/process/container cleanup; never mask binding or permission errors.
 - Never rebuild a checkout while live children mount its `dist/`. Preserve owned
-  release/provider/artifact/hardening evidence when clearing regular test results.
+  release/provider/artifact/hardening/benchmark evidence when clearing regular test results.
 - Endpoint mode performs connection authentication and read-only PING/ECHO only.
   Mutating tests use disposable fixtures and unique keys; never flush shared servers.
 - `pnpm bench:clients` is an opt-in Node comparison with development-only drivers.

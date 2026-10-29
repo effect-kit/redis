@@ -109,7 +109,11 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
           tickets.push(reserved);
         }
 
-        for (const ticket of tickets) generation.enqueue(ticket);
+        const writeGroup = !fenced && tickets.length > 1 ? Symbol() : undefined;
+        for (const ticket of tickets) {
+          ticket.writeGroup = writeGroup;
+          generation.enqueue(ticket);
+        }
 
         const receive = Effect.forEach(
           tickets,

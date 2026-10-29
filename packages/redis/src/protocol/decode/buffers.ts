@@ -123,6 +123,10 @@ export class ByteBuilder {
   }
 
   finish(): Uint8Array {
+    const single = this.blocks[0];
+    // A completed blob owns these exact-sized bytes; its builder is no longer reused.
+    if (this.blocks.length === 1 && single?.bytes.length === this.length) return single.bytes;
+
     const bytes = new Uint8Array(this.length);
     let offset = 0;
 

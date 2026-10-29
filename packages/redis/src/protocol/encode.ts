@@ -52,7 +52,32 @@ export const encodeCommand = (
   const decoded = encodeLimits(options);
   if (Result.isFailure(decoded)) return Result.fail(decoded.failure);
 
-  const limits = decoded.success;
+  return encodeCommandWithLimits(command, decoded.success);
+};
+
+/** Internal connections already validated their immutable limits at acquisition. */
+export const encodeCommandWithLimits = (
+  command: RedisCommand,
+  limits: RespEncodeLimits,
+  capacity = limits.maxQueuedBytes,
+): Result.Result<Uint8Array, ProtocolError> => {
+  const measured = measureCommand(command, limits, capacity);
+  if (Result.isFailure(measured)) return Result.fail(measured.failure);
+
+  const frame = new Uint8Array(measured.success.total);
+  const written = writeCommand(command, measured.success.lengths, frame, 0);
+  if (Result.isFailure(written)) return Result.fail(written.failure);
+  return Result.succeed(frame);
+};
+
+export const measureCommand = (
+  command: RedisCommand,
+  limits: RespEncodeLimits,
+  capacity: number,
+): Result.Result<
+  { readonly total: number; readonly lengths: ReadonlyArray<number> },
+  ProtocolError
+> => {
   if (!Array.isArray(command) || command.length === 0) return fail("InvalidArguments");
   if (command.length > limits.maxAggregateEntries)
     return fail("LimitExceeded", "maxAggregateEntries", limits.maxAggregateEntries);
@@ -66,20 +91,29 @@ export const encodeCommand = (
       return fail("InvalidArguments");
 
     const size = Predicate.isString(argument)
-      ? utf8Length(argument, Math.min(limits.maxBlobBytes, limits.maxQueuedBytes))
+      ? utf8Length(argument, Math.min(limits.maxBlobBytes, capacity))
       : argument.byteLength;
     if (size > limits.maxBlobBytes)
       return fail("LimitExceeded", "maxBlobBytes", limits.maxBlobBytes);
 
     total += size.toString().length + size + 5;
-    if (total > limits.maxQueuedBytes)
-      return fail("LimitExceeded", "maxQueuedBytes", limits.maxQueuedBytes);
+    if (total > capacity) return fail("LimitExceeded", "maxQueuedBytes", capacity);
 
     lengths.push(size);
   }
 
-  const frame = new Uint8Array(total);
-  let offset = textEncoder.encodeInto(`*${command.length}\r\n`, frame).written;
+  return Result.succeed({ total, lengths });
+};
+
+/** Fill a measured span directly, including compound requests, without intermediate payload frames. */
+export const writeCommand = (
+  command: RedisCommand,
+  lengths: ReadonlyArray<number>,
+  frame: Uint8Array,
+  start: number,
+): Result.Result<number, ProtocolError> => {
+  let offset =
+    start + textEncoder.encodeInto(`*${command.length}\r\n`, frame.subarray(start)).written;
 
   for (let index = 0; index < command.length; index++) {
     const argument = command[index];
@@ -96,5 +130,5 @@ export const encodeCommand = (
     frame[offset++] = 10;
   }
 
-  return Result.succeed(frame);
+  return Result.succeed(offset);
 };

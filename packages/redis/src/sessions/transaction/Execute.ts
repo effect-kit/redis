@@ -51,6 +51,7 @@ export const runTransaction = <Cs extends ReadonlyArray<AnyCommand>>(
 
     return Effect.gen(function* () {
       state.set("uncertain");
+      // A rejected MULTI must never let the intended transaction's mutations execute as ordinary commands.
       yield* exchange(wire, ["MULTI"], status("OK"));
       state.set("multi");
 

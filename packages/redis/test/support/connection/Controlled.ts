@@ -10,6 +10,9 @@ import type { RedisCommand } from "#/protocol/encode";
 import { decodeRedisConfig } from "#/RedisConfig";
 import { Transport } from "#/transport/Transport";
 import { makeControlledTransport } from "#test/support/transport/ControlledTransport";
+import type { WriteAttempt } from "#test/support/transport/ControlledTransport";
+
+const compoundWrites = new WeakMap<object, { readonly attempt: WriteAttempt; offset: number }>();
 
 export const bytes = (text: string) => new TextEncoder().encode(text);
 
@@ -36,10 +39,16 @@ export const sent = Effect.fnUntraced(function* (
   command: RedisCommand,
   reply?: string,
 ) {
-  const attempt = yield* fixture.nextWrite;
+  const active = compoundWrites.get(fixture) ?? { attempt: yield* fixture.nextWrite, offset: 0 };
+  const frame = yield* Effect.fromResult(encodeCommand(command));
+  const { attempt, offset } = active;
 
-  expect(attempt.bytes).toEqual(yield* Effect.fromResult(encodeCommand(command)));
-  yield* attempt.accept(attempt.bytes.length);
+  // Compare/accept one command prefix even when a batch shares the physical write callback.
+  expect(attempt.bytes.subarray(offset, offset + frame.length)).toEqual(frame);
+  yield* attempt.accept(frame.length);
+  active.offset += frame.length;
+  if (active.offset === attempt.bytes.length) compoundWrites.delete(fixture);
+  else compoundWrites.set(fixture, active);
   if (reply !== undefined) yield* fixture.receive(bytes(reply));
 
   return attempt;

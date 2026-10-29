@@ -6,6 +6,7 @@ import type { Ticket } from "#/connection/Admission";
 import { undecorated } from "#/connection/Handshake";
 import type { ConnectionPolicy } from "#/connection/Options";
 import type { ReplyReader } from "#/connection/ReplyReader";
+import { takeWriteGroup } from "#/connection/WriteGroup";
 import { ConnectionError } from "#/errors/ConnectionError";
 import type { RespValue } from "#/protocol/RespValue";
 import type { TransportConnection } from "#/transport/Transport";
@@ -158,33 +159,21 @@ export const makeGeneration = Effect.fnUntraced(function* (
         if (stopped) return;
 
         const now = yield* Clock.currentTimeMillis;
-        const ticket = yield* Effect.sync(() => {
-          const candidate = queued[0];
-          if (!ready || candidate === undefined || !admission.canWrite(candidate)) return undefined;
+        const group = yield* Effect.sync(() =>
+          ready ? takeWriteGroup(queued, pending, admission, now) : undefined,
+        );
 
-          queued.shift();
-          admission.begin(candidate, now);
-          // Register reply ownership before a fast server can answer the write.
-          pending.push(candidate);
-          return candidate;
-        });
-
-        if (ticket === undefined) {
+        if (group === undefined) {
           yield* Queue.take(wake);
           continue;
         }
 
-        const frame = ticket.frame;
-        if (frame === undefined) {
-          if (stopped) return;
-          return yield* Effect.die(new Error("Missing owned request frame"));
-        }
-
-        yield* transport.write(frame).pipe(
+        yield* transport.write(group.frame).pipe(
           Effect.timeoutOrElse({
-            duration: Math.max(1, ticket.deadlineMillis - now),
+            duration: Math.max(1, group.deadlineMillis - now),
             orElse: () => {
-              admission.timeout(ticket);
+              for (const ticket of group.tickets)
+                if (ticket.deadlineMillis === group.deadlineMillis) admission.timeout(ticket);
               return Effect.fail(
                 new ConnectionError({
                   reason: "timeout",
@@ -197,12 +186,14 @@ export const makeGeneration = Effect.fnUntraced(function* (
         );
 
         yield* Effect.sync(() => {
-          if (ticket.phase === "done") return;
-          ticket.phase = "sent";
-          ticket.frame = undefined;
-          if (ticket.replied) {
-            owned.delete(ticket);
-            admission.release(ticket);
+          for (const ticket of group.tickets) {
+            if (ticket.phase === "done") continue;
+            ticket.phase = "sent";
+            ticket.frame = undefined;
+            if (ticket.replied) {
+              owned.delete(ticket);
+              admission.release(ticket);
+            }
           }
         });
       }

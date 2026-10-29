@@ -26,12 +26,15 @@ const EncodeLimits = Schema.Struct({
 export type RespDecodeLimits = typeof DecodeLimits.Type;
 export type RespEncodeLimits = typeof EncodeLimits.Type;
 
+const parseDecodeLimits = Schema.decodeUnknownResult(DecodeLimits);
+const parseEncodeLimits = Schema.decodeUnknownResult(EncodeLimits);
+
 export const decodeLimits = (options?: Partial<RespDecodeLimits>) =>
-  Schema.decodeUnknownResult(DecodeLimits)(options === undefined ? {} : options).pipe(
+  parseDecodeLimits(options === undefined ? {} : options).pipe(
     Result.mapError(() => new ProtocolError({ stage: "config", kind: "InvalidLimits", offset: 0 })),
   );
 
 export const encodeLimits = (options?: Partial<RespEncodeLimits>) =>
-  Schema.decodeUnknownResult(EncodeLimits)(options === undefined ? {} : options).pipe(
+  parseEncodeLimits(options === undefined ? {} : options).pipe(
     Result.mapError(() => new ProtocolError({ stage: "config", kind: "InvalidLimits", offset: 0 })),
   );

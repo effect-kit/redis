@@ -30,7 +30,7 @@ const results = new URL("../../results/", import.meta.url);
 mkdirSync(results, { recursive: true });
 // Hosted runs own immutable UUID directories; regular live cleanup must preserve their evidence.
 for (const entry of readdirSync(results))
-  if (!["providers", "artifacts", "hardening", "release"].includes(entry))
+  if (!["providers", "artifacts", "hardening", "release", "benchmarks"].includes(entry))
     rmSync(new URL(entry, results), { recursive: true, force: true });
 
 for (const args of [

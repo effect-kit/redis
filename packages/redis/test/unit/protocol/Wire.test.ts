@@ -39,6 +39,22 @@ it("WIRE-03: input reuse and returned-value mutation cannot corrupt parser-owned
   expect(Result.getOrThrow(decoder.next())).toEqual({ _tag: "BlobString", value: bytes("bye") });
 });
 
+it("exact-sized blob storage stays independent of later feeds and returned-value mutation", () => {
+  const decoder = Result.getOrThrow(makeRespDecoder());
+  const wire = bytes(`$256\r\n${"a".repeat(256)}\r\n$256\r\n${"b".repeat(256)}\r\n`);
+  Result.getOrThrow(decoder.feed(wire));
+  const first = Result.getOrThrow(decoder.next());
+  if (first?._tag !== "BlobString") throw new Error("Expected blob");
+  first.value.fill(0);
+  wire.fill(0);
+
+  const second = Result.getOrThrow(decoder.next());
+  expect(second).toEqual({ _tag: "BlobString", value: bytes("b".repeat(256)) });
+  Result.getOrThrow(decoder.feed(bytes("$1\r\nc\r\n")));
+  expect(Result.getOrThrow(decoder.next())).toEqual({ _tag: "BlobString", value: bytes("c") });
+  expect(first.value).toEqual(new Uint8Array(256));
+});
+
 it("WIRE-04: metadata does not satisfy the decorated array element prematurely", () => {
   const decoder = Result.getOrThrow(makeRespDecoder());
   Result.getOrThrow(decoder.feed(bytes("*1\r\n|0\r\n")));

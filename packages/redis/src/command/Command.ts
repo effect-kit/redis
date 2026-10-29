@@ -1,6 +1,8 @@
 import { Effect, Predicate, Schema } from "effect";
 
-import { CommandMetadata, Routing } from "#/command/Metadata";
+import { Routing } from "#/command/Metadata";
+import type { CommandMetadata } from "#/command/Metadata";
+import { parseMetadata } from "#/command/MetadataCache";
 import { CommandInputError } from "#/errors/CommandInputError";
 import type { ReplyError } from "#/errors/ReplyError";
 import type { RedisCommand } from "#/protocol/encode";
@@ -34,7 +36,6 @@ export interface CommandDefinition<A, E = never, R = never> {
 
 const Arguments = Schema.NonEmptyArray(Schema.Union([Schema.String, Schema.Uint8Array]));
 
-const parseMetadata = Schema.decodeUnknownEffect(CommandMetadata, { onExcessProperty: "error" });
 const parseRouting = Schema.decodeUnknownEffect(Routing, { onExcessProperty: "error" });
 const parseServerErrors = Schema.decodeUnknownEffect(Schema.Literals(["fail", "preserve"]));
 const parseArguments = Schema.decodeUnknownEffect(Arguments);

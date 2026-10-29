@@ -7,9 +7,9 @@ import type { ConnectionError } from "#/errors/ConnectionError";
 import type { HandshakeError } from "#/errors/HandshakeError";
 import type { ProfileError } from "#/errors/ProfileError";
 import type { ProtocolError } from "#/errors/ProtocolError";
-import { encodeCommand } from "#/protocol/encode";
+import { encodeCommandWithLimits } from "#/protocol/encode";
 import type { RedisCommand } from "#/protocol/encode";
-import { encodeBatch } from "#/protocol/encodeBatch";
+import { encodeBatchWithLimits } from "#/protocol/encodeBatch";
 import type { RespValue } from "#/protocol/RespValue";
 
 export type ExecutionError =
@@ -31,6 +31,7 @@ export interface Ticket {
   mayHaveBeenWritten: boolean;
   generation: number;
   cancel: (() => void) | undefined;
+  writeGroup: symbol | undefined;
 }
 
 /** Transitions are synchronous: counters and ownership change before any waiter is resumed. */
@@ -50,7 +51,11 @@ export class Admission {
   unknownOutcomes = 0;
   queueWaitMillis = 0;
 
-  constructor(readonly limits: Limits) {}
+  readonly limits: Limits;
+
+  constructor(limits: Limits) {
+    this.limits = Object.freeze({ ...limits });
+  }
 
   reserve(
     command: RedisCommand,
@@ -58,13 +63,13 @@ export class Admission {
     timeoutMillis: number,
   ): Ticket | AdmissionError | ProtocolError {
     return this.reserveWith(queuedAt, timeoutMillis, (capacity) =>
-      encodeCommand(command, { ...this.limits, maxQueuedBytes: capacity }),
+      encodeCommandWithLimits(command, this.limits, capacity),
     );
   }
 
   reserveExchange(commands: ReadonlyArray<RedisCommand>, queuedAt: number, timeoutMillis: number) {
     return this.reserveWith(queuedAt, timeoutMillis, (capacity) =>
-      encodeBatch(commands, { ...this.limits, maxQueuedBytes: capacity }),
+      encodeBatchWithLimits(commands, this.limits, capacity),
     );
   }
 
@@ -115,6 +120,7 @@ export class Admission {
       mayHaveBeenWritten: false,
       generation: 0,
       cancel: undefined,
+      writeGroup: undefined,
     };
 
     this.tickets.add(ticket);

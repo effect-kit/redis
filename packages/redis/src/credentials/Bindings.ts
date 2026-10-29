@@ -1,4 +1,4 @@
-import { Clock, Deferred, Effect, Exit } from "effect";
+import { Clock, Effect, Exit } from "effect";
 import type { Cause, Scope } from "effect";
 
 import type { CredentialLifetime } from "#/credentials/Lifetime";
@@ -31,13 +31,11 @@ export const makeCredentialBindings = (transport: Transport["Service"]) =>
       const plane = yield* CredentialPlane;
       const physical = yield* transport.open(config);
       const openedAt = yield* Clock.currentTimeMillis;
-      const retired = yield* Deferred.make<void>();
       let closed = false;
       let failure: Cause.Cause<TransportError> | undefined;
 
       const close = Effect.gen(function* () {
         closed = true;
-        yield* Deferred.succeed(retired, undefined);
         const exit = yield* Effect.exit(physical.close);
         if (Exit.isFailure(exit)) {
           failure = exit.cause;
@@ -58,23 +56,10 @@ export const makeCredentialBindings = (transport: Transport["Service"]) =>
 
       return {
         isRetired: () => closed || physical.isRetired?.() === true,
-        read: Effect.suspend(() =>
-          closed
-            ? expired("read")
-            : Effect.raceFirst(
-                physical.read,
-                Deferred.await(retired).pipe(Effect.andThen(expired("read"))),
-              ),
-        ),
-        write: (bytes) =>
-          Effect.suspend(() =>
-            closed
-              ? expired("write")
-              : Effect.raceFirst(
-                  physical.write(bytes),
-                  Deferred.await(retired).pipe(Effect.andThen(expired("write"))),
-                ),
-          ),
+        // Transport.close owns waking pending I/O. A second per-operation race
+        // duplicates that lifetime and eagerly allocates errors on successful I/O.
+        read: Effect.suspend(() => (closed ? expired("read") : physical.read)),
+        write: (bytes) => Effect.suspend(() => (closed ? expired("write") : physical.write(bytes))),
         close,
       };
     });
