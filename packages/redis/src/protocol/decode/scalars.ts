@@ -12,12 +12,23 @@ export const readLength = (
   offset: number,
   limit: string,
 ): number => {
-  const text = headerText(bytes);
-  if (!/^\d+$/.test(text)) return failProtocol("InvalidLength", offset);
+  if (bytes.length === 0) return failProtocol("InvalidLength", offset);
 
-  const count = Number(text);
-  if (!Number.isSafeInteger(count) || count > maximum)
-    return failProtocol("LimitExceeded", offset, limit, maximum);
+  let count = 0;
+  let exceeded = false;
+
+  for (const byte of bytes) {
+    if (byte < 48 || byte > 57) return failProtocol("InvalidLength", offset);
+
+    // Validate the rest even after overflow: malformed syntax takes precedence
+    // over a size rejection, including non-ASCII/BOM bytes in very long headers.
+    if (!exceeded) {
+      count = count * 10 + (byte - 48);
+      exceeded = !Number.isSafeInteger(count) || count > maximum;
+    }
+  }
+
+  if (exceeded) return failProtocol("LimitExceeded", offset, limit, maximum);
 
   return count;
 };

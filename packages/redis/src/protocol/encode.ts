@@ -112,15 +112,14 @@ export const writeCommand = (
   frame: Uint8Array,
   start: number,
 ): Result.Result<number, ProtocolError> => {
-  let offset =
-    start + textEncoder.encodeInto(`*${command.length}\r\n`, frame.subarray(start)).written;
+  let offset = writeHeader(42, command.length, frame, start);
 
   for (let index = 0; index < command.length; index++) {
     const argument = command[index];
     const length = lengths[index];
     if (argument === undefined || length === undefined) return fail("InvalidArguments");
 
-    offset += textEncoder.encodeInto(`$${length}\r\n`, frame.subarray(offset)).written;
+    offset = writeHeader(36, length, frame, offset);
     if (Predicate.isString(argument))
       textEncoder.encodeInto(argument, frame.subarray(offset, offset + length));
     else frame.set(argument, offset);
@@ -131,4 +130,14 @@ export const writeCommand = (
   }
 
   return Result.succeed(offset);
+};
+
+const writeHeader = (marker: number, length: number, frame: Uint8Array, start: number) => {
+  const digits = String(length);
+  let offset = start;
+  frame[offset++] = marker;
+  for (let index = 0; index < digits.length; index++) frame[offset++] = digits.charCodeAt(index);
+  frame[offset++] = 13;
+  frame[offset++] = 10;
+  return offset;
 };

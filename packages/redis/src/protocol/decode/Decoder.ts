@@ -4,7 +4,7 @@ import { failProtocol, ProtocolError } from "#/errors/ProtocolError";
 import { completeAggregate } from "#/protocol/decode/aggregates";
 import type { AggregateFrame } from "#/protocol/decode/aggregates";
 import { ByteBuilder, ByteQueue } from "#/protocol/decode/buffers";
-import { headerText, readLength, scalar } from "#/protocol/decode/scalars";
+import { readLength, scalar } from "#/protocol/decode/scalars";
 import { decodeLimits } from "#/protocol/limits";
 import type { RespDecodeLimits } from "#/protocol/limits";
 import type { RespValue } from "#/protocol/RespValue";
@@ -221,12 +221,10 @@ class Decoder implements RespDecoder {
   }
 
   private header(marker: number, bytes: Uint8Array): RespValue | undefined {
-    const text = headerText(bytes);
-
     // Dot closes a streamed aggregate; semicolon introduces a streamed blob chunk.
     if (marker === 46) {
       const frame = this.frames.at(-1);
-      if (text !== "" || frame === undefined || frame.expected !== undefined)
+      if (bytes.length !== 0 || frame === undefined || frame.expected !== undefined)
         return failProtocol("InvalidTerminator", this.headerOffset);
       this.frames.pop();
       return completeAggregate(frame);
@@ -247,8 +245,9 @@ class Decoder implements RespDecoder {
     }
 
     if (marker === 36 || marker === 33 || marker === 61) {
-      if (marker === 36 && text === "-1") return { _tag: "Null", kind: "bulk" };
-      const streamed = marker === 36 && text === "?";
+      if (marker === 36 && bytes.length === 2 && bytes[0] === 45 && bytes[1] === 49)
+        return { _tag: "Null", kind: "bulk" };
+      const streamed = marker === 36 && bytes.length === 1 && bytes[0] === 63;
       const count = streamed
         ? undefined
         : readLength(bytes, this.limits.maxBlobBytes, this.headerOffset, "maxBlobBytes");
@@ -274,13 +273,14 @@ class Decoder implements RespDecoder {
     }
 
     if (marker === 42 || marker === 37 || marker === 126 || marker === 62 || marker === 124)
-      return this.aggregate(marker, bytes, text);
+      return this.aggregate(marker, bytes);
 
     return scalar(marker, bytes, this.headerOffset);
   }
 
-  private aggregate(marker: number, bytes: Uint8Array, text: string): RespValue | undefined {
-    if (marker === 42 && text === "-1") return { _tag: "Null", kind: "array" };
+  private aggregate(marker: number, bytes: Uint8Array): RespValue | undefined {
+    if (marker === 42 && bytes.length === 2 && bytes[0] === 45 && bytes[1] === 49)
+      return { _tag: "Null", kind: "array" };
     if (this.frames.length + 1 > this.limits.maxNestingDepth)
       return failProtocol(
         "LimitExceeded",
@@ -298,7 +298,8 @@ class Decoder implements RespDecoder {
     )
       return failProtocol("InvalidPush", this.headerOffset);
 
-    const streamed = text === "?" && (marker === 42 || marker === 37 || marker === 126);
+    const streamed =
+      bytes.length === 1 && bytes[0] === 63 && (marker === 42 || marker === 37 || marker === 126);
     const count = streamed
       ? undefined
       : readLength(
