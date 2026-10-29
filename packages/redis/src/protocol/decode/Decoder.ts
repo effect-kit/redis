@@ -9,6 +9,8 @@ import { decodeLimits } from "#/protocol/limits";
 import type { RespDecodeLimits } from "#/protocol/limits";
 import type { RespValue } from "#/protocol/RespValue";
 
+const maximumContiguousBlobBytes = 64 * 1024;
+
 interface BlobFrame {
   readonly tag: "BlobString" | "BlobError" | "VerbatimString";
   readonly streamed: boolean;
@@ -243,10 +245,19 @@ class Decoder implements RespDecoder {
         : readLength(bytes, this.limits.maxBlobBytes, this.headerOffset, "maxBlobBytes");
       if (marker === 61 && count !== undefined && count < 4)
         return failProtocol("InvalidVerbatim", this.headerOffset);
+
+      // Known bounded blobs can fill their final storage directly. Large announcements
+      // retain incremental allocation, including declarations that cannot fit the wire budget.
+      const contiguous =
+        count !== undefined &&
+        count <= maximumContiguousBlobBytes &&
+        count + 2 <= this.limits.maxBufferedBytes - this.bufferedBytes;
       this.blob = {
         tag: marker === 36 ? "BlobString" : marker === 33 ? "BlobError" : "VerbatimString",
         streamed,
-        bytes: new ByteBuilder(Math.max(1, Math.min(this.blockSize, count ?? this.blockSize))),
+        bytes: new ByteBuilder(
+          Math.max(1, contiguous ? count : Math.min(this.blockSize, count ?? this.blockSize)),
+        ),
         remaining: count,
         terminator: 0,
       };
