@@ -155,6 +155,7 @@ try {
                     sampleMillis: options.sampleMillis,
                     construction: options.construction,
                     latencyClock: options.latencyClock,
+                    sessionConnections: options.sessionConnections,
                   };
                   yield* Effect.sync(() =>
                     process.stdout.write(
@@ -177,7 +178,9 @@ try {
                     receipt.workload !== workload.name ||
                     receipt.node !== process.versions.node ||
                     receipt.construction !== options.construction ||
-                    receipt.latencyClock !== options.latencyClock
+                    receipt.latencyClock !== options.latencyClock ||
+                    (client === "effect-redis" &&
+                      receipt.settings.maxSessionConnections !== options.sessionConnections)
                   )
                     return yield* Effect.die(new Error("Benchmark child identity mismatch"));
 

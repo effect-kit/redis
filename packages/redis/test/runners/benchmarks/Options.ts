@@ -34,6 +34,7 @@ export const Input = Schema.Struct({
   sampleMillis: bounded(100, 60_000),
   construction: Schema.optionalKey(Schema.Literals(constructions)),
   latencyClock: Schema.optionalKey(Schema.Literals(latencyClocks)),
+  sessionConnections: Schema.optionalKey(bounded(1, 16)),
 });
 export type Input = typeof Input.Type;
 
@@ -47,6 +48,7 @@ const Settings = Schema.Struct({
   sampleMillis: bounded(100, 60_000),
   construction: Schema.Literals(constructions),
   latencyClock: Schema.Literals(latencyClocks),
+  sessionConnections: bounded(1, 16),
 });
 
 export const benchmarkOptions = (args: ReadonlyArray<string>) => {
@@ -62,6 +64,7 @@ export const benchmarkOptions = (args: ReadonlyArray<string>) => {
       "sample-ms": { type: "string", default: "2000" },
       construction: { type: "string", default: "reuse" },
       "latency-clock": { type: "string", default: "performance" },
+      "session-connections": { type: "string", default: "4" },
     },
   });
 
@@ -71,6 +74,7 @@ export const benchmarkOptions = (args: ReadonlyArray<string>) => {
     warmupMillis: Number(values["warmup-ms"]),
     sampleMillis: Number(values["sample-ms"]),
     latencyClock: values["latency-clock"],
+    sessionConnections: Number(values["session-connections"]),
   });
 
   if (settings.latencyClock === "effect" && settings.execution !== "effect")

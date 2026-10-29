@@ -2,4 +2,4 @@
 "@effect-kit/redis": patch
 ---
 
-Reduce native I/O orchestration and repeated validation, group explicit batch writes within admission limits, and reduce protocol buffer copies while preserving scoped ownership and typed outcomes.
+Improve native command and pipeline performance with focused built-in preparation, coordinated deadlines, aggregate batch completion, bounded buffer ownership and faster RESP headers. Preserve public APIs, scoped cleanup, interruption, binary snapshots and per-command delivery outcomes.

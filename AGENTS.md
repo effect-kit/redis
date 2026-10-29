@@ -48,6 +48,8 @@
 - Preserve binary bytes, RESP types, exact integers, nested errors and attributes.
   Drain the incremental decoder between bounded feeds; malformed framing retires
   its connection generation.
+- Native ownership shortcuts are private capabilities. Public feeds/writes retain
+  snapshots; unknown transports use the copying fallback. Bound backing stores too.
 - One physical connection owns ordered writes and reply slots. Cancellation after
   possible write retires the generation; never silently replay uncertain commands.
 - Pipelines are ordered, not atomic. WATCH/transactions/blocking operations and

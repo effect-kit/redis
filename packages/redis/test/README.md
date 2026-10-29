@@ -153,7 +153,10 @@ pnpm fixtures:pull --engine redis
 pnpm fixtures:pull --engine valkey
 pnpm bench:clients
 pnpm bench:clients --execution all
-pnpm bench:clients --engine redis --workload get-256b-c32 --trials 5
+pnpm bench:clients --engine redis --workload get-256b-c32 --trials 5 --sample-ms 5000
+pnpm bench:clients --engine redis --workload get-256b-c32 --construction call
+pnpm bench:clients --engine redis --workload get-256b-c32 --latency-clock effect
+pnpm bench:clients --engine redis --workload pipeline-32-c4 --session-connections 1
 ```
 
 The default is both engines, native Effect versus Promise clients wrapped in
@@ -163,18 +166,27 @@ Effect Redis uses `ManagedRuntime.runPromise` per operation in that lane. Each
 client/workload/trial runs in a fresh Node process; client order rotates across
 trials. `--client`, `--warmup-ms` and `--sample-ms` support focused reruns. These
 commands never join ordinary tests, CI or Release and never target shared endpoints.
+`--construction call` constructs the public operation per iteration and rotates four
+equal-length small GET keys; the default reuses its operation. `--latency-clock effect`
+adds an `Effect.timed` cross-check inside the Effect lane, with its overhead included.
+Keep these modes separate when comparing results.
 
 All clients use RESP2, binary GETs and the same fixed payloads/concurrency. Cases
 cover 256-byte GET at concurrency 1/32, 64-KiB GET at concurrency 8, SET, INCR,
 32-GET pipelines and 8-GET transactions. Each reply is checked inside the timed
-loop. Throughput excludes connection/setup/warmup but includes client scheduling,
-reply normalization and verification. These are closed-loop measurements, not
-open-loop saturation or coordinated-omission-corrected latency estimates.
+loop. Receipts separate command-completion latency from latency including verification.
+The outer throughput window includes one runner entry and worker launch/join; the
+in-program stopwatch includes worker launch/join without that runner edge. Both
+exclude connection/setup/warmup and include scheduling, normalization and verification.
+These are closed-loop measurements, not open-loop saturation or coordinated-omission-corrected latency estimates.
 
 Batching is explicit for pipeline/transaction workloads. Ordinary commands use
 documented client policies: ioredis automatic pipelining is disabled, node-redis
 retains same-tick batching, and GLIDE uses native multiplexing. Effect Redis retains
-its ordinary connection and scoped session pool. These policies are recorded,
+its ordinary connection and scoped session pool (four session connections by default).
+`--session-connections` changes only Effect Redis’s existing session-pool limit for a
+separate matched experiment. Receipts record that policy and observed Node sockets;
+GLIDE’s native sockets are not observed by this probe. These policies are recorded,
 not treated as identical physical connections/writes. node-redis 6.3.0 decodes RESP2
 EXEC blobs as strings; its adapter converts this fixture's ASCII payload back to
 Buffer inside the measured operation. No arbitrary-binary transaction claim follows.

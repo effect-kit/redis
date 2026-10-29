@@ -14,6 +14,7 @@ export const effectRedis = async (input: Input): Promise<Operation> => {
       endpoint: { host: "127.0.0.1", port: input.port },
       protocol: "resp2",
       commandTimeoutMillis: 10_000,
+      sessions: { maxSessionConnections: input.sessionConnections ?? 4 },
     }),
   );
 
@@ -77,7 +78,13 @@ export const effectRedis = async (input: Input): Promise<Operation> => {
       promise: () => runtime.runPromise(effect),
       verify: verifyReply(input),
       close: () => runtime.dispose(),
-      settings: { protocol: "resp2", automaticPipelining: false, telemetry: false },
+      settings: {
+        protocol: "resp2",
+        automaticPipelining: false,
+        telemetry: false,
+        ordinaryConnections: 1,
+        maxSessionConnections: input.sessionConnections ?? 4,
+      },
     };
   } catch (cause) {
     await runtime.dispose();

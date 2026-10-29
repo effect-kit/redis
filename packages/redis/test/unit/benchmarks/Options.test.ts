@@ -5,6 +5,8 @@ import { benchmarkOptions, clients, rotateClients } from "#test/runners/benchmar
 
 it("keeps native Effect comparisons separate from Promise boundary measurements", () => {
   expect(benchmarkOptions([]).execution).toBe("effect");
+  expect(benchmarkOptions([]).sessionConnections).toBe(4);
+  expect(benchmarkOptions(["--session-connections", "1"]).sessionConnections).toBe(1);
   expect(
     benchmarkOptions(["--execution", "all", "--engine", "valkey", "--trials", "4"]),
   ).toMatchObject({
@@ -52,6 +54,8 @@ it.each([
   ["--warmup-ms", "0"],
   ["--sample-ms", "60001"],
   ["--url", "redis://localhost"],
+  ["--session-connections", "0"],
+  ["--session-connections", "17"],
 ])("rejects unsafe or invalid selections before starting fixtures: %j", (...args) => {
   expect(() => benchmarkOptions(args)).toThrow();
 });
