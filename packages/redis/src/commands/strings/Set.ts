@@ -1,9 +1,10 @@
 import { Effect } from "effect";
 import type { Option } from "effect";
 
-import { defineCommand, fromPreparation } from "#/command/Command";
+import { fromPreparation } from "#/command/Command";
 import type { Command, ReplyDecoder } from "#/command/Command";
 import { blob, mismatch, optional, status, undecorate } from "#/command/reply/Scalars";
+import { singleKeyCommand } from "#/command/SingleKey";
 import { metadata } from "#/commands/Metadata";
 import { decodeSetOptions } from "#/commands/strings/SetOptions";
 import type { SetOptions, SetResult } from "#/commands/strings/SetOptions";
@@ -72,12 +73,8 @@ export function set(
 
       const decode = replyDecoder(parsed);
 
-      return yield* defineCommand({
-        metadata: setMetadata,
-        tokens: ["SET", key, value, ...args],
-        routing: { _tag: "Keys", keys: [{ index: 1, access: "read-write" }] },
-        decode,
-      }).prepare;
+      return yield* singleKeyCommand(setMetadata, key, [value, ...args], "read-write", decode)
+        .prepare;
     }),
   );
 }
