@@ -1,0 +1,242 @@
+{
+  "startedAt": "2026-10-29T22:43:01.480Z",
+  "options": {
+    "engine": "all",
+    "execution": "effect",
+    "client": "all",
+    "workload": "all",
+    "trials": 1,
+    "warmupMillis": 500,
+    "sampleMillis": 2500,
+    "construction": "reuse",
+    "latencyClock": "effect",
+    "sessionConnections": 4
+  },
+  "sourceDigest": "e428a7f2980efa929a84d41bf1ef5122a6d56cc32385e5bb828454f6476b5367",
+  "commit": "292f540d31c687b8182cb8ebd097b2ca5ef090f2",
+  "workingTreeClean": true,
+  "node": "24.22.0",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M3 Pro",
+  "logicalCpus": 11,
+  "memoryBytes": 19327352832,
+  "kernel": "25.6.0",
+  "loadModel": "closed-loop; latency includes client scheduling, response normalization and validation",
+  "protocol": "RESP2",
+  "transport": "loopback TCP to owned Docker fixture",
+  "latencySamples": "exact, bounded at 2 million; percentiles summarized as medians of per-trial percentiles",
+  "measurementVersion": 2,
+  "timingBoundaries": {
+    "latency": "operation plus reply verification inside the worker",
+    "commandLatency": "operation completion before verification inside the worker",
+    "elapsedMillis": "outer workload window, including one runner entry and final drain",
+    "workloadElapsedMillis": "inside the program, including worker launch/join and verification",
+    "effectLatency": "optional Effect.timed around the same operation, excluding verification"
+  },
+  "runId": "cadc40f7-73a8-4491-aad1-4535ff70f85b",
+  "completedAt": "2026-10-29T22:47:00.509Z",
+  "measurements": 72,
+  "completed": true,
+  "primaryThroughputMetric": "workloadCommandsPerSecond",
+  "primaryLatencyMetric": "effectLatency",
+  "trialsPerCombination": 1,
+  "clients": {
+    "effect-redis": "0.1.0",
+    "ioredis": "6.0.0",
+    "node-redis": "6.3.0",
+    "valkey-glide": "2.5.3"
+  },
+  "workloads": [
+    {
+      "name": "get-256b-c1",
+      "concurrency": 1,
+      "commandsPerOperation": 1,
+      "payload": "256-byte binary reply"
+    },
+    {
+      "name": "get-256b-c32",
+      "concurrency": 32,
+      "commandsPerOperation": 1,
+      "payload": "256-byte binary reply"
+    },
+    {
+      "name": "get-64k-c8",
+      "concurrency": 8,
+      "commandsPerOperation": 1,
+      "payload": "65,536-byte binary reply"
+    },
+    {
+      "name": "set-256b-c16",
+      "concurrency": 16,
+      "commandsPerOperation": 1,
+      "payload": "256-byte write"
+    },
+    {
+      "name": "incr-c16",
+      "concurrency": 16,
+      "commandsPerOperation": 1,
+      "payload": "one integer reply"
+    },
+    {
+      "name": "pipeline-32-c4",
+      "concurrency": 4,
+      "commandsPerOperation": 32,
+      "payload": "32 GETs, 256-byte replies"
+    },
+    {
+      "name": "batch-32-c4",
+      "concurrency": 4,
+      "commandsPerOperation": 32,
+      "payload": "32 GETs, 256-byte replies"
+    },
+    {
+      "name": "compiled-32-c4",
+      "concurrency": 4,
+      "commandsPerOperation": 32,
+      "payload": "32 fixed GETs, 256-byte replies"
+    },
+    {
+      "name": "transaction-8-c1",
+      "concurrency": 1,
+      "commandsPerOperation": 8,
+      "payload": "8 GETs in MULTI/EXEC"
+    }
+  ],
+  "servers": {
+    "redis": {
+      "image": "redis:8.10.2@sha256:97ec88159e6d7cfb5ddef9015386087d58a912de80112f06ebdfa78fa5989901",
+      "build": "Redis server v=8.10.2 sha=00000000:1 malloc=jemalloc-5.3.0 bits=64 build=c4a0461010fb17f1",
+      "configurationDigest": "e191fa29759bebda6eaa27717963a46d82e465df31ac2ee102b5bbd7cb4747e9"
+    },
+    "valkey": {
+      "image": "valkey/valkey:9.1.2@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd",
+      "build": "Valkey server v=9.1.2 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=d56443322a2ea9e5",
+      "configurationDigest": "6dac432010446e524a9dffd7e5c341b8148912ec6d99394d299f8d0fef8961f3"
+    }
+  },
+  "settings": {
+    "effect-redis": {
+      "protocol": "resp2",
+      "automaticPipelining": false,
+      "telemetry": false,
+      "ordinaryConnections": 1,
+      "maxSessionConnections": 4,
+      "measurementVersion": 2,
+      "keyCount": 1,
+      "timing": "command and verified latency; outer and in-program workload throughput"
+    },
+    "ioredis": {
+      "protocol": "resp2",
+      "automaticPipelining": false,
+      "offlineQueue": false,
+      "reconnect": false,
+      "measurementVersion": 2,
+      "keyCount": 1,
+      "timing": "command and verified latency; outer and in-program workload throughput"
+    },
+    "node-redis": {
+      "protocol": "resp2",
+      "automaticPipelining": true,
+      "transactionDecoding": "ASCII string to Buffer (measured)",
+      "offlineQueue": false,
+      "reconnect": false,
+      "measurementVersion": 2,
+      "keyCount": 1,
+      "timing": "command and verified latency; outer and in-program workload throughput"
+    },
+    "valkey-glide": {
+      "protocol": "resp2",
+      "automaticPipelining": "native multiplexing",
+      "reconnect": "GLIDE default",
+      "measurementVersion": 2,
+      "keyCount": 1,
+      "timing": "command and verified latency; outer and in-program workload throughput"
+    }
+  },
+  "sourceReceiptSha256": {
+    "valkey-effect-incr-c16-0-ioredis-reuse-effect.json": "f2532bce47b747dc624e7fb5b6c7b899b0370619ef5f7001a8da79b50895810e",
+    "redis-effect-incr-c16-0-effect-redis-reuse-effect.json": "4a4c15e4812371221df722657c2d7cd9d4f37828b2d28326d3ab4144d2f13b53",
+    "redis-effect-get-256b-c1-0-effect-redis-reuse-effect.json": "8c9c1a8ee6d67af65a17d3febdd2405212447511f0b9b4a47f760327dbe10d01",
+    "valkey-effect-get-256b-c32-0-node-redis-reuse-effect.json": "f6549971ec84d461ae3c91e36805aec9a3564186e0409391352ac4457e0e33bf",
+    "redis-effect-get-64k-c8-0-ioredis-reuse-effect.json": "de1cffb007022456880691bf82226166cec90a02e97a4b9de28b4a0f7db2bf60",
+    "redis-effect-compiled-32-c4-0-node-redis-reuse-effect.json": "df257871e4a8aa9e22906966aa8b425d6168a14cdbc43d74c673c6c715f80928",
+    "valkey-effect-batch-32-c4-0-ioredis-reuse-effect.json": "77fa74e357124c67b7080128f4cc143b3244a325cca67f7c173b43f34ad6f2e9",
+    "valkey-effect-compiled-32-c4-0-node-redis-reuse-effect.json": "ccdcb07ec6d26e17e8d9d036ac9907fc07b69a0bb86e2661eab54dbf4fc55cfb",
+    "redis-effect-batch-32-c4-0-node-redis-reuse-effect.json": "ffd0f60e21a4ca3adcc13ff6d9e20b5392a0558e4527cedfbda4c0d3a2f64158",
+    "redis-effect-batch-32-c4-0-valkey-glide-reuse-effect.json": "39ce9504e81e0c97c183e0017e8b4444f843fedfba84fd22cbf3b6d4c90c6114",
+    "valkey-effect-transaction-8-c1-0-valkey-glide-reuse-effect.json": "fe38e9abe3329fadd69deaf185aef922ebc35b9c5646a0d9359a0bc4e3424046",
+    "valkey-effect-get-256b-c1-0-node-redis-reuse-effect.json": "70811e9786eead2f772c37e2c9f16e1b0fdc57bfad1bf39030b01c6538cf045a",
+    "valkey-effect-batch-32-c4-0-valkey-glide-reuse-effect.json": "cd6c58791f5a6233409ed417b3db9ab7ffa41201132ec79f097918de3e70da29",
+    "valkey-effect-compiled-32-c4-0-effect-redis-reuse-effect.json": "d38f4b6960635ffe6b013efb626e01b0ce887968d6f3dabffddeb672877ccf55",
+    "valkey-effect-get-64k-c8-0-ioredis-reuse-effect.json": "3aef5f8d5c70a6dfd2f3a7bd0d6a9b476b01651dd15ba43a2121e72b7d60adfa",
+    "valkey-effect-pipeline-32-c4-0-valkey-glide-reuse-effect.json": "b7bd555de5497c8f0c989fc697648795d1c78a2b23a040d07f0829f3fff1c12a",
+    "valkey-effect-get-256b-c1-0-effect-redis-reuse-effect.json": "84c21d9ac1ef49a7136575b51685c8fb8602091165c272352032eb56fa9283cd",
+    "valkey-effect-get-64k-c8-0-valkey-glide-reuse-effect.json": "8ecfba510deb7f3841c9798c339b77518ba9460b4f9fd95bea41333a520e4f03",
+    "redis-effect-set-256b-c16-0-node-redis-reuse-effect.json": "f4ed18052719c77b69720625b870f5b23d30a551a56efd5dfd251a2ee7911c1a",
+    "redis-effect-set-256b-c16-0-ioredis-reuse-effect.json": "9f396c0c59446eff234e3e72aebf9925d87896b71ca859d33247bf01c7685639",
+    "valkey-effect-set-256b-c16-0-effect-redis-reuse-effect.json": "89af6b37d595c712aad559a1c3863baf73d07490a1f4e6624a5d8a0b272701e7",
+    "valkey-effect-get-256b-c32-0-ioredis-reuse-effect.json": "2bed1f11184afc9212bda4f23d170a68057e069f155ce8bc41cf8b2894910315",
+    "redis-effect-get-64k-c8-0-node-redis-reuse-effect.json": "c8f289b0d2191640fc0a22c0b4753162f6ae461d84464fe66e68c401e22116d9",
+    "redis-effect-set-256b-c16-0-effect-redis-reuse-effect.json": "fa852592e912b735e90c6ad8c0f8710f655499c6832de3387b4a896e33ec0c36",
+    "redis-effect-incr-c16-0-ioredis-reuse-effect.json": "76cb8fe87e15647f806605411907f141d761e76c374d8886aeff37b1ccc4c0b1",
+    "redis-effect-transaction-8-c1-0-effect-redis-reuse-effect.json": "c6eabc644d13ad764512886efb276de4ea37922ffb9e0956b7f1b98962df9262",
+    "valkey-effect-set-256b-c16-0-node-redis-reuse-effect.json": "2facfd1a35a5b32277b60fa16ba1a60a2df02524dcaa79599737d77e0d66d334",
+    "valkey-effect-incr-c16-0-valkey-glide-reuse-effect.json": "39d4261809b0681f78ef48d9b9473c6fea0c4eae5f6e2838692ab822cfffe623",
+    "redis-effect-get-64k-c8-0-valkey-glide-reuse-effect.json": "60921971bb3911fe41e12f7c4c75b71b7fc4ed14f82fd99d7c776d651393265f",
+    "redis-effect-compiled-32-c4-0-effect-redis-reuse-effect.json": "f97f478758a98dfe5121dcd71f226c854966dee7377be20ed14e9f05106294c9",
+    "redis-effect-pipeline-32-c4-0-valkey-glide-reuse-effect.json": "c4e996bc2744429b7a6747529aff67cdcbe9cc252ea1bb39c1ec6ba77fe1d25e",
+    "redis-effect-compiled-32-c4-0-ioredis-reuse-effect.json": "16f57ad2af6bb1d92ff293b6d9016e9fb711325abcf04eb8a08391ddd2446397",
+    "redis-effect-get-256b-c32-0-effect-redis-reuse-effect.json": "a234ff72185056b9dcaa0e93d16b9ab56548055268935ddbaefe1fb7d1595752",
+    "valkey-effect-get-256b-c32-0-effect-redis-reuse-effect.json": "f8c3de409ba6e3470512fb01c47716bf152e28d7ef8e42c0eac1a72123033f46",
+    "redis-effect-batch-32-c4-0-ioredis-reuse-effect.json": "e62f6b312d0bde72d37c594fd4523e0049fb36d543769dd0376631e1448d0da8",
+    "valkey-effect-pipeline-32-c4-0-ioredis-reuse-effect.json": "1690fdea5c37276b2d940e4cbfc523a179ace8130de1f2c4e98d2053789f860a",
+    "redis-effect-get-256b-c32-0-node-redis-reuse-effect.json": "1f530a6d8194f29ca35d79d17180830af2d31cc1447100b7a44d241fbea55158",
+    "valkey-effect-incr-c16-0-effect-redis-reuse-effect.json": "6b5c3a68acee3c767a4b7375bfda31cbc37d08935af9a4aca28673b74f60a7eb",
+    "valkey-effect-transaction-8-c1-0-node-redis-reuse-effect.json": "341f0460bc092fda58e46a04df8100d5a1a9b3c5744e56f1e1af3b079e865807",
+    "redis-effect-incr-c16-0-node-redis-reuse-effect.json": "1bcefddd9d91e12fe032033489e831315452b9c4bb9b41b1eba3ea74b7f42726",
+    "redis-effect-get-64k-c8-0-effect-redis-reuse-effect.json": "aed3e9f93444d348146cb875c5cc158eee581210937c4e0ff7894b3a10d18ae7",
+    "valkey-effect-transaction-8-c1-0-ioredis-reuse-effect.json": "f8a6e29963fb495f40f71caf746c7b9860a96cb8e8775d5e85b701dbfc50f221",
+    "redis-effect-compiled-32-c4-0-valkey-glide-reuse-effect.json": "b90136a2396b9cf8616f8f0bebada50e9cb1bd68e97df855752ff84573b83b18",
+    "valkey-effect-compiled-32-c4-0-ioredis-reuse-effect.json": "a0bfb7827c3b1188b241f48ff5df44fb47cdaac9e3d4dd67e15a98a0f477b0f3",
+    "redis-effect-pipeline-32-c4-0-effect-redis-reuse-effect.json": "afdcef7623cfcdbad72a775aabbeb542297871dbd3efe1361a0b61dba625fcae",
+    "valkey-effect-set-256b-c16-0-ioredis-reuse-effect.json": "b88b25eed31128fd4f3ba6f1a14b69afb4c9afe8dec230df3e1860273a598629",
+    "redis-effect-get-256b-c32-0-ioredis-reuse-effect.json": "fe5ef5e76ebde41bba4c431bce1e046d66af70232a700beaa8665f61dd2d2f62",
+    "valkey-effect-get-256b-c32-0-valkey-glide-reuse-effect.json": "9c77b77645087a8ee48a6fcfb3d9ffb1b7cdec0786a869479cc7b07b236665f3",
+    "redis-effect-pipeline-32-c4-0-ioredis-reuse-effect.json": "f479d7d84651641d7c30e9851de511026b1cae5207f940586c2b97057ca5999f",
+    "redis-effect-get-256b-c32-0-valkey-glide-reuse-effect.json": "d89f9070c23c960137aa2c2b0a133fe30c7f6fdc698210a6838d9d9834f8917d",
+    "valkey-effect-get-256b-c1-0-ioredis-reuse-effect.json": "b9454306bb0ad2cd472eac67d3be6008810f0beab6b45bb12cba1faea39b57dd",
+    "valkey-effect-get-64k-c8-0-node-redis-reuse-effect.json": "c774eb43196704f1b326dbbfc008247791737bae607cae93624aaf77f6b0b27e",
+    "redis-effect-transaction-8-c1-0-ioredis-reuse-effect.json": "747ea2d738d97d32b215f6384c72a348566f819487045013fc800d626b99614a",
+    "redis-effect-incr-c16-0-valkey-glide-reuse-effect.json": "c76a5fdb2d7953eb6d956c75f85fc4e10a81e16c4154145d9e51d6901ba764a9",
+    "redis-effect-get-256b-c1-0-ioredis-reuse-effect.json": "de575851c8025f198959e0318f630887af463cd46688a261269f5d90b74adf99",
+    "redis-effect-get-256b-c1-0-valkey-glide-reuse-effect.json": "d7eff2b15b800601d1c74c0fe6aea69ee10a4ceb299e32c197438d18490827f3",
+    "valkey-effect-batch-32-c4-0-node-redis-reuse-effect.json": "298c6eca4bc69f2b251bac58bedde0acc9575c03d334abcd667d85d36955d587",
+    "redis-effect-pipeline-32-c4-0-node-redis-reuse-effect.json": "46d8e4da99ec29601f3897e33f49df5f7eca2561a7fc9b6fba7cf32dbc6afd30",
+    "redis-effect-batch-32-c4-0-effect-redis-reuse-effect.json": "f6dda48014a439783bf6823d320297dc3955d02b146e467983c31ac3ffbee6a2",
+    "valkey-effect-pipeline-32-c4-0-node-redis-reuse-effect.json": "bde87a738c7ddf8489fb8d73662f3c13c7b7e853dd191889ee4e867ce1f02618",
+    "valkey-effect-compiled-32-c4-0-valkey-glide-reuse-effect.json": "d9c93a93f3d55e5e04c457fc99f1bd0afe563f391f2fcb5127f6f9202402712c",
+    "valkey-effect-batch-32-c4-0-effect-redis-reuse-effect.json": "56d4812e3f06933ce0c8cdb9ad38d629db51d1bceeff22e0866a32f3e43ea562",
+    "valkey-effect-pipeline-32-c4-0-effect-redis-reuse-effect.json": "7d2f16965341f1302b9156ede41f5d23d937750389a8c5ec3dd6e9166f28c7f0",
+    "valkey-effect-transaction-8-c1-0-effect-redis-reuse-effect.json": "6cdfdd5d6514c662a115fa8126ab8eb8ad980fd13a7949714148f1782c1b4061",
+    "redis-effect-get-256b-c1-0-node-redis-reuse-effect.json": "4a194b6831ddc44a370624601d1032d40cbbc2848d59e401d3713c019686e905",
+    "valkey-effect-incr-c16-0-node-redis-reuse-effect.json": "0d3ebcf7e3ee57699ee73c0cfc5e8ee06953c5b8dc5a920a3b0753a06c37b589",
+    "redis-effect-set-256b-c16-0-valkey-glide-reuse-effect.json": "fff45af5ba02c699ae8cc1f476664f792924128718635d0962e6e65c516703c4",
+    "redis-effect-transaction-8-c1-0-valkey-glide-reuse-effect.json": "63d7d5f03b26c0ece188ffa49325f24976eb5dc8f35e6424675810b8c13c5bb4",
+    "redis-effect-transaction-8-c1-0-node-redis-reuse-effect.json": "cc2cf2e57d4fe9bba28caca33126ad35a76e8bd8b9c9864d8c6c9b062bbfe614",
+    "valkey-effect-get-64k-c8-0-effect-redis-reuse-effect.json": "2ff59658d9553af1bca5c2da7eae6a4ec7b62db165ec9647c194920221b6a810",
+    "valkey-effect-get-256b-c1-0-valkey-glide-reuse-effect.json": "aa92a23c3a571e2d4a942f49a5a1b0112a34ca19dc337e3863a64679352846aa",
+    "valkey-effect-set-256b-c16-0-valkey-glide-reuse-effect.json": "e7945cb0d01ab6cc56640fcdb2b238fe7a9947b40372fe6072e0b5d8c1b37874"
+  },
+  "evidenceFiles": {
+    "trials.csv": "8cfb7930100f096716c2652e6dbe938c572dd3a4b58b08fa5819115fc9108361",
+    "relative-throughput.svg": "7f0b20eebf228ee4f245f9d3a7787035f099a385bda797562b3dc391ec9d6eeb"
+  },
+  "excludedRuns": [
+    {
+      "runId": "ee3f088c-070c-4506-b7ef-b9ecfbe0c679",
+      "reason": "Incomplete run; no partial observations are included in this report."
+    }
+  ],
+  "observedNodeSocketCounts": "Recorded per backend/workload/client in trials.csv; GLIDE native sockets are not observed by the Node hook."
+}

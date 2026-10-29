@@ -111,6 +111,9 @@ hosted-provider and release workflows are also dispatch-only. Live dispatch can 
 engine and an optional PR number; it tests the exact resolved commit. Hardening
 checks remain available locally through `pnpm test:hardening`.
 
+Measured client comparisons, methodology and reproduction commands are in
+[BENCHMARKS.md](BENCHMARKS.md).
+
 ## Releases
 
 CI, PR-title checks, Changeset summaries, releases, and registry smoke checks reuse

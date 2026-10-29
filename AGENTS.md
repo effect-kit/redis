@@ -125,6 +125,8 @@
 
 - Keep public READMEs concise and consumer-facing. Detailed architecture, research,
   phase plans/reports and progress belong in ignored `/research/`, never Git.
+- Keep the public comparison in root `BENCHMARKS.md` with compact evidence under
+  `benchmarks/`. Full local benchmark runs and analysis scripts stay ignored.
 - Test inputs/runners stay tracked and self-contained. Builds, tests, CI and package
   contents must work without research or local secrets. Never force-add ignored files.
 - When working on a phase, inspect local progress/backlog if present and update its
