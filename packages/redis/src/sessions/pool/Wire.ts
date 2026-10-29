@@ -17,6 +17,7 @@ import { ProfileCommandPolicy } from "#/profiles/Commands";
 import type { RedisCommand } from "#/protocol/encode";
 import type { RespValue } from "#/protocol/RespValue";
 import type { RedisConfig } from "#/RedisConfig";
+import { collectReplies } from "#/sessions/pool/Replies";
 import { Transport } from "#/transport/Transport";
 
 export type WireOutcome =
@@ -110,28 +111,22 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
         }
 
         const writeGroup = !fenced && tickets.length > 1 ? Symbol() : undefined;
+        const replies = collectReplies(tickets);
         for (const ticket of tickets) {
           ticket.writeGroup = writeGroup;
           generation.enqueue(ticket);
         }
 
-        const receive = Effect.forEach(
-          tickets,
-          (ticket) =>
-            Deferred.await(ticket.result).pipe(
-              Effect.map((reply): WireOutcome => ({ _tag: "Replied", reply })),
-              Effect.catch((error) =>
-                Effect.succeed<WireOutcome>({
-                  _tag: ticket.mayHaveBeenWritten ? "Unknown" : "Unsent",
-                  error,
-                }),
-              ),
-            ),
-          { concurrency: "unbounded" },
-        );
-
+        const receive = replies.await;
+        const clock = yield* Clock.Clock;
+        const ownedDeadline =
+          replyTimeoutMillis !== "forever" && clock === generation.deadlines.clock;
+        const cancelReplyDeadline =
+          ownedDeadline && !replies.isComplete()
+            ? generation.deadlines.schedule(replyTimeoutMillis, generation.expireReplies)
+            : undefined;
         const timed =
-          replyTimeoutMillis === "forever"
+          replyTimeoutMillis === "forever" || ownedDeadline
             ? receive
             : receive.pipe(
                 Effect.timeoutOrElse({
@@ -142,6 +137,7 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
               );
 
         return yield* restore(timed).pipe(
+          Effect.ensuring(Effect.sync(() => cancelReplyDeadline?.())),
           Effect.onExit((exit) =>
             Exit.isFailure(exit)
               ? Effect.gen(function* () {

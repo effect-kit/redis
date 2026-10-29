@@ -47,3 +47,18 @@ it.effect("BLOCK-POOL: a blocked socket leaves the exclusive lane usable", () =>
     expect(yield* Fiber.join(blocked)).toEqual(Option.some([bytes("k"), bytes("v")]));
   }),
 );
+
+it.effect(
+  "an infinite reply wait outlives the bounded write deadline after its write completes",
+  () =>
+    Effect.gen(function* () {
+      const { sessions, primary } = yield* sessionFixture({}, { commandTimeoutMillis: 100 });
+      const blocked = yield* Effect.forkChild(sessions.blpop(["k"], { blockFor: "forever" }));
+      yield* sent(primary, ["BLPOP", "k", "0"]);
+      yield* TestClock.adjust(1000);
+      expect(blocked.pollUnsafe()).toBeUndefined();
+      expect((yield* primary.observations).closed).toBe(0);
+      yield* primary.receive(bytes("*2\r\n$1\r\nk\r\n$1\r\nv\r\n"));
+      expect(yield* Fiber.join(blocked)).toEqual(Option.some([bytes("k"), bytes("v")]));
+    }),
+);

@@ -1,4 +1,4 @@
-import { Deferred, Effect, Result } from "effect";
+import { Deferred, Effect, Exit, Result } from "effect";
 import type { Cause } from "effect";
 
 import type { Limits } from "#/config/Limits";
@@ -33,6 +33,7 @@ export interface Ticket {
   cancel: (() => void) | undefined;
   writeGroup: symbol | undefined;
   cancelDeadline: (() => void) | undefined;
+  onResult: ((exit: Exit.Exit<RespValue, ExecutionError>) => void) | undefined;
 }
 
 /** Transitions are synchronous: counters and ownership change before any waiter is resumed. */
@@ -123,6 +124,7 @@ export class Admission {
       cancel: undefined,
       writeGroup: undefined,
       cancelDeadline: undefined,
+      onResult: undefined,
     };
 
     this.tickets.add(ticket);
@@ -181,17 +183,27 @@ export class Admission {
 
     // A reply may beat the write callback; release its bytes only after both complete.
     if (ticket.phase !== "writing") this.release(ticket);
+    const notify = ticket.onResult;
+    ticket.onResult = undefined;
     Deferred.doneUnsafe(ticket.result, Effect.succeed(reply));
+    notify?.(Exit.succeed(reply));
   }
 
   fail(ticket: Ticket, error: ExecutionError) {
     this.release(ticket);
+    const notify = ticket.onResult;
+    ticket.onResult = undefined;
     Deferred.doneUnsafe(ticket.result, Effect.fail(error));
+    notify?.(Exit.fail(error));
   }
 
   die(ticket: Ticket, cause: Cause.Cause<never>) {
     this.release(ticket);
+    const notify = ticket.onResult;
+    ticket.onResult = undefined;
+    // Cold failure evidence must be pollable before aggregate completion resumes a caller.
     Deferred.doneUnsafe(ticket.result, Effect.failCause(cause));
+    notify?.(Exit.failCause(cause));
   }
 
   private clearDeadline(ticket: Ticket) {

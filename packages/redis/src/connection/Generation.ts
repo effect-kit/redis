@@ -100,7 +100,14 @@ export const makeGeneration = Effect.fnUntraced(function* (
     signal();
   };
 
-  const deadlines = yield* makeDeadlines(scope, 1, (cause) => retire("aborted", cause, cause));
+  const deadlines = yield* makeDeadlines(
+    scope,
+    Math.min(
+      Number.MAX_SAFE_INTEGER,
+      admission.limits.maxQueuedCommands + admission.limits.maxInFlightCommands + 1,
+    ),
+    (cause) => retire("aborted", cause, cause),
+  );
 
   const push = (value: RespValue, wireBytes: number) =>
     Effect.sync(() => {
@@ -312,6 +319,11 @@ export const makeGeneration = Effect.fnUntraced(function* (
     takePush,
     enqueue,
     retire,
+    deadlines,
+    expireReplies: () => {
+      retire("timeout");
+      writerFiber?.interruptUnsafe();
+    },
     isReady: () => {
       // Credential rotation can settle native close before the reader fiber observes its wakeup.
       // Fence new admission synchronously; replacement still joins this generation's full cleanup.
