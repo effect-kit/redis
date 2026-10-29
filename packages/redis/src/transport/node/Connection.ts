@@ -92,7 +92,6 @@ export const makeConnection = (
   socket.on("readable", pump);
   socket.on("end", onEnd);
   socket.on("error", onError);
-  socket.on("close", onClose);
 
   const close = Effect.suspend(() => {
     aborted = true;
@@ -122,6 +121,9 @@ export const makeConnection = (
     write: makeWriter(socket, maximumWrite, () => aborted || retired || ended || failed, close),
     close,
   };
+
+  // Writer cleanup must run before this listener resumes callers awaiting closed.
+  socket.on("close", onClose);
 
   return { connection, ready: Deferred.await(ready), close };
 };

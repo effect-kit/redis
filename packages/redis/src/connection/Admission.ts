@@ -32,6 +32,7 @@ export interface Ticket {
   generation: number;
   cancel: (() => void) | undefined;
   writeGroup: symbol | undefined;
+  cancelDeadline: (() => void) | undefined;
 }
 
 /** Transitions are synchronous: counters and ownership change before any waiter is resumed. */
@@ -121,6 +122,7 @@ export class Admission {
       generation: 0,
       cancel: undefined,
       writeGroup: undefined,
+      cancelDeadline: undefined,
     };
 
     this.tickets.add(ticket);
@@ -156,6 +158,7 @@ export class Admission {
 
   release(ticket: Ticket) {
     if (ticket.phase === "done") return;
+    this.clearDeadline(ticket);
     if (ticket.phase === "queued") {
       this.queuedCommands--;
       this.queuedBytes -= ticket.bytes;
@@ -174,6 +177,7 @@ export class Admission {
   succeed(ticket: Ticket, reply: RespValue) {
     ticket.replied = true;
     this.replies++;
+    this.clearDeadline(ticket);
 
     // A reply may beat the write callback; release its bytes only after both complete.
     if (ticket.phase !== "writing") this.release(ticket);
@@ -188,5 +192,10 @@ export class Admission {
   die(ticket: Ticket, cause: Cause.Cause<never>) {
     this.release(ticket);
     Deferred.doneUnsafe(ticket.result, Effect.failCause(cause));
+  }
+
+  private clearDeadline(ticket: Ticket) {
+    ticket.cancelDeadline?.();
+    ticket.cancelDeadline = undefined;
   }
 }

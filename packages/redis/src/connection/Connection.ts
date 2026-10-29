@@ -14,6 +14,7 @@ import {
 
 import { Admission } from "#/connection/Admission";
 import type { ExecutionError, Ticket } from "#/connection/Admission";
+import { makeDeadlines } from "#/connection/deadline/Coordinator";
 import { makeGeneration } from "#/connection/Generation";
 import type { Generation, PushReply } from "#/connection/Generation";
 import { handshake } from "#/connection/Handshake";
@@ -107,6 +108,19 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
   let connectionAttempts = 0;
   let retiredGenerations = 0;
   let protocol: "resp2" | "resp3" | undefined;
+  const deadlines = yield* makeDeadlines(
+    scope,
+    Math.min(
+      Number.MAX_SAFE_INTEGER,
+      config.limits.maxQueuedCommands + config.limits.maxInFlightCommands,
+    ),
+    (cause) => {
+      acquisitionDefect = cause;
+      current?.retire("aborted", cause, cause);
+      const waiting = [...admission.tickets];
+      for (const ticket of waiting) admission.die(ticket, cause);
+    },
+  );
 
   const unavailable = () =>
     new ConnectionError({
@@ -301,8 +315,16 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
             : Effect.succeed(reserved);
         });
 
-        const operation = Effect.gen(function* () {
-          const ready = yield* ensureReady.pipe(
+        const operation = Effect.suspend(() => {
+          if (closing || stopped) return Effect.fail(unavailable());
+          if (current?.isReady()) {
+            current.enqueue(ticket);
+            return Deferred.await(ticket.result);
+          }
+
+          // Acquisition is shared, but a queued deadline must wake this caller immediately.
+          // Only this cold path needs a race against the acquisition waiter.
+          return ensureReady.pipe(
             Effect.mapError((error) =>
               error instanceof TransportError || error instanceof ProtocolError
                 ? new ConnectionError({
@@ -313,18 +335,20 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
                   })
                 : error,
             ),
+            Effect.flatMap((ready) => {
+              if (ticket.phase !== "done") ready.enqueue(ticket);
+              return Deferred.await(ticket.result);
+            }),
+            Effect.raceFirst(Deferred.await(ticket.result)),
           );
-
-          // A failed acquisition never owns a remote reply slot.
-          ready.enqueue(ticket);
-          return yield* Deferred.await(ticket.result);
         }).pipe(
           Effect.onExit((exit) =>
             Exit.isFailure(exit) ? cancel(ticket, Cause.hasInterrupts(exit.cause)) : Effect.void,
           ),
         );
 
-        const remaining = config.commandTimeoutMillis - (yield* Clock.currentTimeMillis) + now;
+        const clock = yield* Clock.Clock;
+        const remaining = config.commandTimeoutMillis - clock.currentTimeMillisUnsafe() + now;
         if (remaining <= 0) {
           admission.timeout(ticket);
           yield* cancel(ticket);
@@ -335,6 +359,28 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
           });
         }
 
+        if (clock === deadlines.clock) {
+          ticket.cancelDeadline = deadlines.schedule(remaining, () => {
+            if (ticket.phase === "done" || ticket.replied) return;
+            admission.timeout(ticket);
+            Deferred.doneUnsafe(
+              ticket.result,
+              Effect.fail(
+                new ConnectionError({
+                  reason: "timeout",
+                  generation: ticket.generation,
+                  delivery: ticket.mayHaveBeenWritten ? "possibly-written" : "unsent",
+                }),
+              ),
+            );
+            ticket.cancel?.();
+            admission.release(ticket);
+          });
+          return yield* restore(operation);
+        }
+
+        // A caller may override Clock locally. Keep its timeout semantics rather
+        // than moving that request onto the connection owner's different clock.
         return yield* restore(
           operation.pipe(
             Effect.timeoutOrElse({

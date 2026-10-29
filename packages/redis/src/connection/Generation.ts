@@ -1,8 +1,9 @@
-import type { Scope } from "effect";
+import type { Fiber, Scope } from "effect";
 import { Cause, Clock, Deferred, Effect, Exit, Queue, Redacted, Result } from "effect";
 
 import type { Admission } from "#/connection/Admission";
 import type { Ticket } from "#/connection/Admission";
+import { makeDeadlines } from "#/connection/deadline/Coordinator";
 import { undecorated } from "#/connection/Handshake";
 import type { ConnectionPolicy } from "#/connection/Options";
 import type { ReplyReader } from "#/connection/ReplyReader";
@@ -43,6 +44,8 @@ export const makeGeneration = Effect.fnUntraced(function* (
   let takePending = false;
   let failure: ConnectionError | undefined;
   let fatal: Cause.Cause<never> | undefined;
+  let writerFiber: Fiber.Fiber<unknown, unknown> | undefined;
+  let cancelWriteDeadline: (() => void) | undefined;
 
   const signal = () => {
     Queue.offerUnsafe(wake, undefined);
@@ -57,6 +60,8 @@ export const makeGeneration = Effect.fnUntraced(function* (
 
     fatal = defect;
     stopped = true;
+    cancelWriteDeadline?.();
+    cancelWriteDeadline = undefined;
     onRetire();
     reader.dispose();
     ready = false;
@@ -94,6 +99,8 @@ export const makeGeneration = Effect.fnUntraced(function* (
     Deferred.doneUnsafe(retired, Effect.void);
     signal();
   };
+
+  const deadlines = yield* makeDeadlines(scope, 1, (cause) => retire("aborted", cause, cause));
 
   const push = (value: RespValue, wireBytes: number) =>
     Effect.sync(() => {
@@ -168,21 +175,22 @@ export const makeGeneration = Effect.fnUntraced(function* (
           continue;
         }
 
+        const cancelDeadline = deadlines.schedule(Math.max(1, group.deadlineMillis - now), () => {
+          for (const ticket of group.tickets)
+            if (ticket.deadlineMillis === group.deadlineMillis) admission.timeout(ticket);
+          retire("timeout");
+          // The synchronous timer callback must interrupt the scoped writer too:
+          // retiring slots alone cannot cancel a native write whose replies already arrived.
+          writerFiber?.interruptUnsafe();
+        });
+        cancelWriteDeadline = cancelDeadline;
         yield* transport.write(group.frame).pipe(
-          Effect.timeoutOrElse({
-            duration: Math.max(1, group.deadlineMillis - now),
-            orElse: () => {
-              for (const ticket of group.tickets)
-                if (ticket.deadlineMillis === group.deadlineMillis) admission.timeout(ticket);
-              return Effect.fail(
-                new ConnectionError({
-                  reason: "timeout",
-                  generation: id,
-                  delivery: "possibly-written",
-                }),
-              );
-            },
-          }),
+          Effect.ensuring(
+            Effect.sync(() => {
+              cancelDeadline();
+              if (cancelWriteDeadline === cancelDeadline) cancelWriteDeadline = undefined;
+            }),
+          ),
         );
 
         yield* Effect.sync(() => {
@@ -291,7 +299,7 @@ export const makeGeneration = Effect.fnUntraced(function* (
   const start = Effect.gen(function* () {
     ready = true;
     yield* Effect.forkIn(read, scope);
-    yield* Effect.forkIn(writer, scope);
+    writerFiber = yield* Effect.forkIn(writer, scope);
   });
 
   return {

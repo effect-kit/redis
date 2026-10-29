@@ -6,6 +6,16 @@ import { TransportError } from "#/errors/TransportError";
 
 const chunkBytes = 64 * 1024;
 
+type Resume = (result: Effect.Effect<void, TransportError>) => void;
+
+interface PendingWrite {
+  readonly snapshot: Uint8Array;
+  readonly resume: Resume;
+  offset: number;
+  flushed: boolean;
+  drained: boolean;
+}
+
 /** A single owner writes bounded chunks; local completion never proves remote execution. */
 export const makeWriter = (
   socket: Socket,
@@ -14,13 +24,69 @@ export const makeWriter = (
   close: Effect.Effect<void>,
 ) => {
   let busy = false;
+  let pending: PendingWrite | undefined;
+
+  const finish = (error?: TransportError) => {
+    const active = pending;
+    if (active === undefined) return;
+    pending = undefined;
+    active.resume(error === undefined ? Effect.void : Effect.fail(error));
+  };
+
+  const onError = (cause: unknown) => {
+    if (pending === undefined) return;
+    finish(new TransportError({ stage: "write", reason: "io", cause: Redacted.make(cause) }));
+  };
+
+  const onClose = () => {
+    socket.off("error", onError);
+    socket.off("close", onClose);
+    socket.off("drain", onDrain);
+    if (pending !== undefined) finish(new TransportError({ stage: "write", reason: "closed" }));
+  };
+
+  // Callback completion and drain are independent. The socket listeners live
+  // with the connection; a late callback can only advance its own write state.
+  const advance = (active: PendingWrite) => {
+    if (pending !== active || !active.flushed || !active.drained) return;
+    if (active.offset === active.snapshot.length) finish();
+    else send(active);
+  };
+
+  const onDrain = () => {
+    if (pending === undefined) return;
+    pending.drained = true;
+    advance(pending);
+  };
+
+  const send = (active: PendingWrite) => {
+    if (unavailable()) return onClose();
+    const end = Math.min(active.offset + chunkBytes, active.snapshot.length);
+    const chunk = active.snapshot.subarray(active.offset, end);
+    active.offset = end;
+    active.flushed = false;
+
+    try {
+      active.drained = socket.write(chunk, (error) => {
+        if (pending !== active) return;
+        if (error) return onError(error);
+        active.flushed = true;
+        advance(active);
+      });
+    } catch (cause) {
+      onError(cause);
+    }
+  };
+
+  socket.on("error", onError);
+  socket.on("close", onClose);
+  socket.on("drain", onDrain);
 
   return (bytes: Uint8Array): Effect.Effect<void, TransportError> =>
     Effect.uninterruptibleMask((restore) =>
       Effect.suspend(() => {
         if (unavailable())
           return Effect.fail(new TransportError({ stage: "write", reason: "closed" }));
-
         if (busy) return Effect.fail(new TransportError({ stage: "write", reason: "unavailable" }));
         if (bytes.byteLength > maximum)
           return Effect.fail(new TransportError({ stage: "write", reason: "limit" }));
@@ -31,81 +97,20 @@ export const makeWriter = (
 
         return restore(
           Effect.callback<void, TransportError>((resume) => {
-            let offset = 0;
-            let finished = false;
-            let flushed = false;
-            let drained = true;
-
-            const cleanup = () => {
-              socket.off("error", onError);
-              socket.off("close", onClose);
-              socket.off("drain", onDrain);
+            const active: PendingWrite = {
+              snapshot,
+              resume,
+              offset: 0,
+              flushed: false,
+              drained: true,
             };
+            pending = active;
+            send(active);
 
-            const finish = (error?: TransportError) => {
-              if (finished) return;
-              finished = true;
-              cleanup();
-              resume(error === undefined ? Effect.void : Effect.fail(error));
-            };
-
-            const onError = (cause: Error) =>
-              finish(
-                new TransportError({
-                  stage: "write",
-                  reason: "io",
-                  cause: Redacted.make(cause),
-                }),
-              );
-
-            const onClose = () => finish(new TransportError({ stage: "write", reason: "closed" }));
-
-            // Node write callbacks and drain are independent; wait for both before advancing.
-            const advance = () => {
-              if (finished || !flushed || !drained) return;
-              if (offset === snapshot.length) return finish();
-              send();
-            };
-
-            const onDrain = () => {
-              drained = true;
-              advance();
-            };
-
-            const send = () => {
-              if (unavailable()) return onClose();
-
-              const end = Math.min(offset + chunkBytes, snapshot.length);
-              const chunk = snapshot.subarray(offset, end);
-              offset = end;
-              flushed = false;
-
-              try {
-                drained = socket.write(chunk, (error) => {
-                  if (finished) return;
-                  if (error) return onError(error);
-
-                  flushed = true;
-                  advance();
-                });
-              } catch (cause) {
-                finish(
-                  new TransportError({ stage: "write", reason: "io", cause: Redacted.make(cause) }),
-                );
-              }
-            };
-
-            socket.on("error", onError);
-            socket.on("close", onClose);
-            socket.on("drain", onDrain);
-
-            send();
-
-            return Effect.gen(function* () {
-              finished = true;
-              cleanup();
-              // A canceled native write may have sent a prefix. Never reuse this socket.
-              yield* close;
+            return Effect.suspend(() => {
+              if (pending === active) pending = undefined;
+              // Cancellation after a possible prefix must retire the physical socket.
+              return close;
             });
           }),
         ).pipe(
