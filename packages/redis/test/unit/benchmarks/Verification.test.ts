@@ -19,8 +19,10 @@ it("rejects fast but incorrect GETs and partial/error batches", () => {
   expect(() => get(Buffer.alloc(256, 98))).toThrow();
   expect(() => get("a".repeat(256))).toThrow();
 
-  const batch = verifyReply({ ...input, workload: "pipeline-32-c4" });
-  expect(() => batch(Array.from({ length: 32 }, () => small))).not.toThrow();
-  expect(() => batch([small])).toThrow();
-  expect(() => batch(Array.from({ length: 32 }, () => new Error("server error")))).toThrow();
+  for (const workload of ["pipeline-32-c4", "batch-32-c4", "compiled-32-c4"] as const) {
+    const batch = verifyReply({ ...input, workload });
+    expect(() => batch(Array.from({ length: 32 }, () => small))).not.toThrow();
+    expect(() => batch([small])).toThrow();
+    expect(() => batch(Array.from({ length: 32 }, () => new Error("server error")))).toThrow();
+  }
 });

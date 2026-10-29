@@ -38,9 +38,9 @@ export const nodeRedis = async (input: Input) => {
           return client.incr(`${input.prefix}counter`);
         default: {
           const batch = client.multi();
-          for (let index = 0; index < (input.workload === "pipeline-32-c4" ? 32 : 8); index++)
+          for (let index = 0; index < (input.workload === "transaction-8-c1" ? 8 : 32); index++)
             batch.get(key);
-          if (input.workload === "pipeline-32-c4") return batch.execAsPipeline();
+          if (input.workload !== "transaction-8-c1") return batch.execAsPipeline();
 
           // This version omits the Buffer mapping on EXEC. Our fixed ASCII payload
           // can be restored losslessly; the conversion cost stays inside the measurement.

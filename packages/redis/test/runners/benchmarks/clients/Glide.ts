@@ -32,7 +32,7 @@ export const glide = async (input: Input) => {
           return client.incr(`${input.prefix}counter`);
         default: {
           const batch = new Batch(input.workload === "transaction-8-c1");
-          for (let index = 0; index < (input.workload === "pipeline-32-c4" ? 32 : 8); index++)
+          for (let index = 0; index < (input.workload === "transaction-8-c1" ? 8 : 32); index++)
             batch.get(key);
           return client.exec(batch, true, { decoder: Decoder.Bytes });
         }

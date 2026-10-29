@@ -39,7 +39,7 @@ export const verifyReply = (input: Input) => (reply: unknown) => {
     return;
   }
 
-  const count = input.workload === "pipeline-32-c4" ? 32 : 8;
+  const count = input.workload === "transaction-8-c1" ? 8 : 32;
   if (
     !Array.isArray(reply) ||
     reply.length !== count ||

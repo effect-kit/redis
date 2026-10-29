@@ -30,6 +30,11 @@ export const effectRedis = async (input: Input): Promise<Operation> => {
         yield* redis.set(`${input.prefix}large`, large);
         yield* redis.set(`${input.prefix}counter`, "0");
 
+        const compiled =
+          input.workload === "compiled-32-c4"
+            ? yield* redis.compile(Array.from({ length: 32 }, () => Commands.getBytes(key)))
+            : undefined;
+
         const build = () => {
           switch (input.workload) {
             case "get-256b-c1":
@@ -43,9 +48,17 @@ export const effectRedis = async (input: Input): Promise<Operation> => {
               return redis.incr(`${input.prefix}counter`);
             default: {
               const commands = Array.from(
-                { length: input.workload === "pipeline-32-c4" ? 32 : 8 },
+                { length: input.workload === "transaction-8-c1" ? 8 : 32 },
                 () => Commands.getBytes(key),
               );
+              if (compiled !== undefined)
+                return compiled
+                  .execute()
+                  .pipe(Effect.map((replies) => replies.map(Option.getOrThrow)));
+              if (input.workload === "batch-32-c4")
+                return redis
+                  .batch(commands)
+                  .pipe(Effect.map((replies) => replies.map(Option.getOrThrow)));
               const batch =
                 input.workload === "pipeline-32-c4"
                   ? redis

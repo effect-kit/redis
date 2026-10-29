@@ -41,8 +41,8 @@ export const ioredis = async (input: Input) => {
         case "incr-c16":
           return client.incr(`${input.prefix}counter`);
         default: {
-          const batch = input.workload === "pipeline-32-c4" ? client.pipeline() : client.multi();
-          for (let index = 0; index < (input.workload === "pipeline-32-c4" ? 32 : 8); index++)
+          const batch = input.workload === "transaction-8-c1" ? client.multi() : client.pipeline();
+          for (let index = 0; index < (input.workload === "transaction-8-c1" ? 8 : 32); index++)
             batch.getBuffer(key);
           return batch.exec().then((replies) => {
             if (replies === null) throw new Error("Unexpected aborted batch");

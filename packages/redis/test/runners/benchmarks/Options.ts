@@ -13,6 +13,8 @@ export const workloads = [
   { name: "set-256b-c16", concurrency: 16, commands: 1 },
   { name: "incr-c16", concurrency: 16, commands: 1 },
   { name: "pipeline-32-c4", concurrency: 4, commands: 32 },
+  { name: "batch-32-c4", concurrency: 4, commands: 32 },
+  { name: "compiled-32-c4", concurrency: 4, commands: 32 },
   { name: "transaction-8-c1", concurrency: 1, commands: 8 },
 ] as const;
 
