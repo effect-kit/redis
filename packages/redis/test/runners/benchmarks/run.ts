@@ -45,7 +45,8 @@ const expected = targets.flatMap((target) =>
     selectedWorkloads.flatMap((workload) =>
       Array.from({ length: options.trials }, (_, trial) =>
         selectedClients.map(
-          (client) => `${target.product}/${execution}/${workload.name}/${trial}/${client}`,
+          (client) =>
+            `${target.product}/${execution}/${workload.name}/${trial}/${client}/${options.construction}/${options.latencyClock}`,
         ),
       ).flat(),
     ),
@@ -104,6 +105,14 @@ await writeFile(
       transport: "loopback TCP to owned Docker fixture",
       latencySamples:
         "exact, bounded at 2 million; percentiles summarized as medians of per-trial percentiles",
+      measurementVersion: 2,
+      timingBoundaries: {
+        latency: "operation plus reply verification inside the worker",
+        commandLatency: "operation completion before verification inside the worker",
+        elapsedMillis: "outer workload window, including one runner entry and final drain",
+        workloadElapsedMillis: "inside the program, including worker launch/join and verification",
+        effectLatency: "optional Effect.timed around the same operation, excluding verification",
+      },
     },
     null,
     2,
@@ -144,6 +153,8 @@ try {
                     prefix: `effect-kit:benchmark:${randomUUID()}:`,
                     warmupMillis: options.warmupMillis,
                     sampleMillis: options.sampleMillis,
+                    construction: options.construction,
+                    latencyClock: options.latencyClock,
                   };
                   yield* Effect.sync(() =>
                     process.stdout.write(
@@ -164,7 +175,9 @@ try {
                     receipt.client !== client ||
                     receipt.execution !== execution ||
                     receipt.workload !== workload.name ||
-                    receipt.node !== process.versions.node
+                    receipt.node !== process.versions.node ||
+                    receipt.construction !== options.construction ||
+                    receipt.latencyClock !== options.latencyClock
                   )
                     return yield* Effect.die(new Error("Benchmark child identity mismatch"));
 
@@ -172,6 +185,9 @@ try {
                   if (
                     measurement.elapsedMillis < options.sampleMillis ||
                     measurement.latency.count !== measurement.operations ||
+                    measurement.commandLatency.count !== measurement.operations ||
+                    (options.latencyClock === "effect" &&
+                      measurement.effectLatency?.count !== measurement.operations) ||
                     measurement.commands !== measurement.operations * workload.commands
                   )
                     return yield* Effect.die(

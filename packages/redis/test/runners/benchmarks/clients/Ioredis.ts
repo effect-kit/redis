@@ -1,5 +1,6 @@
 import { Redis } from "ioredis";
 
+import { keySequence, smallKeys } from "#test/runners/benchmarks/Fixtures";
 import { large, promiseOperation, small } from "#test/runners/benchmarks/Operation";
 import type { Input } from "#test/runners/benchmarks/Options";
 
@@ -22,7 +23,9 @@ export const ioredis = async (input: Input) => {
   try {
     await client.connect();
     const key = `${input.prefix}small`;
-    await client.set(key, small);
+    const keys = smallKeys(input);
+    const nextKey = keySequence(keys);
+    await Promise.all(keys.map((fixtureKey) => client.set(fixtureKey, small)));
     await client.set(`${input.prefix}large`, large);
     await client.set(`${input.prefix}counter`, "0");
 
@@ -30,7 +33,7 @@ export const ioredis = async (input: Input) => {
       switch (input.workload) {
         case "get-256b-c1":
         case "get-256b-c32":
-          return client.getBuffer(key);
+          return client.getBuffer(nextKey());
         case "get-64k-c8":
           return client.getBuffer(`${input.prefix}large`);
         case "set-256b-c16":

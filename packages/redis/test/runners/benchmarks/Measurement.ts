@@ -1,7 +1,7 @@
 import { monitorEventLoopDelay, PerformanceObserver } from "node:perf_hooks";
 import { setImmediate } from "node:timers/promises";
 
-import { Effect } from "effect";
+import { Duration, Effect } from "effect";
 
 import type { Operation } from "#test/runners/benchmarks/Operation";
 import type { Input } from "#test/runners/benchmarks/Options";
@@ -14,6 +14,11 @@ export const measure = async (input: Input, operation: Operation, millis: number
 
   // Exact samples are bounded. Overflow fails rather than sampling away slow replies.
   const latencies = new Latencies(2_000_000);
+  const commandLatencies = new Latencies(2_000_000);
+  const effectLatencies = input.latencyClock === "effect" ? new Latencies(2_000_000) : undefined;
+  if (effectLatencies !== undefined && input.execution !== "effect")
+    throw new Error("Effect timing requires the Effect execution lane");
+  const timed = effectLatencies === undefined ? undefined : Effect.timed(operation.effect);
   const delay = monitorEventLoopDelay({ resolution: 10 });
   let gcMillis = 0;
   const gc = new PerformanceObserver((entries) => {
@@ -29,27 +34,47 @@ export const measure = async (input: Input, operation: Operation, millis: number
   delay.enable();
   const cpu = process.cpuUsage();
   const started = performance.now();
-  const deadline = started + millis;
+  let workloadElapsedMillis = 0;
 
   try {
     if (input.execution === "effect") {
       await Effect.runPromise(
-        Effect.all(
-          Array.from({ length: workload.concurrency }, () =>
-            Effect.gen(function* () {
-              while (performance.now() < deadline) {
-                const began = performance.now();
-                const reply = yield* operation.effect;
-                operation.verify(reply);
-                latencies.add(performance.now() - began);
-              }
-            }),
-          ),
-          { concurrency: workload.concurrency, discard: true },
-        ),
+        Effect.gen(function* () {
+          // This clock is inside the program; the outer window also includes its runner edge.
+          const workloadStarted = performance.now();
+          const deadline = workloadStarted + millis;
+          yield* Effect.all(
+            Array.from({ length: workload.concurrency }, () =>
+              Effect.gen(function* () {
+                while (performance.now() < deadline) {
+                  const began = performance.now();
+                  let reply: unknown;
+                  let effectMillis: number | undefined;
+                  if (timed === undefined) reply = yield* operation.effect;
+                  else {
+                    const [duration, value] = yield* timed;
+                    effectMillis = Duration.toMillis(duration);
+                    reply = value;
+                  }
+
+                  const commandMillis = performance.now() - began;
+                  operation.verify(reply);
+                  const verifiedMillis = performance.now() - began;
+                  commandLatencies.add(commandMillis);
+                  latencies.add(verifiedMillis);
+                  if (effectMillis !== undefined) effectLatencies?.add(effectMillis);
+                }
+              }),
+            ),
+            { concurrency: workload.concurrency, discard: true },
+          );
+          workloadElapsedMillis = performance.now() - workloadStarted;
+        }),
       );
     } else {
       let failed = false;
+      const workloadStarted = performance.now();
+      const deadline = workloadStarted + millis;
       // Join every worker before returning a failure; remaining requests must not leak into cleanup.
       const results = await Promise.allSettled(
         Array.from({ length: workload.concurrency }, async () => {
@@ -59,8 +84,11 @@ export const measure = async (input: Input, operation: Operation, millis: number
               const began = performance.now();
               // oxlint-disable-next-line no-await-in-loop -- One closed-loop caller has one outstanding request.
               const reply = await operation.promise();
+              const commandMillis = performance.now() - began;
               operation.verify(reply);
-              latencies.add(performance.now() - began);
+              const verifiedMillis = performance.now() - began;
+              commandLatencies.add(commandMillis);
+              latencies.add(verifiedMillis);
             }
           } catch (cause) {
             failed = true;
@@ -70,6 +98,7 @@ export const measure = async (input: Input, operation: Operation, millis: number
       );
       const failure = results.find((result) => result.status === "rejected");
       if (failure?.status === "rejected") throw failure.reason;
+      workloadElapsedMillis = performance.now() - workloadStarted;
     }
 
     const elapsedMillis = performance.now() - started;
@@ -87,7 +116,12 @@ export const measure = async (input: Input, operation: Operation, millis: number
       commands: latency.count * workload.commands,
       operationsPerSecond: (latency.count * 1000) / elapsedMillis,
       commandsPerSecond: (latency.count * workload.commands * 1000) / elapsedMillis,
+      workloadElapsedMillis,
+      workloadOperationsPerSecond: (latency.count * 1000) / workloadElapsedMillis,
+      workloadCommandsPerSecond: (latency.count * workload.commands * 1000) / workloadElapsedMillis,
       latency,
+      commandLatency: commandLatencies.result(),
+      ...(effectLatencies === undefined ? {} : { effectLatency: effectLatencies.result() }),
       cpuMillis,
       cpuCores: cpuMillis / elapsedMillis,
       baselineRssBytes: before.rss,

@@ -1,10 +1,23 @@
 import { Schema } from "effect";
 
-import { Client, Execution, WorkloadName } from "#test/runners/benchmarks/Options";
+import {
+  Client,
+  constructions,
+  Execution,
+  latencyClocks,
+  WorkloadName,
+} from "#test/runners/benchmarks/Options";
 
 const nonnegative = Schema.Number.check(Schema.isGreaterThanOrEqualTo(0));
 const positive = Schema.Number.check(Schema.isGreaterThan(0));
 const count = Schema.Int.check(Schema.isGreaterThan(0));
+const Latency = Schema.Struct({
+  count,
+  p50Millis: nonnegative,
+  p95Millis: nonnegative,
+  p99Millis: nonnegative,
+  maximumMillis: nonnegative,
+});
 
 export const Receipt = Schema.Struct({
   client: Client,
@@ -12,6 +25,8 @@ export const Receipt = Schema.Struct({
   execution: Execution,
   workload: WorkloadName,
   node: Schema.NonEmptyString,
+  construction: Schema.optionalKey(Schema.Literals(constructions)),
+  latencyClock: Schema.optionalKey(Schema.Literals(latencyClocks)),
   settings: Schema.Record(
     Schema.String,
     Schema.Union([Schema.String, Schema.Number, Schema.Boolean]),
@@ -22,13 +37,12 @@ export const Receipt = Schema.Struct({
     commands: count,
     operationsPerSecond: positive,
     commandsPerSecond: positive,
-    latency: Schema.Struct({
-      count,
-      p50Millis: nonnegative,
-      p95Millis: nonnegative,
-      p99Millis: nonnegative,
-      maximumMillis: nonnegative,
-    }),
+    workloadElapsedMillis: positive,
+    workloadOperationsPerSecond: positive,
+    workloadCommandsPerSecond: positive,
+    latency: Latency,
+    commandLatency: Latency,
+    effectLatency: Schema.optionalKey(Latency),
     cpuMillis: nonnegative,
     cpuCores: nonnegative,
     baselineRssBytes: positive,
@@ -47,7 +61,7 @@ export interface Cell {
 }
 
 export const cellId = (cell: Cell) =>
-  `${cell.engine}/${cell.receipt.execution}/${cell.receipt.workload}/${cell.trial}/${cell.receipt.client}`;
+  `${cell.engine}/${cell.receipt.execution}/${cell.receipt.workload}/${cell.trial}/${cell.receipt.client}/${cell.receipt.construction ?? "reuse"}/${cell.receipt.latencyClock ?? "performance"}`;
 
 const median = (values: ReadonlyArray<number>) => {
   const sorted = values.toSorted((left, right) => left - right);
@@ -71,7 +85,7 @@ export const summarize = (cells: ReadonlyArray<Cell>, expected: ReadonlyArray<st
 
   const groups = new Map<string, Cell[]>();
   for (const cell of cells) {
-    const key = `${cell.engine}/${cell.receipt.execution}/${cell.receipt.workload}/${cell.receipt.client}`;
+    const key = `${cell.engine}/${cell.receipt.execution}/${cell.receipt.workload}/${cell.receipt.client}/${cell.receipt.construction ?? "reuse"}/${cell.receipt.latencyClock ?? "performance"}`;
     const group = groups.get(key) ?? [];
     group.push(cell);
     groups.set(key, group);
@@ -90,6 +104,8 @@ export const summarize = (cells: ReadonlyArray<Cell>, expected: ReadonlyArray<st
       workload: first.receipt.workload,
       client: first.receipt.client,
       version: first.receipt.version,
+      construction: first.receipt.construction ?? "reuse",
+      latencyClock: first.receipt.latencyClock ?? "performance",
       trials: group.length,
       medianOperationsPerSecond: median(measurements.map((value) => value.operationsPerSecond)),
       medianCommandsPerSecond: median(measurements.map((value) => value.commandsPerSecond)),
@@ -98,6 +114,10 @@ export const summarize = (cells: ReadonlyArray<Cell>, expected: ReadonlyArray<st
       medianP50Millis: median(measurements.map((value) => value.latency.p50Millis)),
       medianP95Millis: median(measurements.map((value) => value.latency.p95Millis)),
       medianP99Millis: median(measurements.map((value) => value.latency.p99Millis)),
+      medianCommandP99Millis: median(measurements.map((value) => value.commandLatency.p99Millis)),
+      medianWorkloadCommandsPerSecond: median(
+        measurements.map((value) => value.workloadCommandsPerSecond),
+      ),
       medianCpuCores: median(measurements.map((value) => value.cpuCores)),
       maxRssBytes: Math.max(...measurements.map((value) => value.peakRssBytes)),
       medianGcMillis: median(measurements.map((value) => value.gcMillis)),

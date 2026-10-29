@@ -1,10 +1,15 @@
 import { readFile } from "node:fs/promises";
 
+import { observeConnections } from "#test/runners/benchmarks/Connections";
 import { measure } from "#test/runners/benchmarks/Measurement";
 import { Input } from "#test/runners/benchmarks/Options";
 import { readInput } from "#test/runners/providers/Stdin";
 
 const input = await readInput(Input);
+if (input.latencyClock === "effect" && input.execution !== "effect")
+  throw new Error("Effect timing requires the Effect execution lane");
+
+const connections = observeConnections(input.port);
 // Import only the selected driver: native GLIDE and its threads must not affect other clients.
 const operation = await (async () => {
   switch (input.client) {
@@ -17,7 +22,10 @@ const operation = await (async () => {
     case "valkey-glide":
       return (await import("#test/runners/benchmarks/clients/Glide")).glide(input);
   }
-})();
+})().catch((cause: unknown) => {
+  connections.close();
+  throw cause;
+});
 
 try {
   operation.verify(await operation.promise());
@@ -47,10 +55,23 @@ try {
       execution: input.execution,
       workload: input.workload,
       node: process.versions.node,
-      settings: operation.settings,
+      construction: input.construction ?? "reuse",
+      latencyClock: input.latencyClock ?? "performance",
+      settings: {
+        ...operation.settings,
+        measurementVersion: 2,
+        keyCount: input.construction === "call" && input.workload.startsWith("get-256b") ? 4 : 1,
+        observedNodeSockets:
+          input.client === "valkey-glide" ? "native-not-observed" : connections.snapshot().peak,
+        timing: "command and verified latency; outer and in-program workload throughput",
+      },
       measurement,
     }),
   );
 } finally {
-  await operation.close();
+  try {
+    await operation.close();
+  } finally {
+    connections.close();
+  }
 }

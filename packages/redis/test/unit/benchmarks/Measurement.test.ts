@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 
 import { measure } from "#test/runners/benchmarks/Measurement";
 import type { Operation } from "#test/runners/benchmarks/Operation";
@@ -56,4 +56,56 @@ it("propagates incorrect replies instead of counting them as fast successful ope
   await expect(measure({ ...input, execution: "effect" }, operation, 100)).rejects.toThrow(
     "incorrect reply",
   );
+});
+
+it("separates command completion, verification and the in-program workload window", async () => {
+  let now = 0;
+  const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
+  const operation: Operation = {
+    effect: Effect.sync(() => {
+      now += 2;
+      return "reply";
+    }),
+    promise: async () => "reply",
+    verify: () => {
+      now += 5;
+    },
+    close: async () => {},
+    settings: {},
+  };
+
+  try {
+    const measured = await measure(
+      { ...input, execution: "effect", workload: "get-256b-c1" },
+      operation,
+      10,
+    );
+
+    expect(measured.commandLatency).toMatchObject({ count: 2, p99Millis: 2 });
+    expect(measured.latency).toMatchObject({ count: 2, p99Millis: 7 });
+    expect(measured.workloadElapsedMillis).toBe(14);
+    expect(measured.elapsedMillis).toBeGreaterThanOrEqual(measured.workloadElapsedMillis);
+  } finally {
+    clock.mockRestore();
+  }
+});
+
+it("cross-checks operation elapsed time inside Effect without changing reply counts", async () => {
+  const operation: Operation = {
+    effect: Effect.sleep(1).pipe(Effect.as("reply")),
+    promise: async () => "reply",
+    verify: (reply) => expect(reply).toBe("reply"),
+    close: async () => {},
+    settings: {},
+  };
+
+  const measured = await measure(
+    { ...input, execution: "effect", workload: "get-256b-c1", latencyClock: "effect" },
+    operation,
+    10,
+  );
+
+  expect(measured.effectLatency?.count).toBe(measured.operations);
+  expect(measured.commandLatency.count).toBe(measured.operations);
+  expect(measured.effectLatency?.p50Millis).toBeGreaterThan(0);
 });

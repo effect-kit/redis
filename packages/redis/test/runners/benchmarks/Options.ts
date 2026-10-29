@@ -4,6 +4,8 @@ import { Schema } from "effect";
 
 export const clients = ["effect-redis", "ioredis", "node-redis", "valkey-glide"] as const;
 export const executions = ["effect", "promise"] as const;
+export const constructions = ["reuse", "call"] as const;
+export const latencyClocks = ["performance", "effect"] as const;
 export const workloads = [
   { name: "get-256b-c1", concurrency: 1, commands: 1 },
   { name: "get-256b-c32", concurrency: 32, commands: 1 },
@@ -30,6 +32,8 @@ export const Input = Schema.Struct({
   prefix: Schema.NonEmptyString,
   warmupMillis: bounded(100, 60_000),
   sampleMillis: bounded(100, 60_000),
+  construction: Schema.optionalKey(Schema.Literals(constructions)),
+  latencyClock: Schema.optionalKey(Schema.Literals(latencyClocks)),
 });
 export type Input = typeof Input.Type;
 
@@ -41,6 +45,8 @@ const Settings = Schema.Struct({
   trials: bounded(1, 10),
   warmupMillis: bounded(100, 60_000),
   sampleMillis: bounded(100, 60_000),
+  construction: Schema.Literals(constructions),
+  latencyClock: Schema.Literals(latencyClocks),
 });
 
 export const benchmarkOptions = (args: ReadonlyArray<string>) => {
@@ -54,15 +60,23 @@ export const benchmarkOptions = (args: ReadonlyArray<string>) => {
       trials: { type: "string", default: "3" },
       "warmup-ms": { type: "string", default: "1000" },
       "sample-ms": { type: "string", default: "2000" },
+      construction: { type: "string", default: "reuse" },
+      "latency-clock": { type: "string", default: "performance" },
     },
   });
 
-  return Schema.decodeUnknownSync(Settings)({
+  const settings = Schema.decodeUnknownSync(Settings)({
     ...values,
     trials: Number(values.trials),
     warmupMillis: Number(values["warmup-ms"]),
     sampleMillis: Number(values["sample-ms"]),
+    latencyClock: values["latency-clock"],
   });
+
+  if (settings.latencyClock === "effect" && settings.execution !== "effect")
+    throw new Error("Effect timing requires the Effect execution lane");
+
+  return settings;
 };
 
 /** Balance first/last positions across trials without irreproducible random ordering. */

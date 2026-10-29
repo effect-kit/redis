@@ -19,6 +19,16 @@ const cell = (trial: number, operationsPerSecond: number): Cell => ({
       commands: operationsPerSecond * 32,
       operationsPerSecond,
       commandsPerSecond: operationsPerSecond * 32,
+      workloadElapsedMillis: 999,
+      workloadOperationsPerSecond: operationsPerSecond,
+      workloadCommandsPerSecond: operationsPerSecond * 32,
+      commandLatency: {
+        count: operationsPerSecond,
+        p50Millis: 0.5,
+        p95Millis: 1,
+        p99Millis: 2,
+        maximumMillis: 3,
+      },
       latency: {
         count: operationsPerSecond,
         p50Millis: 1,
