@@ -59,6 +59,8 @@
   the generation after uncertain cancellation. Keep provider session/routing guarantees.
 - Pipelines are ordered, not atomic. WATCH/transactions/blocking operations and
   next-command state require the correct exclusive connection ownership.
+- Confirm MULTI before sending transaction commands. Combined queue/EXEC submission
+  requires an explicit verified engine profile; classify uncertainty from the EXEC slot.
 - Cluster, Sentinel, ordinary native and HTTP execution have distinct capabilities.
   Reject unsupported routing/state rather than emulate server guarantees.
 - HTTP has no physical sessions; preserve its binary/JSON/SSE limits. Upstash
