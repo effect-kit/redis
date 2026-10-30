@@ -307,20 +307,17 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
     Effect.uninterruptibleMask((restore) =>
       Effect.gen(function* () {
         const now = yield* Clock.currentTimeMillis;
-        const ticket = yield* Effect.suspend((): Effect.Effect<Ticket, ExecutionError> => {
-          if (closing || stopped) return Effect.fail(unavailable());
+        if (closing || stopped) return yield* unavailable();
 
-          const restricted = commandPolicy(command);
-          if (restricted !== undefined) return Effect.fail(restricted);
+        const restricted = commandPolicy(command);
+        if (restricted !== undefined) return yield* restricted;
 
-          const modeError = checkOrdinary(command);
-          if (modeError !== undefined) return Effect.fail(modeError);
+        const modeError = checkOrdinary(command);
+        if (modeError !== undefined) return yield* modeError;
 
-          const reserved = admission.reserve(command, now, config.commandTimeoutMillis);
-          return reserved instanceof AdmissionError || reserved instanceof ProtocolError
-            ? Effect.fail(reserved)
-            : Effect.succeed(reserved);
-        });
+        const ticket = admission.reserve(command, now, config.commandTimeoutMillis);
+        if (ticket instanceof AdmissionError || ticket instanceof ProtocolError)
+          return yield* ticket;
 
         const operation = Effect.suspend(() => {
           if (closing || stopped) return Effect.fail(unavailable());

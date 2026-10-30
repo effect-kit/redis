@@ -179,9 +179,7 @@ export const makeGeneration = Effect.fnUntraced(function* (
         if (stopped) return;
 
         const now = yield* Clock.currentTimeMillis;
-        const group = yield* Effect.sync(() =>
-          ready ? takeWriteGroup(queued, pending, admission, now) : undefined,
-        );
+        const group = ready ? takeWriteGroup(queued, pending, admission, now) : undefined;
 
         if (group === undefined) {
           yield* Queue.take(wake);
@@ -206,17 +204,15 @@ export const makeGeneration = Effect.fnUntraced(function* (
           ),
         );
 
-        yield* Effect.sync(() => {
-          for (const ticket of group.tickets) {
-            if (ticket.phase === "done") continue;
-            ticket.phase = "sent";
-            ticket.frame = undefined;
-            if (ticket.replied) {
-              owned.delete(ticket);
-              admission.release(ticket);
-            }
+        for (const ticket of group.tickets) {
+          if (ticket.phase === "done") continue;
+          ticket.phase = "sent";
+          ticket.frame = undefined;
+          if (ticket.replied) {
+            owned.delete(ticket);
+            admission.release(ticket);
           }
-        });
+        }
       }
     }),
   );

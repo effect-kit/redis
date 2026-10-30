@@ -24,23 +24,30 @@ const serverCode = (bytes: Uint8Array) => {
   return code || "ERR";
 };
 
-export const checkServerReply = (reply: RespValue): Effect.Effect<RespValue, ServerError> => {
+const serverFailure = (reply: RespValue): ServerError | undefined => {
   const value = undecorate(reply);
   return value._tag === "SimpleError" || value._tag === "BlobError"
-    ? Effect.fail(
-        new ServerError({
-          delivery: "replied",
-          code: serverCode(value.value),
-          reply: Redacted.make(reply),
-        }),
-      )
-    : Effect.succeed(reply);
+    ? new ServerError({
+        delivery: "replied",
+        code: serverCode(value.value),
+        reply: Redacted.make(reply),
+      })
+    : undefined;
+};
+
+export const checkServerReply = (reply: RespValue): Effect.Effect<RespValue, ServerError> => {
+  const failure = serverFailure(reply);
+  return failure === undefined ? Effect.succeed(reply) : Effect.fail(failure);
 };
 
 export const decodeReply = <A, E, R>(
   command: PreparedCommand<A, E, R>,
   reply: RespValue,
-): Effect.Effect<A, E | ServerError | ReplyError, R> =>
-  (command.serverErrors === "fail" ? checkServerReply(reply) : Effect.succeed(reply)).pipe(
-    Effect.flatMap(command.decode),
-  );
+): Effect.Effect<A, E | ServerError | ReplyError, R> => {
+  const failure = command.serverErrors === "fail" ? serverFailure(reply) : undefined;
+  if (failure !== undefined) return Effect.fail(failure);
+
+  const decode = command.decode;
+  // Decoder invocation stays in the executing fiber, including synchronous throws.
+  return Effect.suspend(() => decode(reply));
+};
