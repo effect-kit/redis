@@ -111,25 +111,29 @@ export const makeGeneration = Effect.fnUntraced(function* (
     (cause) => retire("aborted", cause, cause),
   );
 
-  const push = (value: RespValue, wireBytes: number) =>
-    Effect.sync(() => {
-      // Wire bytes bound payload retention; decoder entry/depth limits also bound object overhead.
-      const cost = wireBytes;
-      if (
-        stopped ||
-        cost > policy.maxPushBytes - pushBytes ||
-        !Queue.offerUnsafe(pushes, { generation: id, value, cost })
-      ) {
-        retire("push-overflow");
-        return (
-          failure ??
-          new ConnectionError({ reason: "push-overflow", generation: id, delivery: "unsent" })
-        );
-      }
+  const offerPush = (value: RespValue, wireBytes: number) => {
+    // Wire bytes bound payload retention; decoder entry/depth limits bound object overhead.
+    if (
+      stopped ||
+      wireBytes > policy.maxPushBytes - pushBytes ||
+      !Queue.offerUnsafe(pushes, { generation: id, value, cost: wireBytes })
+    ) {
+      retire("push-overflow");
+      return (
+        failure ??
+        new ConnectionError({ reason: "push-overflow", generation: id, delivery: "unsent" })
+      );
+    }
 
-      pushBytes += cost;
-      return undefined;
-    }).pipe(Effect.flatMap((error) => (error === undefined ? Effect.void : Effect.fail(error))));
+    pushBytes += wireBytes;
+    return undefined;
+  };
+
+  const push = (value: RespValue, wireBytes: number) =>
+    Effect.suspend(() => {
+      const error = offerPush(value, wireBytes);
+      return error === undefined ? Effect.void : Effect.fail(error);
+    });
 
   const watch = <A, E>(effect: Effect.Effect<A, E>) =>
     effect.pipe(
@@ -217,6 +221,23 @@ export const makeGeneration = Effect.fnUntraced(function* (
     }),
   );
 
+  const acceptReply: Parameters<ReplyReader["drain"]>[0] = (reply) => {
+    if (stopped) return false;
+    if (undecorated(reply.value)._tag === "Push")
+      return offerPush(reply.value, reply.wireBytes) === undefined;
+
+    const ticket = pending.shift();
+    if (ticket === undefined) {
+      retire("protocol");
+      return false;
+    }
+
+    if (ticket.phase !== "writing") owned.delete(ticket);
+    admission.succeed(ticket, reply.value);
+    signal();
+    return !stopped;
+  };
+
   const read = watch(
     Effect.gen(function* () {
       let turns = 0;
@@ -224,27 +245,17 @@ export const makeGeneration = Effect.fnUntraced(function* (
       while (true) {
         if (stopped) return;
 
-        const reply = yield* reader.next;
-        if (reply === undefined) {
+        const count = yield* reader.drain(acceptReply);
+        if (count === 0) {
           retire("closed");
           return;
         }
 
-        if (stopped) return;
-
-        if (undecorated(reply.value)._tag === "Push") yield* push(reply.value, reply.wireBytes);
-        else {
-          const ticket = pending.shift();
-          if (ticket === undefined) {
-            retire("protocol");
-            return;
-          }
-          if (ticket.phase !== "writing") owned.delete(ticket);
-          admission.succeed(ticket, reply.value);
-          signal();
+        turns += count;
+        if (turns >= 64) {
+          turns = 0;
+          yield* Effect.yieldNow;
         }
-
-        if (++turns % 64 === 0) yield* Effect.yieldNow;
       }
     }),
   );

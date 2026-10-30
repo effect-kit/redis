@@ -102,10 +102,13 @@ export class ByteQueue {
     if (this.cursor !== block.used) return;
 
     this.blocks[this.head++] = undefined;
-    // A spare block must not keep the previous payload alive after consumption.
-    block.bytes.fill(0, 0, block.used);
-    block.used = 0;
-    if (block.reusable) this.spare = block;
+    if (block.reusable) {
+      // Retained scratch must not keep a previous payload. Transferred input is
+      // discarded instead, and never becomes scratch or a public reply buffer.
+      block.bytes.fill(0, 0, block.used);
+      block.used = 0;
+      this.spare = block;
+    }
     this.cursor = 0;
 
     if (this.size === 0) {
