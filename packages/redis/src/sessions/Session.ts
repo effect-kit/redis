@@ -89,7 +89,7 @@ export const makeSession = (
       }),
     );
 
-  const client = {
+  const makeClient = () => ({
     ...makeRedis({ ...executor, executeBatchPrepared: pipelinePrepared }),
     ...blockingFamily(executor),
     ...blockingTimeSeriesFamily(executor),
@@ -150,10 +150,15 @@ export const makeSession = (
         }),
       ),
     snapshot: Effect.sync(() => ({ generation: wire.id, mode: state.get() })),
-  };
+  });
+
+  let client: ReturnType<typeof makeClient> | undefined;
 
   return {
-    client,
+    // Direct transactions need lease state, but none of the command-family closures.
+    get client() {
+      return (client ??= makeClient());
+    },
     finish: state.finish.pipe(
       Effect.ensuring(
         Effect.sync(() => {
