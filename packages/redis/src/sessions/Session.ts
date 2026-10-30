@@ -4,6 +4,7 @@ import type { Command, PreparedCommand } from "#/command/Command";
 import { decodeReply } from "#/command/Decode";
 import type { RedisExecutor } from "#/command/Executor";
 import { status } from "#/command/reply/Scalars";
+import { registerValuesExecutor } from "#/command/ValuesExecutor";
 import { blockingFamily } from "#/commands/blocking/Family";
 import { hashImportFamily } from "#/commands/hashes/Import";
 import { Arguments, parse } from "#/commands/internal/Input";
@@ -15,7 +16,8 @@ import { checkOrdinary } from "#/connection/OrdinaryCommand";
 import { SessionError } from "#/errors/SessionError";
 import { makeRedis } from "#/Redis";
 import type { RedisArgument } from "#/RedisArgument";
-import { runPipeline } from "#/sessions/batch/Pipeline";
+import { decodeBatchValues } from "#/sessions/batch/DecodeValues";
+import { pipelineReplies, runPipeline } from "#/sessions/batch/Pipeline";
 import { prepareBatch } from "#/sessions/batch/Prepare";
 import type { AnyCommand, PreparedBatch } from "#/sessions/batch/Types";
 import { adjacencyControls } from "#/sessions/controls/Adjacency";
@@ -90,7 +92,19 @@ export const makeSession = (
     );
 
   const makeClient = () => ({
-    ...makeRedis({ ...executor, executeBatchPrepared: pipelinePrepared }),
+    ...makeRedis(
+      registerValuesExecutor({ ...executor, executeBatchPrepared: pipelinePrepared }, (prepared) =>
+        state.run(() =>
+          Effect.gen(function* () {
+            if (prepared.length > policy.maxBatchCommands)
+              return yield* new SessionError({ reason: "batch-limit", delivery: "unsent" });
+            yield* validation?.batch(prepared, false) ?? Effect.void;
+
+            return yield* decodeBatchValues(prepared, yield* pipelineReplies(wire, prepared));
+          }),
+        ),
+      ),
+    ),
     ...blockingFamily(executor),
     ...blockingTimeSeriesFamily(executor),
     ...hashImportFamily(executor),

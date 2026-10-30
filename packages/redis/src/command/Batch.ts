@@ -4,6 +4,7 @@ import { BatchExecutor } from "#/command/BatchExecutor";
 import { batchValues, snapshotBatch } from "#/command/Compiled";
 import type { CompiledBatch } from "#/command/Compiled";
 import type { RedisExecutor } from "#/command/Executor";
+import { valuesExecutor } from "#/command/ValuesExecutor";
 import { ConnectionError } from "#/errors/ConnectionError";
 import { UnsupportedCommandError } from "#/errors/UnsupportedCommandError";
 import { prepareBatch } from "#/sessions/batch/Prepare";
@@ -22,9 +23,16 @@ export const batchApi = (
   ownedBatches: BatchExecutorService | undefined,
   isClosed: () => boolean,
 ) => {
+  const directValues = valuesExecutor(source);
   const resolve = Effect.suspend(() => {
-    if (source.executeBatchPrepared !== undefined)
-      return Effect.succeed(source.executeBatchPrepared);
+    if (directValues !== undefined) return Effect.succeed(directValues);
+    if (source.executeBatchPrepared !== undefined) {
+      const execute = source.executeBatchPrepared;
+      return Effect.succeed(
+        <const Cs extends ReadonlyArray<AnyCommand>>(prepared: PreparedBatch<Cs>) =>
+          execute<Cs>(prepared).pipe(Effect.flatMap(batchValues<Cs>)),
+      );
+    }
     return Effect.gen(function* () {
       const available = yield* Effect.serviceOption(BatchExecutor);
       const batches = ownedBatches ?? Option.getOrUndefined(available);
@@ -33,11 +41,13 @@ export const batchApi = (
       return <const Cs extends ReadonlyArray<AnyCommand>>(prepared: PreparedBatch<Cs>) => {
         const bound = prepared.map((command) => ({ prepare: Effect.succeed(command) }));
         // Preparation changes no slot's value/error/decoder type or position.
-        return batches.pipeline(bound) as Effect.Effect<
-          BatchResults<Cs>,
-          BatchFailure<Cs>,
-          DecodeRequirements<Cs[number]>
-        >;
+        return (
+          batches.pipeline(bound) as Effect.Effect<
+            BatchResults<Cs>,
+            BatchFailure<Cs>,
+            DecodeRequirements<Cs[number]>
+          >
+        ).pipe(Effect.flatMap(batchValues<Cs>));
       };
     });
   });
@@ -60,9 +70,7 @@ export const batchApi = (
               "batch",
               Effect.suspend(() => {
                 const ownerClosed = guard();
-                return ownerClosed === undefined
-                  ? run<Cs>(prepared).pipe(Effect.flatMap(batchValues<Cs>))
-                  : Effect.fail(ownerClosed);
+                return ownerClosed === undefined ? run<Cs>(prepared) : Effect.fail(ownerClosed);
               }),
             ),
         });
@@ -76,7 +84,7 @@ export const batchApi = (
           if (closed !== undefined) return yield* closed;
           const prepared = yield* prepareBatch(commands, 256);
           const run = yield* resolve;
-          return yield* run<Cs>(prepared).pipe(Effect.flatMap(batchValues<Cs>));
+          return yield* run<Cs>(prepared);
         }),
       ),
   };

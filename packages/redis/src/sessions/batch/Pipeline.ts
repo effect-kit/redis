@@ -12,7 +12,7 @@ import type {
 } from "#/sessions/batch/Types";
 import type { SessionWire } from "#/sessions/pool/Wire";
 
-export const runPipeline = <const Cs extends ReadonlyArray<AnyCommand>>(
+export const pipelineReplies = <const Cs extends ReadonlyArray<AnyCommand>>(
   wire: SessionWire,
   prepared: PreparedBatch<Cs>,
 ) =>
@@ -35,8 +35,16 @@ export const runPipeline = <const Cs extends ReadonlyArray<AnyCommand>>(
             })) as PartialBatchError<Cs>,
     );
 
-    return yield* decodeBatch(prepared, replies, "pipeline");
+    return replies;
   });
+
+export const runPipeline = <const Cs extends ReadonlyArray<AnyCommand>>(
+  wire: SessionWire,
+  prepared: PreparedBatch<Cs>,
+) =>
+  pipelineReplies(wire, prepared).pipe(
+    Effect.flatMap((replies) => decodeBatch(prepared, replies, "pipeline")),
+  );
 
 export const unknownBatch = <Cs extends ReadonlyArray<AnyCommand>>(
   prepared: PreparedBatch<Cs>,
