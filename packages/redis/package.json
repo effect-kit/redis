@@ -1,6 +1,6 @@
 {
   "name": "@effect-kit/redis",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A typed Redis client for Effect, built for Redis-compatible servers.",
   "keywords": [
     "bun",
