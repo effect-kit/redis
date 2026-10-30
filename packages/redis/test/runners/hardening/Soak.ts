@@ -150,6 +150,10 @@ export const soak = Effect.fnUntraced(function* (
       if (samples.length > 32) samples.shift();
       lastSample = performance.now();
     }
+
+    // Closed sockets retain source ports in TIME_WAIT. Bound scope churn so the
+    // five-minute soak measures cleanup without exhausting the host's port range.
+    yield* Effect.sleep(50);
   }
   collect();
   const memory = process.memoryUsage();
