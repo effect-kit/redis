@@ -9,6 +9,11 @@ const Address = Schema.Struct({
 
 export const RuntimeInput = Schema.Union([
   Schema.Struct({
+    scenario: Schema.Literal("pipelined-transactions"),
+    config: Schema.Unknown,
+    engine: Schema.Literals(["redis", "valkey"]),
+  }),
+  Schema.Struct({
     scenario: Schema.Literal("uncertainty"),
     config: Schema.Unknown,
     operation: Schema.Literals(["mutation", "exec", "group"]),

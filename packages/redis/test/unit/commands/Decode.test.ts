@@ -12,7 +12,7 @@ it.effect("decoder invocation is deferred and synchronous throws remain defects"
     const decoded = decodeReply(
       {
         ...prepared,
-        decode: () => {
+        decode: (): Effect.Effect<bigint> => {
           invoked = true;
           throw defect;
         },

@@ -4,6 +4,7 @@ import { authError, client, smallBuffer } from "#test/runners/bun/Client";
 import { cluster } from "#test/runners/bun/Cluster";
 import { events } from "#test/runners/bun/Events";
 import { modules } from "#test/runners/bun/Modules";
+import { pipelinedTransactions } from "#test/runners/bun/PipelinedTransactions";
 import { core, native } from "#test/runners/bun/Runtime";
 import { sentinel } from "#test/runners/bun/Sentinel";
 import { sessions } from "#test/runners/bun/Sessions";
@@ -25,6 +26,8 @@ const program = Effect.gen(function* () {
   });
   const checks = yield* (() => {
     switch (input.scenario) {
+      case "pipelined-transactions":
+        return pipelinedTransactions(input.config, input.engine);
       case "small-buffer":
         return smallBuffer(input.config);
       case "application":
