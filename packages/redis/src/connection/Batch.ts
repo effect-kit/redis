@@ -1,4 +1,4 @@
-import { Cause, Clock, Deferred, Effect, Exit, Option, Redacted } from "effect";
+import { Cause, Clock, Effect, Exit, Redacted } from "effect";
 
 import type { Admission, ExecutionError, Ticket } from "#/connection/Admission";
 import type { makeDeadlines } from "#/connection/deadline/Coordinator";
@@ -113,23 +113,18 @@ export const makeOrdinaryBatch = (owner: BatchOwner) =>
                   owner.admission.release(ticket);
                 }
                 if (!Cause.hasDies(exit.cause) && !Cause.hasInterrupts(exit.cause)) return;
-                const outcomes = yield* Effect.forEach(tickets, (ticket, index) =>
-                  Effect.gen(function* () {
-                    const polled = yield* Deferred.poll(ticket.result);
-                    const completed = Option.isSome(polled)
-                      ? yield* Effect.exit(polled.value)
-                      : undefined;
-                    return completed !== undefined && Exit.isSuccess(completed)
-                      ? { _tag: "Replied" as const, index, reply: Redacted.make(completed.value) }
-                      : {
-                          _tag: ticket.mayHaveBeenWritten
-                            ? ("Unknown" as const)
-                            : ("Unsent" as const),
-                          index,
-                          error: Redacted.make(exit.cause),
-                        };
-                  }),
-                );
+                const outcomes = tickets.map((ticket, index) => {
+                  const completed = ticket.outcome;
+                  return completed !== undefined && Exit.isSuccess(completed)
+                    ? { _tag: "Replied" as const, index, reply: Redacted.make(completed.value) }
+                    : {
+                        _tag: ticket.mayHaveBeenWritten
+                          ? ("Unknown" as const)
+                          : ("Unsent" as const),
+                        index,
+                        error: Redacted.make(exit.cause),
+                      };
+                });
                 return yield* new BatchError({
                   phase: "pipeline",
                   execution: "partial-or-unknown",

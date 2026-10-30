@@ -2,6 +2,7 @@ import { Deferred, Effect, Exit, Result } from "effect";
 import type { Cause } from "effect";
 
 import type { Limits } from "#/config/Limits";
+import { completeReply } from "#/connection/Completion";
 import { AdmissionError } from "#/errors/AdmissionError";
 import type { ConnectionError } from "#/errors/ConnectionError";
 import type { HandshakeError } from "#/errors/HandshakeError";
@@ -21,7 +22,8 @@ export type ExecutionError =
   | ProfileError;
 
 export interface Ticket {
-  readonly result: Deferred.Deferred<RespValue, ExecutionError>;
+  result: Deferred.Deferred<RespValue, ExecutionError> | undefined;
+  outcome: Exit.Exit<RespValue, ExecutionError> | undefined;
   readonly bytes: number;
   readonly queuedAt: number;
   readonly deadlineMillis: number;
@@ -34,7 +36,8 @@ export interface Ticket {
   cancel: (() => void) | undefined;
   writeGroup: symbol | undefined;
   cancelDeadline: (() => void) | undefined;
-  onResult: ((exit: Exit.Exit<RespValue, ExecutionError>) => void) | undefined;
+  batchIndex: number;
+  onResult: ((exit: Exit.Exit<RespValue, ExecutionError>, ticket: Ticket) => void) | undefined;
 }
 
 /** Transitions are synchronous: counters and ownership change before any waiter is resumed. */
@@ -168,7 +171,8 @@ export class Admission {
     if (this.tickets.size === 0) this.drained = Deferred.makeUnsafe();
 
     const ticket: Ticket = {
-      result: Deferred.makeUnsafe(),
+      result: undefined,
+      outcome: undefined,
       bytes: frame.length,
       frame,
       queuedAt,
@@ -181,6 +185,7 @@ export class Admission {
       cancel: undefined,
       writeGroup: undefined,
       cancelDeadline: undefined,
+      batchIndex: 0,
       onResult: undefined,
     };
 
@@ -245,10 +250,7 @@ export class Admission {
 
     // A reply may beat the write callback; release its bytes only after both complete.
     if (ticket.phase !== "writing") this.release(ticket);
-    const notify = ticket.onResult;
-    ticket.onResult = undefined;
-    Deferred.doneUnsafe(ticket.result, Effect.succeed(reply));
-    notify?.(Exit.succeed(reply));
+    completeReply(ticket, Exit.succeed(reply));
   }
 
   fail(ticket: Ticket, error: ExecutionError) {
@@ -258,19 +260,12 @@ export class Admission {
 
   /** Deadlines publish their exact failure before cancellation retires neighboring FIFO slots. */
   notifyFailure(ticket: Ticket, error: ExecutionError) {
-    const notify = ticket.onResult;
-    ticket.onResult = undefined;
-    Deferred.doneUnsafe(ticket.result, Effect.fail(error));
-    notify?.(Exit.fail(error));
+    completeReply(ticket, Exit.fail(error));
   }
 
   die(ticket: Ticket, cause: Cause.Cause<never>) {
     this.release(ticket);
-    const notify = ticket.onResult;
-    ticket.onResult = undefined;
-    // Cold failure evidence must be pollable before aggregate completion resumes a caller.
-    Deferred.doneUnsafe(ticket.result, Effect.failCause(cause));
-    notify?.(Exit.failCause(cause));
+    completeReply(ticket, Exit.failCause(cause));
   }
 
   private clearDeadline(ticket: Ticket) {

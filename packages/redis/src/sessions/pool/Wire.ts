@@ -1,4 +1,4 @@
-import { Cause, Clock, Deferred, Effect, Exit, Option, Redacted, Scope } from "effect";
+import { Cause, Clock, Deferred, Effect, Exit, Redacted, Scope } from "effect";
 
 import { Admission } from "#/connection/Admission";
 import type { ExecutionError, Ticket } from "#/connection/Admission";
@@ -145,25 +145,20 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
                   );
                   if (phase === "single") return;
 
-                  const outcomes = yield* Effect.forEach(tickets, (ticket, index) =>
-                    Effect.gen(function* () {
-                      const polled = yield* Deferred.poll(ticket.result);
-                      const completed = Option.isSome(polled)
-                        ? yield* Effect.exit(polled.value)
-                        : undefined;
-                      return completed !== undefined && Exit.isSuccess(completed)
-                        ? { _tag: "Replied", index, reply: Redacted.make(completed.value) }
-                        : {
-                            _tag: ticket.mayHaveBeenWritten ? "Unknown" : "Unsent",
-                            index,
-                            error: Redacted.make(
-                              completed !== undefined && Exit.isFailure(completed)
-                                ? completed.cause
-                                : exit.cause,
-                            ),
-                          };
-                    }),
-                  );
+                  const outcomes = tickets.map((ticket, index) => {
+                    const completed = ticket.outcome;
+                    return completed !== undefined && Exit.isSuccess(completed)
+                      ? { _tag: "Replied", index, reply: Redacted.make(completed.value) }
+                      : {
+                          _tag: ticket.mayHaveBeenWritten ? "Unknown" : "Unsent",
+                          index,
+                          error: Redacted.make(
+                            completed !== undefined && Exit.isFailure(completed)
+                              ? completed.cause
+                              : exit.cause,
+                          ),
+                        };
+                  });
 
                   // Add evidence to the Cause while retaining its original interruption/defect.
                   return yield* new BatchError({

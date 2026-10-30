@@ -15,6 +15,7 @@ import {
 import { Admission } from "#/connection/Admission";
 import type { ExecutionError, Ticket } from "#/connection/Admission";
 import { makeOrdinaryBatch } from "#/connection/Batch";
+import { awaitReply } from "#/connection/Completion";
 import { makeDeadlines } from "#/connection/deadline/Coordinator";
 import { makeGeneration } from "#/connection/Generation";
 import type { Generation, PushReply } from "#/connection/Generation";
@@ -352,9 +353,9 @@ export const makeConnection = Effect.fnUntraced(function* <R = never>(
             ),
             Effect.flatMap((ready) => {
               if (ticket.phase !== "done") ready.enqueue(ticket);
-              return Deferred.await(ticket.result);
+              return awaitReply(ticket);
             }),
-            Effect.raceFirst(Deferred.await(ticket.result)),
+            Effect.raceFirst(awaitReply(ticket)),
           );
         }).pipe(
           Effect.onExit((exit) =>

@@ -83,6 +83,10 @@ export const makeWriter = (
   socket.on("close", onClose);
   socket.on("drain", onDrain);
 
+  const reset = Effect.sync(() => {
+    busy = false;
+  });
+
   const write = (bytes: Uint8Array, owned: boolean): Effect.Effect<void, TransportError> =>
     Effect.uninterruptibleMask((restore) =>
       Effect.suspend(() => {
@@ -115,11 +119,8 @@ export const makeWriter = (
             });
           }),
         ).pipe(
-          Effect.onExit((exit) => (Exit.isFailure(exit) ? close : Effect.void)),
-          Effect.ensuring(
-            Effect.sync(() => {
-              busy = false;
-            }),
+          Effect.onExit((exit) =>
+            Exit.isFailure(exit) ? close.pipe(Effect.ensuring(reset)) : reset,
           ),
         );
       }),
