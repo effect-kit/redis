@@ -1,14 +1,12 @@
 import { Cause, Effect, Exit, Redacted } from "effect";
 
 import { checkServerReply } from "#/command/Decode";
-import { status, undecorate, mismatch } from "#/command/reply/Scalars";
+import { status } from "#/command/reply/Scalars";
 import { AdmissionError } from "#/errors/AdmissionError";
 import { BatchError } from "#/errors/BatchError";
 import { ConnectionError } from "#/errors/ConnectionError";
 import { ProtocolError } from "#/errors/ProtocolError";
-import { ServerError } from "#/errors/ServerError";
 import { TransactionError } from "#/errors/TransactionError";
-import { decodeBatch } from "#/sessions/batch/Decode";
 import { mapBatchFailure } from "#/sessions/batch/Failure";
 import { unknownBatch } from "#/sessions/batch/Pipeline";
 import type {
@@ -16,11 +14,12 @@ import type {
   BatchOutcomes,
   PartialBatchError,
   PreparedBatch,
-  TransactionOutcome,
 } from "#/sessions/batch/Types";
 import { exchange } from "#/sessions/controls/Exchange";
 import type { SessionWire, WireOutcome } from "#/sessions/pool/Wire";
+import { decodeTransaction } from "#/sessions/transaction/Decode";
 import type { SessionState } from "#/sessions/transaction/State";
+import { submitPipelined } from "#/sessions/transaction/Submit";
 
 export const runTransaction = <Cs extends ReadonlyArray<AnyCommand>>(
   wire: SessionWire,
@@ -33,6 +32,7 @@ export const runTransaction = <Cs extends ReadonlyArray<AnyCommand>>(
     let execStarted = false;
     let execReplied = false;
     let execMayHaveBeenWritten = false;
+    let pipelinedActive = false;
 
     const notExecuted = (error: unknown, phase: "transaction-queue" | "transaction-exec") =>
       new BatchError({
@@ -54,6 +54,13 @@ export const runTransaction = <Cs extends ReadonlyArray<AnyCommand>>(
       // A rejected MULTI must never let the intended transaction's mutations execute as ordinary commands.
       yield* exchange(wire, ["MULTI"], status("OK"));
       state.set("multi");
+
+      if (wire.queueAndExec !== undefined) {
+        pipelinedActive = true;
+        const pipelined = yield* submitPipelined(wire, state, prepared);
+        if (pipelined !== undefined) return pipelined;
+        pipelinedActive = false;
+      }
 
       queueStarted = true;
       const queued = yield* mapBatchFailure(
@@ -119,36 +126,10 @@ export const runTransaction = <Cs extends ReadonlyArray<AnyCommand>>(
             : unknownBatch(prepared, error, "transaction-exec"),
       );
       execReplied = true;
-      const checked = yield* Effect.result(checkServerReply(reply));
-      if (checked._tag === "Failure") {
-        const aborted =
-          checked.failure instanceof ServerError && checked.failure.code === "EXECABORT";
-        if (aborted) state.set("idle");
-        return yield* new TransactionError({
-          reason: "exec-rejected",
-          execution: aborted ? "not-executed" : "unknown",
-          errors: Redacted.make(checked.failure),
-        });
-      }
-
-      const value = undecorate(reply);
-      // Kvrocks RESP2 uses a null bulk for WATCH conflicts; every null here denotes aborted EXEC.
-      if (value._tag === "Null") {
-        state.set("idle");
-        return { _tag: "Conflict" } as const;
-      }
-      if (value._tag !== "Array") return yield* mismatch("array", reply);
-
-      state.set("idle");
-      if (value.values.length !== prepared.length) return yield* mismatch("array-length", reply);
-      const results = yield* decodeBatch(
-        prepared,
-        value.values.map((entry) => ({ _tag: "Replied", reply: entry })),
-        "transaction-exec",
-      );
-      return { _tag: "Committed", results } as const satisfies TransactionOutcome<Cs>;
+      return yield* decodeTransaction(state, prepared, reply);
     }).pipe(
       Effect.onExit((exit) => {
+        if (pipelinedActive) return Effect.void;
         if (
           !Exit.isFailure(exit) ||
           (!Cause.hasInterrupts(exit.cause) && !Cause.hasDies(exit.cause))

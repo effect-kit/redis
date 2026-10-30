@@ -196,6 +196,10 @@ return `Committed` with per-command Results or a WATCH `Conflict`; runtime error
 do not roll back sibling commands. Use `RedisSessions.watch(keys, use)` for WATCH
 workflows. Cluster transactions require one slot, selected here by `{account:42}`.
 
+For standalone native connections, `profile: RedisProfiles.redis()` or
+`profile: RedisProfiles.valkey()` enables combined queue/EXEC submission after
+MULTI succeeds. Other profiles retain sequential submission.
+
 ## Scans, Streams and Pub/Sub
 
 Lazy cursor scans compose directly with Effect Stream:

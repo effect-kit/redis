@@ -14,6 +14,7 @@ import { ConnectionError } from "#/errors/ConnectionError";
 import { HandshakeError } from "#/errors/HandshakeError";
 import { ProtocolError } from "#/errors/ProtocolError";
 import { ProfileCommandPolicy } from "#/profiles/Commands";
+import { PipelinedTransactions } from "#/profiles/Transactions";
 import type { RedisCommand } from "#/protocol/encode";
 import type { RespValue } from "#/protocol/RespValue";
 import type { RedisConfig } from "#/RedisConfig";
@@ -34,6 +35,7 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
   const { credentials } = options;
   const transport = yield* Transport;
   const commandPolicy = yield* ProfileCommandPolicy;
+  const pipelinedTransactions = yield* PipelinedTransactions;
   const expectedRole = yield* RoleExpectation;
   const admission = new Admission(config.limits);
 
@@ -82,9 +84,10 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
   const batch = Effect.fnUntraced(function* (
     commands: ReadonlyArray<RedisCommand>,
     replyTimeoutMillis: number | "forever" = config.commandTimeoutMillis,
-    phase: "pipeline" | "transaction-queue" | "single" = "pipeline",
+    phase: "pipeline" | "transaction-queue" | "transaction-exec" | "single" = "pipeline",
     fenced = false,
     observeFailure?: (mayHaveBeenWritten: boolean) => void,
+    observeLast = false,
   ) {
     const tickets: Ticket[] = [];
     for (const command of commands) {
@@ -100,7 +103,14 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
         // Reserve the entire batch before making any frame visible to the writer.
         const reserved = fenced
           ? admission.reserveExchange(commands, now, config.commandTimeoutMillis)
-          : admission.reserveBatch(commands, now, config.commandTimeoutMillis);
+          : admission.reserveBatch(
+              commands,
+              now,
+              config.commandTimeoutMillis,
+              phase !== "transaction-exec",
+            );
+        // Empty is a private fallback marker: a combined queue always includes EXEC.
+        if (phase === "transaction-exec" && reserved instanceof AdmissionError) return [];
         if (reserved instanceof AdmissionError || reserved instanceof ProtocolError)
           return yield* reserved;
         tickets.push(...(Array.isArray(reserved) ? reserved : [reserved]));
@@ -134,7 +144,11 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
           Effect.onExit((exit) =>
             Exit.isFailure(exit)
               ? Effect.gen(function* () {
-                  observeFailure?.(tickets.some((ticket) => ticket.mayHaveBeenWritten));
+                  observeFailure?.(
+                    observeLast
+                      ? (tickets.at(-1)?.mayHaveBeenWritten ?? false)
+                      : tickets.some((ticket) => ticket.mayHaveBeenWritten),
+                  );
                   // An interrupted reader cannot release possibly-written FIFO slots for reuse.
                   generation.retire(
                     "aborted",
@@ -145,7 +159,8 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
                   );
                   if (phase === "single") return;
 
-                  const outcomes = tickets.map((ticket, index) => {
+                  const evidence = phase === "transaction-exec" ? tickets.slice(0, -1) : tickets;
+                  const outcomes = evidence.map((ticket, index) => {
                     const completed = ticket.outcome;
                     return completed !== undefined && Exit.isSuccess(completed)
                       ? { _tag: "Replied", index, reply: Redacted.make(completed.value) }
@@ -164,7 +179,13 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
                   return yield* new BatchError({
                     phase,
                     execution:
-                      phase === "transaction-queue" ? "not-executed" : "partial-or-unknown",
+                      phase === "transaction-queue"
+                        ? "not-executed"
+                        : phase === "transaction-exec"
+                          ? tickets.at(-1)?.mayHaveBeenWritten
+                            ? "unknown"
+                            : "not-executed"
+                          : "partial-or-unknown",
                     outcomes: Redacted.make(outcomes),
                   });
                 })
@@ -204,6 +225,22 @@ export const makeSessionWire = Effect.fnUntraced(function* <R>(
   });
 
   return {
+    ...(pipelinedTransactions
+      ? {
+          queueAndExec: (
+            commands: ReadonlyArray<RedisCommand>,
+            observeFailure: (execMayHaveBeenWritten: boolean) => void,
+          ) =>
+            batch(
+              [...commands, ["EXEC"]],
+              undefined,
+              "transaction-exec",
+              false,
+              observeFailure,
+              true,
+            ),
+        }
+      : {}),
     fence,
     id,
     batch,

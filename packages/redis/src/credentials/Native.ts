@@ -12,6 +12,7 @@ import { commandPolicy, ProfileCommandPolicy } from "#/profiles/Commands";
 import { restrictedTransport } from "#/profiles/Network";
 import type { NetworkPolicy } from "#/profiles/Network";
 import type { DeploymentProfile } from "#/profiles/Profile";
+import { canPipelineTransactions, PipelinedTransactions } from "#/profiles/Transactions";
 import { Transport } from "#/transport/Transport";
 
 export const makeNativeCredentials = Effect.fnUntraced(function* <R>(
@@ -95,6 +96,7 @@ export const makeNativeCredentials = Effect.fnUntraced(function* <R>(
       Context.make(Transport, bindings.transport).pipe(
         Context.add(RedisCredentials, identity),
         Context.add(ProfileCommandPolicy, commandPolicy(deployment.profile)),
+        Context.add(PipelinedTransactions, canPipelineTransactions(deployment.profile)),
       ),
     ),
   };

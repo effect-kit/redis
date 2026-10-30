@@ -81,9 +81,14 @@ export class Admission {
     );
   }
 
-  reserveBatch(commands: ReadonlyArray<RedisCommand>, queuedAt: number, timeoutMillis: number) {
+  reserveBatch(
+    commands: ReadonlyArray<RedisCommand>,
+    queuedAt: number,
+    timeoutMillis: number,
+    reportRejection = true,
+  ) {
     const reject = (reason: AdmissionError["reason"]) => {
-      this.rejected++;
+      if (reportRejection) this.rejected++;
       return new AdmissionError({ reason, delivery: "unsent" });
     };
     if (commands.length > this.limits.maxQueuedCommands - this.queuedCommands)
