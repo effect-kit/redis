@@ -1,5 +1,5 @@
 import { Context, Effect } from "effect";
-import type { Crypto } from "effect";
+import type { Digest } from "effect/crypto";
 
 import { Commands, RedisScript, RedisScripts, Reply } from "#/index";
 import type { RedisClient, RedisScriptsClient } from "#/index";
@@ -20,7 +20,7 @@ type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 type Assert<T extends true> = T;
 export type ScriptingContracts = [
-  Assert<Equal<Effect.Services<typeof descriptor>, Crypto.Crypto>>,
+  Assert<Equal<Effect.Services<typeof descriptor>, Digest.Digest>>,
   Assert<Equal<Effect.Services<typeof executed>, DecoderContext>>,
   Assert<Equal<Effect.Success<typeof executed>, string>>,
   Assert<Equal<Effect.Services<typeof direct>, DecoderContext>>,

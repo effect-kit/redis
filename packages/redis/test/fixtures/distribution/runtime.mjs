@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import { Effect, Layer } from "effect";
+import { SecureRandom } from "effect/crypto";
 
 import { Commands, RedisProfiles, RedisScript, RedisTelemetry, Reply } from "@effect-kit/redis";
 import { decodeUpstashConfig } from "@effect-kit/redis/upstash";
@@ -23,7 +24,14 @@ const script = await Effect.runPromise(
     Effect.provide(adapter.cryptoLayer),
   ),
 );
-assert.match(script.sha1, /^[a-f0-9]{40}$/);
+assert.equal(script.sha1, "e0e1f9fabfc9d4800c877a703b823ac0578ff8db");
+const random = await Effect.runPromise(
+  SecureRandom.SecureRandom.pipe(
+    Effect.flatMap((service) => service.randomBytes(65537)),
+    Effect.provide(adapter.cryptoLayer),
+  ),
+);
+assert.equal(random.length, 65537);
 await Effect.runPromise(Effect.scoped(Layer.build(RedisTelemetry.layer({ tracing: true }))));
 assert.equal(typeof decodeUpstashConfig, "function");
 console.log(

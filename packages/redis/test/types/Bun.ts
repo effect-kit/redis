@@ -1,5 +1,6 @@
 import { Effect, Layer } from "effect";
-import type { Scope, Crypto } from "effect";
+import type { Scope } from "effect";
+import type { Digest } from "effect/crypto";
 
 import { connect, cryptoLayer, layer } from "#/bun";
 import { CommandExecutor, Connection, Redis, RedisScript, Reply } from "#/index";
@@ -27,7 +28,7 @@ type Assert<T extends true> = T;
 export type BunContracts = [
   Assert<Equal<Effect.Success<typeof acquired>, TransportConnection>>,
   Assert<Equal<Effect.Services<typeof acquired>, Scope.Scope>>,
-  Assert<Equal<Effect.Services<typeof script>, Crypto.Crypto>>,
+  Assert<Equal<Effect.Services<typeof script>, Digest.Digest>>,
   Assert<Equal<Effect.Services<typeof hashed>, never>>,
   Assert<Equal<Effect.Success<typeof runnable>, bigint>>,
   Assert<Equal<Effect.Services<typeof runnable>, never>>,

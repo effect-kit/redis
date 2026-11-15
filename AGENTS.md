@@ -13,7 +13,7 @@
 
 - Library: `packages/redis`; npm name: `@effect-kit/redis`. Use pnpm and the
   Node/Bun versions pinned in the repository. Keep the workspace root private.
-- Effect v4 is the only runtime peer; the supported range is `^4.0.6`. Changes to
+- Effect v4 is the only runtime peer; the supported range is `^4.1.0`. Changes to
   the minimum require behavior tests, including interruption and cleanup.
 - Use catalog ranges and commit `pnpm-lock.yaml`. CI installs with `--frozen-lockfile`.
   Do not add dependencies when existing tools/platform APIs suffice.
