@@ -16,7 +16,7 @@ bun add @effect-kit/redis effect
 yarn add @effect-kit/redis effect
 ```
 
-Requires Effect `^4.0.6` and ESM. Tested native runtimes: Node.js 24.22.0 and Bun 1.4.4.
+Requires Effect `^4.1.0` and ESM. Tested native runtimes: Node.js 24.22.0 and Bun 1.4.4.
 
 ## Quick start
 
@@ -95,6 +95,10 @@ HTTP supports commands, pipelines, transactions and text SSE. WATCH, blocking re
 tracking and client-side topology routing require native sockets. HTTP transactions
 reject ambiguous raw/custom/script replies. Binary request positions are limited;
 use native Pub/Sub for binary or multiline messages.
+
+`RedisScript.make` hashes sources with Effect's `Digest` service from `effect/crypto`.
+`RedisNode`/`RedisBun` Layers and the `cryptoLayer` exported by `/node` and `/bun`
+provide native `Digest` and `SecureRandom`; elsewhere, use `Digest.layerWebCrypto`.
 
 ## Typed values and commands
 

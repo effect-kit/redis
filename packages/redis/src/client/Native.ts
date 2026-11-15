@@ -1,5 +1,6 @@
 import { Effect, Layer } from "effect";
-import type { Config, Crypto } from "effect";
+import type { Config } from "effect";
+import type { Digest, SecureRandom } from "effect/crypto";
 
 import type { NativeClientInput, NativeClusterInput } from "#/client/Input";
 import { standaloneLayer } from "#/client/Standalone";
@@ -10,7 +11,7 @@ import type { Transport } from "#/transport/Transport";
 /** Runtime entrypoints supply platform services; universal modules never choose a runtime. */
 export const nativeLayers = (
   transport: Layer.Layer<Transport>,
-  crypto: Layer.Layer<Crypto.Crypto>,
+  crypto: Layer.Layer<Digest.Digest | SecureRandom.SecureRandom>,
 ) => {
   const layer = <R = never>(input: NativeClientInput<R>) =>
     standaloneLayer(input).pipe(Layer.provide(transport), Layer.provideMerge(crypto));

@@ -104,7 +104,7 @@ export const checkConsumers = async (
     manifest.name !== "@effect-kit/redis" ||
     manifest.private === true ||
     manifest.dependencies !== undefined ||
-    manifest.peerDependencies?.effect !== "^4.0.6" ||
+    manifest.peerDependencies?.effect !== "^4.1.0" ||
     manifest.license !== "Apache-2.0" ||
     manifest.repository?.url !== "git+https://github.com/effect-kit/redis.git" ||
     manifest.publishConfig?.access !== "public" ||

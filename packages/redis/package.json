@@ -106,7 +106,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "effect": "catalog:"
+    "effect": "catalog:peer"
   },
   "engines": {
     "node": ">=24.22.0"

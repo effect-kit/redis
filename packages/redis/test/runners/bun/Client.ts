@@ -1,4 +1,5 @@
-import { Crypto, Effect, Option, Result, Schema, Stream } from "effect";
+import { Effect, Option, Result, Schema, Stream } from "effect";
+import { Digest, SecureRandom } from "effect/crypto";
 
 import { readyClient } from "#test/runners/bun/Ready";
 import { core, ensure, equalBytes } from "#test/runners/bun/Runtime";
@@ -9,12 +10,13 @@ export const client = Effect.fnUntraced(function* (input: unknown) {
   const redis = core.makeRedis(core.makeExecutor(connection));
   const prefix = `bun:${crypto.randomUUID()}`;
   const bytes = new Uint8Array([0, 255, 128, 13, 10]);
-  const cryptography = yield* Crypto.Crypto;
+  const random = yield* SecureRandom.SecureRandom;
+  const hashing = yield* Digest.Digest;
   ensure(
-    (yield* cryptography.randomBytes(65537)).length === 65537,
+    (yield* random.randomBytes(65537)).length === 65537,
     "Native entropy crossed the Web Crypto quota incorrectly",
   );
-  const digest = yield* cryptography.digest("SHA-256", new TextEncoder().encode("abc"));
+  const digest = yield* hashing.digest(Digest.sha256, new TextEncoder().encode("abc"));
   ensure(
     Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("") ===
       "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",

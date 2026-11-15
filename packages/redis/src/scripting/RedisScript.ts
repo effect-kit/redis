@@ -1,4 +1,5 @@
-import { Crypto, Effect, Redacted, Schema } from "effect";
+import { Effect, Redacted, Schema } from "effect";
+import { Digest } from "effect/crypto";
 
 import type { ReplyDecoder } from "#/command/Command";
 import { Argument, parse } from "#/commands/internal/Input";
@@ -20,12 +21,14 @@ export const make = Effect.fnUntraced(function* <A, E, R>(input: {
   const body = yield* parse(Argument, input.source);
   const readOnly = yield* parse(Schema.Boolean, input.readOnly ?? false);
   const source = typeof body === "string" ? new TextEncoder().encode(body) : new Uint8Array(body);
-  const crypto = yield* Crypto.Crypto;
-  const digest = yield* crypto.digest("SHA-1", source);
+  const digest = yield* Digest.Digest;
+
+  // Hex is derived locally so custom Digest services cannot change the Redis digest format.
+  const bytes = yield* digest.digest(Digest.sha1, source);
 
   return {
     source: Redacted.make(source),
-    sha1: Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join(""),
+    sha1: Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(""),
     readOnly,
     decode: input.decode,
   } satisfies RedisScript<A, E, R>;
